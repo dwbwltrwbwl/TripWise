@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripWise.Models
 {
@@ -10,5 +11,9 @@ namespace TripWise.Models
         public int idUser { get; set; }
         public decimal shareAmount { get; set; }
         public bool isPaid { get; set; } = false;
+        [ForeignKey("idExpense")]
+        public virtual expense Expense { get; set; } = null!;
+        [ForeignKey("idUser")]
+        public virtual user User { get; set; } = null!;
     }
 }

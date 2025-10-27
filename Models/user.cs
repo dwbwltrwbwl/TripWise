@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 
 namespace TripWise.Models
 {
@@ -18,5 +20,12 @@ namespace TripWise.Models
         [Range(0, 120)]
         public int? age { get; set; }
         public DateTime createdAt { get; set; } = DateTime.UtcNow;
+        public int idRole { get; set; }
+        [ForeignKey("idRole")]
+        public virtual role Role { get; set; } = null!;
+        public virtual ICollection<tripParticipant> TripParticipants { get; set; } = new List<tripParticipant>();
+        public virtual ICollection<expense> Expenses { get; set; } = new List<expense>();
+        public virtual ICollection<chatMessage> ChatMessages { get; set; } = new List<chatMessage>();
+        public virtual ICollection<votingSystem> VotingSystems { get; set; } = new List<votingSystem>();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripWise.Models
 {
@@ -14,5 +15,12 @@ namespace TripWise.Models
         public int idTrip { get; set; }
         public int createdById { get; set; }
         public int? idPoint { get; set; }
+        [ForeignKey("idTrip")]
+        public virtual trip Trip { get; set; } = null!;
+        [ForeignKey("createdById")]
+        public virtual user CreatedBy { get; set; } = null!;
+        [ForeignKey("idPoint")]
+        public virtual pointOfInterest? PointOfInterest { get; set; }
+        public virtual ICollection<voteOption> VoteOptions { get; set; } = new List<voteOption>();
     }
 }

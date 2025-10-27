@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripWise.Models
 {
@@ -20,5 +21,9 @@ namespace TripWise.Models
         public DateTime uploadedAt { get; set; } = DateTime.UtcNow;
         public int idTrip { get; set; }
         public int uploadedById { get; set; }
+        [ForeignKey("idTrip")]
+        public virtual trip Trip { get; set; } = null!;
+        [ForeignKey("uploadedById")]
+        public virtual user UploadedBy { get; set; } = null!;
     }
 }
