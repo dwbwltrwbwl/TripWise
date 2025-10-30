@@ -20,3 +20,29 @@ html {
 body {
   margin-bottom: 60px;
 }
+.navbar-brand {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    background: linear-gradient(90deg, #047bd6, #3ab326);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-link {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #3ab326 !important;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 8px 16px !important;
+    margin: 0 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+}
