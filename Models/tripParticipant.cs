@@ -1,21 +1,23 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class TripParticipant
 {
-    public class tripParticipant
-    {
-        [Key]
-        public int idTripParticipant { get; set; }
-        public int idTrip { get; set; }
-        public int idUser { get; set; }
-        [Required]
-        [StringLength(20)]
-        public string participantRole { get; set; } = "Viewer";
-        public DateTime joinedAt { get; set; } = DateTime.UtcNow;
-        [ForeignKey("idTrip")]
-        public virtual trip Trip { get; set; } = null!;
-        [ForeignKey("idUser")]
-        public virtual user User { get; set; } = null!;
-    }
+    public int IdTripParticipant { get; set; }
+
+    public int IdTrip { get; set; }
+
+    public int IdUser { get; set; }
+
+    public int IdParticipantRole { get; set; }
+
+    public DateTime JoinedAt { get; set; }
+
+    public virtual ParticipantRole IdParticipantRoleNavigation { get; set; } = null!;
+
+    public virtual Trip IdTripNavigation { get; set; } = null!;
+
+    public virtual User IdUserNavigation { get; set; } = null!;
 }

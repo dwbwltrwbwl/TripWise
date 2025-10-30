@@ -1,26 +1,29 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class VotingSystem
 {
-    public class votingSystem
-    {
-        [Key]
-        public int IdVote { get; set; }
-        [Required]
-        [StringLength(200)]
-        public string question { get; set; } = string.Empty;
-        public DateTime createdAt { get; set; } = DateTime.UtcNow;
-        public DateTime? expiresAt { get; set; }
-        public int idTrip { get; set; }
-        public int createdById { get; set; }
-        public int? idPoint { get; set; }
-        [ForeignKey("idTrip")]
-        public virtual trip Trip { get; set; } = null!;
-        [ForeignKey("createdById")]
-        public virtual user CreatedBy { get; set; } = null!;
-        [ForeignKey("idPoint")]
-        public virtual pointOfInterest? PointOfInterest { get; set; }
-        public virtual ICollection<voteOption> VoteOptions { get; set; } = new List<voteOption>();
-    }
+    public int IdVote { get; set; }
+
+    public string Question { get; set; } = null!;
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
+
+    public int IdTrip { get; set; }
+
+    public int CreatedById { get; set; }
+
+    public int? IdPoint { get; set; }
+
+    public virtual User CreatedBy { get; set; } = null!;
+
+    public virtual PointsOfInterest? IdPointNavigation { get; set; }
+
+    public virtual Trip IdTripNavigation { get; set; } = null!;
+
+    public virtual ICollection<VoteOption> VoteOptions { get; set; } = new List<VoteOption>();
 }

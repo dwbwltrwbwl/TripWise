@@ -1,29 +1,29 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class Document
 {
-    public class document
-    {
-        [Key]
-        public int idDocument { get; set; }
-        [Required]
-        [StringLength(255)]
-        public string fileName { get; set; } = string.Empty;
-        [Required]
-        [StringLength(50)]
-        public string fileType { get; set; } = string.Empty;
-        public long FileSize { get; set; }
-        [StringLength(500)]
-        public string? filePath { get; set; }
-        [StringLength(500)]
-        public string? description { get; set; }
-        public DateTime uploadedAt { get; set; } = DateTime.UtcNow;
-        public int idTrip { get; set; }
-        public int uploadedById { get; set; }
-        [ForeignKey("idTrip")]
-        public virtual trip Trip { get; set; } = null!;
-        [ForeignKey("uploadedById")]
-        public virtual user UploadedBy { get; set; } = null!;
-    }
+    public int IdDocument { get; set; }
+
+    public string FileName { get; set; } = null!;
+
+    public string FileType { get; set; } = null!;
+
+    public long FileSize { get; set; }
+
+    public string? FilePath { get; set; }
+
+    public string? Description { get; set; }
+
+    public DateTime UploadedAt { get; set; }
+
+    public int IdTrip { get; set; }
+
+    public int UploadedById { get; set; }
+
+    public virtual Trip IdTripNavigation { get; set; } = null!;
+
+    public virtual User UploadedBy { get; set; } = null!;
 }

@@ -1,18 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class VoteOption
 {
-    public class voteOption
-    {
-        [Key]
-        public int idVoteOption { get; set; }
-        [Required]
-        [StringLength(200)]
-        public string optionText { get; set; } = string.Empty;
-        public int idVote { get; set; }
-        [ForeignKey("idVote")]
-        public virtual votingSystem votingSystem { get; set; } = null!;
-        public virtual ICollection<userVote> UserVotes { get; set; } = new List<userVote>();
-    }
+    public int IdVoteOption { get; set; }
+
+    public string OptionText { get; set; } = null!;
+
+    public int IdVote { get; set; }
+
+    public virtual VotingSystem IdVoteNavigation { get; set; } = null!;
+
+    public virtual ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
 }

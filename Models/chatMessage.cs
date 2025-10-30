@@ -1,23 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class ChatMessage
 {
-    public class chatMessage
-    {
-        [Key]
-        public int idMessage { get; set; }
-        [Required]
-        public string message { get; set; } = string.Empty;
-        public DateTime sentAt { get; set; } = DateTime.UtcNow;
-        public int idTrip { get; set; }
-        public int idUser { get; set; }
-        public int? idPoint { get; set; }
-        [ForeignKey("idTrip")]
-        public virtual trip Trip { get; set; } = null!;
-        [ForeignKey("idUser")]
-        public virtual user User { get; set; } = null!;
-        [ForeignKey("idPoint")]
-        public virtual pointOfInterest? PointOfInterest { get; set; }
-    }
+    public int IdMessage { get; set; }
+
+    public string Message { get; set; } = null!;
+
+    public DateTime SentAt { get; set; }
+
+    public int IdTrip { get; set; }
+
+    public int IdUser { get; set; }
+
+    public int? IdPoint { get; set; }
+
+    public virtual PointsOfInterest? IdPointNavigation { get; set; }
+
+    public virtual Trip IdTripNavigation { get; set; } = null!;
+
+    public virtual User IdUserNavigation { get; set; } = null!;
 }

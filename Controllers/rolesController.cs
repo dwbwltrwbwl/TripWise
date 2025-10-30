@@ -5,27 +5,26 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using TripWise.Data;
 using TripWise.Models;
 
 namespace TripWise.Controllers
 {
-    public class rolesController : Controller
+    public class RolesController : Controller
     {
-        private readonly TripWiseDbContext _context;
+        private readonly TripWiseContext _context;
 
-        public rolesController(TripWiseDbContext context)
+        public RolesController(TripWiseContext context)
         {
             _context = context;
         }
 
-        // GET: roles
+        // GET: Roles
         public async Task<IActionResult> Index()
         {
             return View(await _context.Roles.ToListAsync());
         }
 
-        // GET: roles/Details/5
+        // GET: Roles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -34,7 +33,7 @@ namespace TripWise.Controllers
             }
 
             var role = await _context.Roles
-                .FirstOrDefaultAsync(m => m.idRole == id);
+                .FirstOrDefaultAsync(m => m.IdRole == id);
             if (role == null)
             {
                 return NotFound();
@@ -43,18 +42,18 @@ namespace TripWise.Controllers
             return View(role);
         }
 
-        // GET: roles/Create
+        // GET: Roles/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: roles/Create
+        // POST: Roles/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("idRole,name")] role role)
+        public async Task<IActionResult> Create([Bind("IdRole,Name")] Role role)
         {
             if (ModelState.IsValid)
             {
@@ -65,7 +64,7 @@ namespace TripWise.Controllers
             return View(role);
         }
 
-        // GET: roles/Edit/5
+        // GET: Roles/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -81,14 +80,14 @@ namespace TripWise.Controllers
             return View(role);
         }
 
-        // POST: roles/Edit/5
+        // POST: Roles/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("idRole,name")] role role)
+        public async Task<IActionResult> Edit(int id, [Bind("IdRole,Name")] Role role)
         {
-            if (id != role.idRole)
+            if (id != role.IdRole)
             {
                 return NotFound();
             }
@@ -102,7 +101,7 @@ namespace TripWise.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!roleExists(role.idRole))
+                    if (!RoleExists(role.IdRole))
                     {
                         return NotFound();
                     }
@@ -116,7 +115,7 @@ namespace TripWise.Controllers
             return View(role);
         }
 
-        // GET: roles/Delete/5
+        // GET: Roles/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -125,7 +124,7 @@ namespace TripWise.Controllers
             }
 
             var role = await _context.Roles
-                .FirstOrDefaultAsync(m => m.idRole == id);
+                .FirstOrDefaultAsync(m => m.IdRole == id);
             if (role == null)
             {
                 return NotFound();
@@ -134,7 +133,7 @@ namespace TripWise.Controllers
             return View(role);
         }
 
-        // POST: roles/Delete/5
+        // POST: Roles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -149,9 +148,9 @@ namespace TripWise.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool roleExists(int id)
+        private bool RoleExists(int id)
         {
-            return _context.Roles.Any(e => e.idRole == id);
+            return _context.Roles.Any(e => e.IdRole == id);
         }
     }
 }

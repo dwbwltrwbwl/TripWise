@@ -1,14 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class Role
 {
-    public class role
-    {
-        [Key]
-        public int idRole { get; set; }
-        [Required]
-        [StringLength(50)]
-        public string name { get; set; } = string.Empty;
-        public virtual ICollection<user> Users { get; set; } = new List<user>();
-    }
+    public int IdRole { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

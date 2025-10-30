@@ -1,30 +1,37 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class Trip
 {
-    public class trip
-    {
-        [Key]
-        public int idTrip { get; set; }
-        [Required]
-        [StringLength(200)]
-        public string title { get; set; } = string.Empty;
-        public string? description { get; set; }
-        [Required]
-        public DateTime startDate { get; set; }
-        [Required]
-        public DateTime endDate { get; set; }
-        public decimal totalBudget { get; set; }
-        public DateTime createdAt { get; set; } = DateTime.UtcNow;
-        public int createdById { get; set; }
-        [ForeignKey("createdById")]
-        public virtual user createdBy { get; set; } = null!;
-        public virtual ICollection<tripParticipant> TripParticipants { get; set; } = new List<tripParticipant>();
-        public virtual ICollection<pointOfInterest> PointOfInterests { get; set; } = new List<pointOfInterest>();
-        public virtual ICollection<expense> Expenses { get; set; } = new List<expense>();
-        public virtual ICollection<chatMessage> ChatMessages { get; set; } = new List<chatMessage>();
-        public virtual ICollection<votingSystem> VotingSystems { get; set; } = new List<votingSystem>();
-        public virtual ICollection<document> Documents { get; set; } = new List<document>();
-    }
+    public int IdTrip { get; set; }
+
+    public string Title { get; set; } = null!;
+
+    public string? Description { get; set; }
+
+    public DateTime StartDate { get; set; }
+
+    public DateTime EndDate { get; set; }
+
+    public decimal TotalBudget { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public int CreatedById { get; set; }
+
+    public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+
+    public virtual User CreatedBy { get; set; } = null!;
+
+    public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
+
+    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+
+    public virtual ICollection<PointsOfInterest> PointsOfInterests { get; set; } = new List<PointsOfInterest>();
+
+    public virtual ICollection<TripParticipant> TripParticipants { get; set; } = new List<TripParticipant>();
+
+    public virtual ICollection<VotingSystem> VotingSystems { get; set; } = new List<VotingSystem>();
 }

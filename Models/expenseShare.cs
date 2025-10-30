@@ -1,19 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace TripWise.Models
+namespace TripWise.Models;
+
+public partial class ExpenseShare
 {
-    public class expenseShare
-    {
-        [Key]
-        public int idExpenseShare { get; set; }
-        public int idExpense { get; set; }
-        public int idUser { get; set; }
-        public decimal shareAmount { get; set; }
-        public bool isPaid { get; set; } = false;
-        [ForeignKey("idExpense")]
-        public virtual expense Expense { get; set; } = null!;
-        [ForeignKey("idUser")]
-        public virtual user User { get; set; } = null!;
-    }
+    public int IdExpenseShare { get; set; }
+
+    public int IdExpense { get; set; }
+
+    public int IdUser { get; set; }
+
+    public decimal ShareAmount { get; set; }
+
+    public bool IsPaid { get; set; }
+
+    public virtual Expense IdExpenseNavigation { get; set; } = null!;
+
+    public virtual User IdUserNavigation { get; set; } = null!;
 }
