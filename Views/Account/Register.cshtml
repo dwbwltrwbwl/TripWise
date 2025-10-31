@@ -2,11 +2,101 @@
     ViewData["Title"] = "Регистрация";
 }
 
+<style>
+    body {
+        background: url('/ostrov.jpg');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        min-height: 100vh;
+    }
+
+    .card {
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+        .form-control:focus {
+            border-color: #047bd6;
+            box-shadow: 0 0 0 0.2rem rgba(4, 123, 214, 0.25);
+        }
+
+    .btn {
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(4, 123, 214, 0.3);
+        }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h1 class="text-center mb-4">Регистрация</h1>
-            <p class="text-center text-muted">Страница регистрации будет здесь</p>
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h1 class="h3 font-weight-bold" style="font-family: 'Nunito', sans-serif; color: #047bd6;">Регистрация</h1>
+                        <p class="text-muted">Создайте новый аккаунт</p>
+                    </div>
+
+                    <form method="post" asp-action="Register">
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Полное имя</label>
+                            <input type="text" class="form-control form-control-lg" id="fullName" name="fullName" placeholder="Иван Иванов" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email адрес</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="ваш@email.com" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Создайте пароль" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Подтверждение пароля</label>
+                            <input type="password" class="form-control form-control-lg" id="confirmPassword" name="confirmPassword" placeholder="Повторите пароль" required>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms" name="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                Я соглашаюсь с <a href="#" class="text-decoration-none" style="color: #047bd6;">условиями использования</a>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100"
+                                style="background: linear-gradient(90deg, #047bd6, #3ab326); border: none; font-family: 'Nunito', sans-serif; font-weight: 800;">
+                            Зарегистрироваться
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="text-muted">
+                            Уже есть аккаунт?
+                            <a asp-controller="Account" asp-action="Login" class="text-decoration-none" style="color: #3ab326; font-weight: 600;">
+                                Войти
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

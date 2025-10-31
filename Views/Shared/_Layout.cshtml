@@ -38,6 +38,11 @@
                     </ul>
                     <ul class="navbar-nav">
                         <li class="nav-item">
+                            <a class="nav-link text-dark p-2" asp-area="" asp-controller="Home" asp-action="Discounts" title="Акции и скидки">
+                                <img src="/iconizer-discount.svg" width="24" height="24" alt="Акции">
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Войти</a>
                         </li>
                         <li class="nav-item">
@@ -64,4 +69,4 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-</html>
+</html
