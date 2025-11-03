@@ -1,7 +1,237 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Главная";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+<div class="container-fluid px-0">
+    <!-- Hero Section -->
+    <section class="hero-section bg-gradient-primary text-white">
+        <div class="container">
+            <div class="row align-items-center py-5">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Планируйте путешествия вместе</h1>
+                    <p class="lead mb-4">Создавайте маршруты, делитесь идеями и открывайте новые места с друзьями и семьей</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="#" class="btn btn-light btn-lg fw-medium px-4">
+                            <i class="fas fa-plane me-2"></i>Начать планирование
+                        </a>
+                        <a href="#" class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-play-circle me-2"></i>Узнать больше
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="hero-image-container">
+                        <img src="https://yandex-images.clstorage.net/sDf4W9204/2a3ac6Nz/qM7Rq52aUidt9d_POX0gBOi6ZbZ_xHAffxMTk89CyedePpzTcPwDYCfyJKq9PrEPQD3RAKfl0Xc-rj8RQQQTUk369C-4HnaHXbVO66i8BDXoarGGvqFU_zvmMzPPR79Bibm-lcIqdGc1JeB_7fuxO0G5pdZEJMJHaqkLhUDFVhfJzzLIXSuCsR33fGmbbWPFiishxT92Rn37kcKEiOOewVv4jKaRetTlBdQzrQ1rsXoEaKRHxsDRxDkp-UZgdgVVCn8j-d3JMkO_5O95moxQdpm50lUcNnffCbFDVlrR_vL7647GUMp2pZcVU07vmrI4hQplx-fDk4dLKHrE0hS3xxhus3l_uiAj7obs2Xn9EWWKu4MUfTeHj6gDUbaJQK8jWQm99pD6xrTmNiF93bqRqaX4JgUHwrAn-Ig5hPOF1SVrjdF5TiugYR10zsvLjSHm-rqBxP_UNh-Z8SDWWECdEBs43ORxm_fHh1Rznu3q43lkaSY2N_BhJfla6IQj1Yemys1jy437sAFflMzLa21g9ZgLwGWuxrVveBMQ5ElCzTLYip0UAoh39HamYKxtudEpRchGFVXi8Dd72-rEADSlR7heEUptS7Hi3Efvm1vvU5aKW5IHD0a03JpiEbboMh4AC4svF5BZdrendgFtjghQ-fdoJNSkoOJ16WsItpKUxUZYjUEqX5pjo2wG_1jbbqKW2AvQNO7Vhk0YIyPlmCK88jvLHOUjiHdWNRchb86ZsAgGWZR1xsKxVRqaWrUABqWkej8T-o0680CsBx3ZKd8gBbhK0_WvJ5evm5IhRSsCXeJqCT6WketFpycWgm_PCZHqt7n1xxVT4deY-yiVU4V05whtkfl8GgBBfdS-Oxg_gka4-NAmPUYVj1nzkeVYQH-DOcld5KCoJFd01CG_ryuw6oeYZvam4mPXiVp5JONUx_Rrv4FIrgkicL_2zbrbrfAkGvswB54UJN04w1NWiMD9w" alt="Путешествия" class="hero-image img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section py-4 bg-light">
+        <div class="container">
+            <div class="search-card bg-white rounded-3 shadow-sm p-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Куда планируете?</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            <input type="text" class="form-control form-control-lg" placeholder="Город, страна или место">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Даты</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            <input type="text" class="form-control" placeholder="Заезд - Выезд">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Участники</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-users"></i></span>
+                            <select class="form-select">
+                                <option>2 путешественника</option>
+                                <option>3 путешественника</option>
+                                <option>4 путешественника</option>
+                                <option>Группа 5+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-search me-2"></i>Найти
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-3">Почему выбирают нас</h2>
+                <p class="text-muted lead">Все инструменты для идеального путешествия в одном месте</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center p-4 h-100">
+                        <div class="feature-icon bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="fw-bold">Совместное планирование</h5>
+                        <p class="text-muted">Создавайте маршруты вместе с друзьями, обсуждайте идеи и голосуйте за варианты</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center p-4 h-100">
+                        <div class="feature-icon bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-route fa-2x text-success"></i>
+                        </div>
+                        <h5 class="fw-bold">Умные маршруты</h5>
+                        <p class="text-muted">Автоматическое построение оптимальных маршрутов с учетом ваших предпочтений</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center p-4 h-100">
+                        <div class="feature-icon bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-wallet fa-2x text-warning"></i>
+                        </div>
+                        <h5 class="fw-bold">Бюджет и расходы</h5>
+                        <p class="text-muted">Контролируйте общие расходы, делите затраты и следите за бюджетом поездки</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Destinations -->
+    <section class="destinations-section py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0">Популярные направления</h2>
+                <a href="#" class="btn btn-outline-primary">Все направления</a>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="destination-card card border-0 shadow-sm h-100">
+                        <img src="https://cdnstatic.rg.ru/uploads/images/2023/05/31/istock-1478313878_a0d.jpg" class="card-img-top" alt="Санкт-Петербург" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Санкт-Петербург</h5>
+                            <p class="card-text text-muted">Культурная столица России</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">от 2 500₽</span>
+                                <small class="text-muted">/ сутки</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="destination-card card border-0 shadow-sm h-100">
+                        <img src="https://avatars.mds.yandex.net/get-altay/9724410/2a00000189625ec7e494138f47b6a9a20085/XXL_height" class="card-img-top" alt="Сочи" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Сочи</h5>
+                            <p class="card-text text-muted">Черноморское побережье</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">от 1 800₽</span>
+                                <small class="text-muted">/ сутки</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="destination-card card border-0 shadow-sm h-100">
+                        <img src="https://moya-planeta.ru/upload/images/xl/3e/7e/3e7e1e7be444d2a6371a29997d867b280f177f8b.jpg" class="card-img-top" alt="Калининград" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Калининград</h5>
+                            <p class="card-text text-muted">Европейская Россия</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">от 2 200₽</span>
+                                <small class="text-muted">/ сутки</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="destination-card card border-0 shadow-sm h-100">
+                        <img src="https://avatars.mds.yandex.net/i?id=870fdc04ce2aad3c2bea44a37031b7ba_l-5353994-images-thumbs&n=13" class="card-img-top" alt="Алтай" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Алтай</h5>
+                            <p class="card-text text-muted">Горные пейзажи</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">от 1 500₽</span>
+                                <small class="text-muted">/ сутки</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold mb-3">Отзывы путешественников</h2>
+                <p class="text-muted lead">Что говорят наши пользователи</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://avatars.mds.yandex.net/i?id=2a00000179f0d5b5e5e5e5e5e5e5e5e5e-5227457-images-thumbs&n=13" class="rounded-circle me-3" alt="Анна" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0 fw-bold">Анна Петрова</h6>
+                                <small class="text-muted">Семейный отдых в Сочи</small>
+                            </div>
+                        </div>
+                        <p class="mb-0">"С помощью этого сервиса мы с семьей легко спланировали поездку в Сочи. Особенно понравилась функция совместного планирования!"</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://avatars.mds.yandex.net/i?id=2a00000179f0d5b5e5e5e5e5e5e5e5e5e-5227457-images-thumbs&n=13" class="rounded-circle me-3" alt="Дмитрий" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0 fw-bold">Дмитрий Иванов</h6>
+                                <small class="text-muted">Тур по Золотому кольцу</small>
+                            </div>
+                        </div>
+                        <p class="mb-0">"Отличный сервис для групповых поездок! Бюджетная функция помогла нам легко разделить все расходы между участниками."</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://avatars.mds.yandex.net/i?id=2a00000179f0d5b5e5e5e5e5e5e5e5e5e-5227457-images-thumbs&n=13" class="rounded-circle me-3" alt="Ольга" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0 fw-bold">Ольга Сидорова</h6>
+                                <small class="text-muted">Отдых на Алтае</small>
+                            </div>
+                        </div>
+                        <p class="mb-0">"Умные маршруты сэкономили нам кучу времени! Всё было продумано до мелочей, мы просто наслаждались путешествием."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section py-5 bg-primary text-white">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h3 class="fw-bold mb-2">Готовы начать своё путешествие?</h3>
+                    <p class="mb-0">Присоединяйтесь к тысячам путешественников, которые уже используют наш сервис</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="#" class="btn btn-light btn-lg px-4">Создать маршрут</a>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>

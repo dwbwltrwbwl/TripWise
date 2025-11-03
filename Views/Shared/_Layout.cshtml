@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вместе В Путь</title>
+    <title>Вместе В Путь - Совместное планирование путешествий</title>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -18,37 +18,110 @@
     <link rel="stylesheet" href="~/TripWise.styles.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-2">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <img src="/favicon-32x32.png" width="30" height="30" class="d-inline-block align-top" alt="Логотип">
-                    Вместе В Путь
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <div class="d-flex align-items-center w-100">
+                    <!-- Бренд -->
+                    <a class="navbar-brand d-flex align-items-center me-4" href="/">
+                        <img src="/favicon-32x32.png" width="35" height="35" class="d-inline-block align-top me-2" alt="Логотип">
+                        Вместе В Путь
+                    </a>
+
+                    <!-- Тумблер разделов -->
+                    <div class="navbar-integrated-tabs">
+                        <div class="nav-tabs-wrapper">
+                            <ul class="nav-tabs">
+                                <li class="nav-tab active" data-tab="flights">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M7.37 14.593 5 14l-2 2 3.5 1.5L8 21l2-2-.593-2.37 2.947-2.679 4.147 7.05a1.777 1.777 0 0 0 1.176-2.048l-1.746-8.385 2.202-2.202a7.05 7.05 0 0 0 1.84-3.259.89.89 0 0 0-1.08-1.08 7.04 7.04 0 0 0-3.26 1.84L13.43 8.069 5.049 6.322A1.78 1.78 0 0 0 2.999 7.5l7.05 4.146z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Авиабилеты</div>
+                                    </a>
+                                </li>
+                                <li class="nav-tab" data-tab="hotels">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M21 5H3v6h3.5v-1a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h3v-1a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1H21zM4 13a3 3 0 0 0-3 3v3h2l1-2h16l1 2h2v-3a3 3 0 0 0-3-3z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Отели</div>
+                                    </a>
+                                </li>
+                                <li class="nav-tab" data-tab="guides">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 13a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"></path>
+                                                <path fill-rule="evenodd" d="M19.292 16.277a9 9 0 1 0-14.583 0C7.19 19.972 11.5 22 11.5 22h1s4.31-2.028 6.791-5.723M9 7l.5-1.5h5L15 7h1a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Короче</div>
+                                    </a>
+                                </li>
+                                <li class="nav-tab" data-tab="assistant">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="m17.017 3.87-.455 1.692-1.692.455v.966l1.692.455.455 1.692h.966l.455-1.692 1.692-.455v-.966l-1.692-.455-.455-1.692zM9.017 4.87 7.713 9.713 2.87 11.017v.966l4.843 1.304 1.304 4.843h.966l1.304-4.843 4.843-1.304v-.966l-4.843-1.304L9.983 4.87zM15.017 15.87l-.455 1.692-1.692.455v.966l1.692.455.455 1.692h.966l.455-1.692 1.692-.455v-.966l-1.692-.455-.455-1.692z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Ассистент</div>
+                                    </a>
+                                </li>
+                                <li class="nav-tab" data-tab="favorites">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M4.383 5.42A4.9 4.9 0 0 0 3 8.92L3 8.999c0 3.6 5.667 9.5 8.5 12h1c2.834-2.5 8.5-8.4 8.5-12v-.08a4.9 4.9 0 0 0-1.382-3.498 4.617 4.617 0 0 0-7.005.398L12 6.614l-.613-.795a4.617 4.617 0 0 0-7.004-.398"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Избранное</div>
+                                    </a>
+                                </li>
+                                <li class="nav-tab" data-tab="business">
+                                    <a href="#">
+                                        <div class="tab-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                                <path fill-rule="evenodd" d="M7.334 6.596A4 4 0 0 1 11.079 4h1.842a4 4 0 0 1 3.745 2.596L17.193 8H21v3a3 3 0 0 1-3 3h-4v-1a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v1H6a3 3 0 0 1-3-3V8h3.807zM8.943 8h6.114l-.263-.702A2 2 0 0 0 12.92 6h-1.842a2 2 0 0 0-1.873 1.298z" clip-rule="evenodd"></path>
+                                                <path d="M20 16v4H4v-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="tab-text">Для бизнеса</div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Кнопка меню для мобильных -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        
-                    </ul>
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark p-2" asp-area="" asp-controller="Home" asp-action="Discounts" title="Акции и скидки">
-                                <img src="/iconizer-discount.svg" width="24" height="24" alt="Акции">
+
+                <!-- Правая часть с авторизацией -->
+                <div class="collapse navbar-collapse flex-grow-0" id="navbarContent">
+                    <div class="d-flex align-items-center">
+
+                        <!-- Кнопки авторизации -->
+                        <div class="d-flex align-items-center">
+                            <a class="btn btn-outline-secondary me-2" href="/login">
+                                <i class="fas fa-sign-in-alt me-1"></i>Войти
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Войти</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Register">Регистрация</a>
-                        </li>
-                    </ul>
+                            <a class="btn btn-primary" href="/register">
+                                Регистрация
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -59,14 +132,74 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - Вместе В Путь - <a asp-area="" asp-controller="Home" asp-action="About">О проекте</a>
-        </div>
+    <footer class="bg-dark text-white py-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <h5 class="fw-bold">TravelPlanner</h5>
+                        <p class="text-muted">Планируйте путешествия вместе с друзьями и семьей</p>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <h6 class="fw-bold">О сервисе</h6>
+                        <ul class="list-unstyled">
+                            <li><a href="#" class="text-muted text-decoration-none">О нас</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none">Контакты</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none">Помощь</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <h6 class="fw-bold">Направления</h6>
+                        <ul class="list-unstyled">
+                            <li><a href="#" class="text-muted text-decoration-none">Россия</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none">Европа</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none">Азия</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <h6 class="fw-bold">Подпишитесь на рассылку</h6>
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="Ваш email">
+                            <button class="btn btn-primary">Подписаться</button>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4">
+                <div class="text-center text-muted">
+                    <small>© 2025 TravelPlanner. Все права защищены.</small>
+                </div>
+            </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Убираем активный класс у всех вкладок
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // Добавляем активный класс к текущей вкладке
+                    this.classList.add('active');
+
+                    // Скрываем все содержимое вкладок
+                    tabPanes.forEach(pane => pane.classList.add('d-none'));
+
+                    // Показываем содержимое активной вкладки
+                    const tabId = this.getAttribute('data-tab');
+                    const activePane = document.getElementById(`${tabId}-content`);
+                    if (activePane) {
+                        activePane.classList.remove('d-none');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
-</html
+</html>
