@@ -9,6 +9,14 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<TripWiseContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Добавьте эту строку для сессий
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -25,6 +33,9 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Добавьте эту строку для использования сессий
+app.UseSession();
 
 app.MapControllerRoute(
     name: "default",

@@ -1,8 +1,19 @@
-/* Base Styles */
 html {
     position: relative;
     min-height: 100%;
     font-size: 14px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+main {
+    flex: 1 0 auto;
 }
 
 @media (min-width: 768px) {
@@ -11,26 +22,20 @@ html {
     }
 }
 
-body {
-    margin-bottom: 60px;
-}
-
-/* Focus Styles */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
 .form-control:focus, .form-check-input:focus {
-    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #0379D9;
 }
 
-/* Custom Variables */
 :root {
-    --primary-color: #2c5aa0;
-    --primary-hover: #1e3f7a;
+    --primary-color: #0379D9;
+    --primary-hover: #0369c1;
     --secondary-color: #6c757d;
-    --success-color: #198754;
+    --success-color: #40B624;
     --warning-color: #ffc107;
     --light-bg: #f8f9fa;
-    --gradient-blue: #047bd6;
-    --gradient-green: #3ab326;
+    --gradient-blue: #0379D9;
+    --gradient-green: #40B624;
     --active-color: #e6f0ff;
     --border-color: #e0e0e0;
     --text-color: #333;
@@ -38,7 +43,6 @@ body {
     --container-min-width: 1024px;
 }
 
-/* Header Styles - Яндекс Путешествия стиль */
 .navbar {
     padding-left: 40px;
     padding-right: 40px;
@@ -54,7 +58,6 @@ body {
         padding-right: 0;
     }
 
-/* Navbar Brand */
 .navbar-brand {
     font-family: 'Nunito', sans-serif;
     font-weight: 800;
@@ -66,7 +69,6 @@ body {
     margin-right: 2rem;
 }
 
-/* Nav Tabs Container */
 .navbar-integrated-tabs {
     flex: 1;
     display: flex;
@@ -152,7 +154,6 @@ body {
     font-family: 'Nunito', sans-serif;
 }
 
-/* Animation delays for tabs */
 .nav-tab:nth-child(1) a {
     animation-delay: 0.05s;
 }
@@ -177,7 +178,6 @@ body {
     animation-delay: 0.3s;
 }
 
-/* Navbar Authorization Buttons */
 #navbarContent {
     margin-left: auto;
 }
@@ -206,35 +206,21 @@ body {
         }
 
     #navbarContent .btn-primary {
-        background: linear-gradient(135deg, var(--primary-color), #3a6bc0);
+        background: var(--primary-color);
         border: none;
     }
 
         #navbarContent .btn-primary:hover {
-            background: linear-gradient(135deg, #1e4a8a, #2c5aa0);
+            background: var(--primary-hover);
             transform: translateY(-1px);
         }
 
-/* Hero Section - Compact Version */
 .hero-section {
     position: relative;
     padding: 80px 0;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #3a6bc0 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--success-color) 100%);
     overflow: hidden;
 }
-
-    .hero-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 50%;
-        height: 100%;
-        background: url('https://yandex-images.clstorage.net/sDf4W9204/2a3ac6Nz/qM7Rq52aUidt9d_POX0gBOi6ZbZ_xHAffxMTk89CyedePpzTcPwDYCfyJKq9PrEPQD3RAKfl0Xc-rj8RQQQTUk369C-4HnaHXbVO66i8BDXoarGGvqFU_zvmMzPPR79Bibm-lcIqdGc1JeB_7fuxO0G5pdZEJMJHaqkLhUDFVhfJzzLIXSuCsR33fGmbbWPFiishxT92Rn37kcKEiOOewVv4jKaRetTlBdQzrQ1rsXoEaKRHxsDRxDkp-UZgdgVVCn8j-d3JMkO_5O95moxQdpm50lUcNnffCbFDVlrR_vL7647GUMp2pZcVU07vmrI4hQplx-fDk4dLKHrE0hS3xxhus3l_uiAj7obs2Xn9EWWKu4MUfTeHj6gDUbaJQK8jWQm99pD6xrTmNiF93bqRqaX4JgUHwrAn-Ig5hPOF1SVrjdF5TiugYR10zsvLjSHm-rqBxP_UNh-Z8SDWWECdEBs43ORxm_fHh1Rznu3q43lkaSY2N_BhJfla6IQj1Yemys1jy437sAFflMzLa21g9ZgLwGWuxrVveBMQ5ElCzTLYip0UAoh39HamYKxtudEpRchGFVXi8Dd72-rEADSlR7heEUptS7Hi3Efvm1vvU5aKW5IHD0a03JpiEbboMh4AC4svF5BZdrendgFtjghQ-fdoJNSkoOJ16WsItpKUxUZYjUEqX5pjo2wG_1jbbqKW2AvQNO7Vhk0YIyPlmCK88jvLHOUjiHdWNRchb86ZsAgGWZR1xsKxVRqaWrUABqWkej8T-o0680CsBx3ZKd8gBbhK0_WvJ5evm5IhRSsCXeJqCT6WketFpycWgm_PCZHqt7n1xxVT4deY-yiVU4V05whtkfl8GgBBfdS-Oxg_gka4-NAmPUYVj1nzkeVYQH-DOcld5KCoJFd01CG_ryuw6oeYZvam4mPXiVp5JONUx_Rrv4FIrgkicL_2zbrbrfAkGvswB54UJN04w1NWiMD9w') no-repeat center center;
-        background-size: cover;
-        opacity: 0.15;
-        z-index: 1;
-    }
 
     .hero-section .container {
         position: relative;
@@ -262,7 +248,6 @@ body {
     filter: brightness(1.1) contrast(1.1);
 }
 
-/* Hero Content Improvements */
 .hero-section .display-4 {
     font-family: 'Baloo 2', cursive;
     font-weight: 800;
@@ -279,7 +264,6 @@ body {
     margin-bottom: 2rem;
 }
 
-/* Button Improvements */
 .hero-section .btn {
     border-radius: 12px;
     font-weight: 600;
@@ -315,7 +299,6 @@ body {
         box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
     }
 
-/* Search Section */
 .search-card {
     margin-top: -60px;
     position: relative;
@@ -325,7 +308,6 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-/* Features Section */
 .feature-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: 1px solid #e9ecef;
@@ -348,7 +330,6 @@ body {
     margin-bottom: 1rem;
 }
 
-/* Destinations Section */
 .destination-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: none;
@@ -369,7 +350,6 @@ body {
         transform: scale(1.05);
     }
 
-/* Button Styles */
 .btn {
     border-radius: 8px;
     font-weight: 500;
@@ -378,15 +358,15 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), #3a6bc0);
+    background: var(--primary-color);
     border: none;
     font-weight: 600;
 }
 
     .btn-primary:hover {
-        background: linear-gradient(135deg, #1e4a8a, #2c5aa0);
+        background: var(--primary-hover);
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(44, 90, 160, 0.3);
+        box-shadow: 0 5px 15px rgba(3, 121, 217, 0.3);
     }
 
 .btn-outline-primary {
@@ -401,7 +381,6 @@ body {
         transform: translateY(-2px);
     }
 
-/* Form Styles */
 .form-control {
     border-radius: 8px;
     border: 1px solid #dee2e6;
@@ -410,7 +389,7 @@ body {
 
     .form-control:focus {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+        box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
     }
 
 .input-group-text {
@@ -419,9 +398,9 @@ body {
     border-radius: 8px;
 }
 
-/* Footer Styles */
 footer {
     background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+    flex-shrink: 0;
 }
 
 .social-links a {
@@ -430,10 +409,9 @@ footer {
 
     .social-links a:hover {
         transform: translateY(-2px);
-        color: var(--gradient-green) !important;
+        color: var(--success-color) !important;
     }
 
-/* Text Styles */
 .display-4 {
     font-family: 'Baloo 2', cursive;
     font-weight: 800;
@@ -443,7 +421,6 @@ footer {
     font-family: 'Nunito', sans-serif;
 }
 
-/* Utility Classes */
 .text-gradient {
     background: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green));
     -webkit-background-clip: text;
@@ -456,7 +433,6 @@ footer {
     border-image: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green)) 1;
 }
 
-/* Card Hover Effects */
 .card {
     transition: all 0.3s ease;
 }
@@ -465,7 +441,6 @@ footer {
         box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     }
 
-/* Animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -494,7 +469,6 @@ footer {
     animation: fadeInUp 0.6s ease-out;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -504,15 +478,14 @@ footer {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, var(--primary-color), #3a6bc0);
+    background: var(--primary-color);
     border-radius: 4px;
 }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #1e4a8a, #2c5aa0);
+        background: var(--primary-hover);
     }
 
-/* Navbar Toggler */
 .navbar-toggler {
     border: none;
 }
@@ -521,7 +494,6 @@ footer {
         box-shadow: none;
     }
 
-/* Responsive adjustments */
 @media (max-width: 1200px) {
     .navbar {
         padding-left: 20px;
@@ -573,11 +545,6 @@ footer {
         padding: 60px 0;
         text-align: center;
     }
-
-        .hero-section::before {
-            width: 100%;
-            opacity: 0.1;
-        }
 
     .hero-image-container {
         margin-top: 2rem;
@@ -650,3 +617,97 @@ footer {
         flex-direction: column;
     }
 }
+
+.accommodation-section {
+    background-color: white;
+}
+
+.accommodation-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: white;
+}
+
+    .accommodation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+.accommodation-icon {
+    width: 70px;
+    height: 70px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+/* Стили для секции стран */
+.countries-section {
+    background-color: white;
+}
+
+.country-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+    .country-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .country-card img {
+        transition: transform 0.3s ease;
+    }
+
+    .country-card:hover img {
+        transform: scale(1.05);
+    }
+
+    /* Стили для карточек вариантов размещения и стран */
+    .accommodation-card .card-body,
+    .country-card .card-body {
+        padding: 1.25rem;
+    }
+
+/* Адаптивность для новых секций */
+@media (max-width: 768px) {
+    .accommodation-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+        .accommodation-icon i {
+            font-size: 1.5rem !important;
+        }
+
+    .country-card img {
+        height: 150px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .accommodation-card .card-body,
+    .country-card .card-body {
+        padding: 1rem;
+    }
+
+    .country-card img {
+        height: 120px !important;
+    }
+}
+
+.testimonial-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+    .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }

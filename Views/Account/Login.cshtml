@@ -51,6 +51,17 @@
                         <p class="text-muted">Введите свои данные для входа</p>
                     </div>
 
+                    <!-- Вывод ошибок валидации -->
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <div>@error.ErrorMessage</div>
+                            }
+                        </div>
+                    }
+
                     <form method="post" asp-action="Login">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email адрес</label>
