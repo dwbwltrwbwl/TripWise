@@ -18,6 +18,31 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Flights()
+    {
+        return View();
+    }
+
+    public IActionResult Hotels()
+    {
+        return View();
+    }
+
+    public IActionResult Guides()
+    {
+        return View();
+    }
+
+    public IActionResult Assistant()
+    {
+        return View();
+    }
+
+    public IActionResult Favorites()
+    {
+        return View();
+    }
+
     public IActionResult Privacy()
     {
         return View();

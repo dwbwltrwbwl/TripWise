@@ -1,0 +1,46 @@
+﻿@{
+    ViewData["Title"] = "Отели";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4 text-gradient mb-4">Поиск отелей</h1>
+            <p class="lead">Найдите идеальное жилье для вашего путешествия</p>
+
+            <!-- Форма поиска отелей -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Направление</label>
+                                <input type="text" class="form-control" placeholder="Город, отель или регион">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Заезд</label>
+                                <input type="date" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Выезд</label>
+                                <input type="date" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Гости</label>
+                                <select class="form-select">
+                                    <option>1 взрослый</option>
+                                    <option>2 взрослых</option>
+                                    <option>3 взрослых</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary w-100">Найти отели</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

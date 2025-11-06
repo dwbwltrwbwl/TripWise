@@ -33,8 +33,8 @@
                     <div class="navbar-integrated-tabs">
                         <div class="nav-tabs-wrapper">
                             <ul class="nav-tabs">
-                                <li class="nav-tab active" data-tab="flights">
-                                    <a href="#">
+                                <li class="nav-tab" data-tab="flights">
+                                    <a asp-controller="Home" asp-action="Flights">
                                         <div class="tab-icon">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M7.37 14.593 5 14l-2 2 3.5 1.5L8 21l2-2-.593-2.37 2.947-2.679 4.147 7.05a1.777 1.777 0 0 0 1.176-2.048l-1.746-8.385 2.202-2.202a7.05 7.05 0 0 0 1.84-3.259.89.89 0 0 0-1.08-1.08 7.04 7.04 0 0 0-3.26 1.84L13.43 8.069 5.049 6.322A1.78 1.78 0 0 0 2.999 7.5l7.05 4.146z"></path>
@@ -44,7 +44,7 @@
                                     </a>
                                 </li>
                                 <li class="nav-tab" data-tab="hotels">
-                                    <a href="#">
+                                    <a asp-controller="Home" asp-action="Hotels">
                                         <div class="tab-icon">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M21 5H3v6h3.5v-1a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h3v-1a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1H21zM4 13a3 3 0 0 0-3 3v3h2l1-2h16l1 2h2v-3a3 3 0 0 0-3-3z"></path>
@@ -53,29 +53,8 @@
                                         <div class="tab-text">Отели</div>
                                     </a>
                                 </li>
-                                <li class="nav-tab" data-tab="guides">
-                                    <a href="#">
-                                        <div class="tab-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12 13a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"></path>
-                                                <path fill-rule="evenodd" d="M19.292 16.277a9 9 0 1 0-14.583 0C7.19 19.972 11.5 22 11.5 22h1s4.31-2.028 6.791-5.723M9 7l.5-1.5h5L15 7h1a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="tab-text">Короче</div>
-                                    </a>
-                                </li>
-                                <li class="nav-tab" data-tab="assistant">
-                                    <a href="#">
-                                        <div class="tab-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="m17.017 3.87-.455 1.692-1.692.455v.966l1.692.455.455 1.692h.966l.455-1.692 1.692-.455v-.966l-1.692-.455-.455-1.692zM9.017 4.87 7.713 9.713 2.87 11.017v.966l4.843 1.304 1.304 4.843h.966l1.304-4.843 4.843-1.304v-.966l-4.843-1.304L9.983 4.87zM15.017 15.87l-.455 1.692-1.692.455v.966l1.692.455.455 1.692h.966l.455-1.692 1.692-.455v-.966l-1.692-.455-.455-1.692z"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="tab-text">Ассистент</div>
-                                    </a>
-                                </li>
                                 <li class="nav-tab" data-tab="favorites">
-                                    <a href="#">
+                                    <a asp-controller="Home" asp-action="Favorites">
                                         <div class="tab-icon">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M4.383 5.42A4.9 4.9 0 0 0 3 8.92L3 8.999c0 3.6 5.667 9.5 8.5 12h1c2.834-2.5 8.5-8.4 8.5-12v-.08a4.9 4.9 0 0 0-1.382-3.498 4.617 4.617 0 0 0-7.005.398L12 6.614l-.613-.795a4.617 4.617 0 0 0-7.004-.398"></path>
@@ -97,27 +76,27 @@
                     <div class="d-flex align-items-center">
                         @if (Context.Session.GetInt32("UserId") != null)
                         {
-                                <!-- Пользователь авторизован -->
-                                <div class="d-flex align-items-center">
-                                    <span class="me-3 text-dark" style="font-family: 'Nunito', sans-serif;">
-                                        <i class="fas fa-user me-1"></i>@Context.Session.GetString("UserName")
-                                    </span>
-                                    <a class="btn btn-outline-danger" asp-controller="Account" asp-action="Logout">
-                                        <i class="fas fa-sign-out-alt me-1"></i>Выйти
-                                    </a>
-                                </div>
+                            <!-- Пользователь авторизован -->
+                            <div class="d-flex align-items-center">
+                                <span class="me-3 text-dark user-name" style="font-family: 'Nunito', sans-serif;">
+                                    <i class="fas fa-user me-1"></i>@Context.Session.GetString("UserName")
+                                </span>
+                                <a class="btn btn-outline-danger" asp-controller="Account" asp-action="Logout">
+                                    <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                                </a>
+                            </div>
                         }
                         else
                         {
-                                <!-- Пользователь не авторизован -->
-                                <div class="d-flex align-items-center">
-                                    <a class="btn btn-outline-secondary me-2" asp-controller="Account" asp-action="Login">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Войти
-                                    </a>
-                                    <a class="btn btn-primary" asp-controller="Account" asp-action="Register">
-                                        Регистрация
-                                    </a>
-                                </div>
+                            <!-- Пользователь не авторизован -->
+                            <div class="d-flex align-items-center">
+                                <a class="btn btn-outline-secondary me-2" asp-controller="Account" asp-action="Login">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Войти
+                                </a>
+                                <a class="btn btn-primary" asp-controller="Account" asp-action="Register">
+                                    Регистрация
+                                </a>
+                            </div>
                         }
                     </div>
                 </div>
@@ -131,41 +110,41 @@
     </div>
 
     <footer class="bg-dark text-white py-4">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <h5 class="fw-bold">Вместе В Путь</h5>
-                        <p class="text-muted">Планируйте путешествия вместе с друзьями и семьей</p>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <h6 class="fw-bold">О сервисе</h6>
-                        <ul class="list-unstyled">
-                            <li><a href="#" class="text-muted text-decoration-none">О нас</a></li>
-                            <li><a href="#" class="text-muted text-decoration-none">Контакты</a></li>
-                            <li><a href="#" class="text-muted text-decoration-none">Помощь</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <h6 class="fw-bold">Направления</h6>
-                        <ul class="list-unstyled">
-                            <li><a href="#" class="text-muted text-decoration-none">Россия</a></li>
-                            <li><a href="#" class="text-muted text-decoration-none">Европа</a></li>
-                            <li><a href="#" class="text-muted text-decoration-none">Азия</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <h6 class="fw-bold">Подпишитесь на рассылку</h6>
-                        <div class="input-group">
-                            <input type="email" class="form-control" placeholder="Ваш email">
-                            <button class="btn btn-primary">Подписаться</button>
-                        </div>
-                    </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5 class="fw-bold">Вместе В Путь</h5>
+                    <p class="text-muted">Планируйте путешествия вместе с друзьями и семьей</p>
                 </div>
-                <hr class="my-4">
-                <div class="text-center text-muted">
-                    <small>© 2025 Вместе В Путь. Все права защищены.</small>
+                <div class="col-md-2 mb-3">
+                    <h6 class="fw-bold">О сервисе</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted text-decoration-none">О нас</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Контакты</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Помощь</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <h6 class="fw-bold">Направления</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted text-decoration-none">Россия</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Европа</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Азия</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6 class="fw-bold">Подпишитесь на рассылку</h6>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Ваш email">
+                        <button class="btn btn-primary">Подписаться</button>
+                    </div>
                 </div>
             </div>
+            <hr class="my-4">
+            <div class="text-center text-muted">
+                <small>© 2025 Вместе В Путь. Все права защищены.</small>
+            </div>
+        </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -174,22 +153,28 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Убираем автоматическое выделение первой вкладки
         document.addEventListener('DOMContentLoaded', function() {
+            // Определяем активную вкладку на основе текущей страницы
+            const currentPath = window.location.pathname;
             const tabs = document.querySelectorAll('.nav-tab');
-            const tabPanes = document.querySelectorAll('.tab-pane');
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    tabPanes.forEach(pane => pane.classList.add('d-none'));
-                    const tabId = this.getAttribute('data-tab');
-                    const activePane = document.getElementById(`${tabId}-content`);
-                    if (activePane) {
-                        activePane.classList.remove('d-none');
-                    }
-                });
-            });
+            // Снимаем активный класс со всех вкладок
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Определяем какая вкладка должна быть активной
+            if (currentPath.includes('/flights') || currentPath === '/Home/Flights') {
+                document.querySelector('[data-tab="flights"]').classList.add('active');
+            } else if (currentPath.includes('/hotels') || currentPath === '/Home/Hotels') {
+                document.querySelector('[data-tab="hotels"]').classList.add('active');
+            } else if (currentPath.includes('/guides') || currentPath === '/Home/Guides') {
+                document.querySelector('[data-tab="guides"]').classList.add('active');
+            } else if (currentPath.includes('/assistant') || currentPath === '/Home/Assistant') {
+                document.querySelector('[data-tab="assistant"]').classList.add('active');
+            } else if (currentPath.includes('/favorites') || currentPath === '/Home/Favorites') {
+                document.querySelector('[data-tab="favorites"]').classList.add('active');
+            }
+            // Главная страница - никакая вкладка не активна
         });
     </script>
 </body>
