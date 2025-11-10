@@ -1,0 +1,171 @@
+﻿@{
+    ViewData["Title"] = "ЖД билеты";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
+                Поиск ЖД билетов
+            </h1>
+            <p class="lead">Найдите билеты на поезда по России и СНГ</p>
+
+            <!-- Форма поиска ЖД билетов -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form id="railwaySearchForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Откуда</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="railwayDeparture"
+                                       placeholder="Станция отправления"
+                                       required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Куда</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="railwayArrival"
+                                       placeholder="Станция назначения"
+                                       required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Туда</label>
+                                <input type="date" class="form-control" id="railwayDepartureDate" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Обратно</label>
+                                <input type="date" class="form-control" id="railwayReturnDate">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Пассажиры</label>
+                                <select class="form-select" id="railwayPassengers">
+                                    <option value="1">1 пассажир</option>
+                                    <option value="2" selected>2 пассажира</option>
+                                    <option value="3">3 пассажира</option>
+                                    <option value="4">4 пассажира</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary w-100">Найти билеты</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Популярные направления -->
+            <div class="mt-5">
+                <h3 class="mb-4">Популярные направления</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://avatars.dzeninfra.ru/get-zen_doc/8302711/pub_6466413b3c24f951449f3665_646643977733f348e0d5d55d/scale_1200" class="card-img-top" alt="Москва - Нижний Новгород">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Нижний Новгород</h5>
+                                    <p class="card-text">От 1 500 ₽</p>
+                                    <p class="text-muted small">В пути от 4 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://don-plaza.ru/upload/iblock/61d/lvb77ryhs40dxr00pgdr9d3l559cl01s.jpg" class="card-img-top" alt="Москва - Ростов-на-Дону">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Ростов-на-Дону</h5>
+                                    <p class="card-text">От 2 300 ₽</p>
+                                    <p class="text-muted small">В пути от 15 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://mf.b37mrtl.ru/rbthmedia/images/2024.01/original/65ae71e1154af9591d0b3b5c.jpg" class="card-img-top" alt="Москва - Самара">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Самара</h5>
+                                    <p class="card-text">От 2 100 ₽</p>
+                                    <p class="text-muted small">В пути от 14 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://cdn.culture.ru/images/e767157a-5487-52de-9eab-8ec54a97f505" class="card-img-top" alt="Москва - Уфа">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Уфа</h5>
+                                    <p class="card-text">От 2 600 ₽</p>
+                                    <p class="text-muted small">В пути от 20 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://i.pinimg.com/736x/be/0f/30/be0f308009ab84acc7a35059fc49d4ff.jpg" class="card-img-top" alt="Москва - Красноярск">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Красноярск</h5>
+                                    <p class="card-text">От 4 500 ₽</p>
+                                    <p class="text-muted small">В пути от 56 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card destination-card h-100">
+                                <img src="https://cache3.youla.io/files/images/720_720_out/5c/b7/5cb7a549f094f3374a714302.jpg" class="card-img-top" alt="Москва - Воронеж">
+                                <div class="card-body">
+                                    <h5 class="card-title">Москва → Воронеж</h5>
+                                    <p class="card-text">От 1 400 ₽</p>
+                                    <p class="text-muted small">В пути от 8 часов</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Установка минимальной даты
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('railwayDepartureDate').min = today;
+            document.getElementById('railwayReturnDate').min = today;
+
+            // Обновление минимальной даты для обратного билета
+            document.getElementById('railwayDepartureDate').addEventListener('change', function() {
+                document.getElementById('railwayReturnDate').min = this.value;
+            });
+
+            // Обработка отправки формы
+            document.getElementById('railwaySearchForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const departure = document.getElementById('railwayDeparture').value;
+                const arrival = document.getElementById('railwayArrival').value;
+                const departureDate = document.getElementById('railwayDepartureDate').value;
+                const returnDate = document.getElementById('railwayReturnDate').value;
+                const passengers = document.getElementById('railwayPassengers').value;
+
+                if (!departure || !arrival) {
+                    alert('Пожалуйста, заполните станции отправления и назначения');
+                    return;
+                }
+
+                // Здесь будет логика поиска билетов
+                console.log('Поиск ЖД билетов:', {
+                    departure,
+                    arrival,
+                    departureDate,
+                    returnDate,
+                    passengers
+                });
+
+                alert(`Поиск ЖД билетов из ${departure} в ${arrival} на ${passengers} пассажира(ов)`);
+            });
+        });
+    </script>
+}

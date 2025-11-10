@@ -12,8 +12,24 @@ body {
     padding: 0;
 }
 
+.container {
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: var(--container-max-width);
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
 main {
     flex: 1 0 auto;
+    width: 100%;
+}
+
+footer {
+    background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+    flex-shrink: 0;
+    width: 100%;
+    margin-top: auto;
 }
 
 @media (min-width: 768px) {
@@ -758,5 +774,100 @@ footer {
 
     .user-name {
         margin-right: 1rem;
+    }
+}
+
+/* Все элементы в навигационных вкладках синие */
+.nav-tab a,
+.nav-tab .tab-text,
+.nav-tab .tab-icon,
+.navbar-integrated-tabs svg {
+    color: #0379D9 !important;
+    fill: #0379D9 !important;
+}
+
+    /* Темнее при наведении */
+    .nav-tab a:hover,
+    .nav-tab a:hover .tab-text,
+    .nav-tab a:hover .tab-icon,
+    .nav-tab a:hover svg {
+        color: #0369c1 !important;
+        fill: #0369c1 !important;
+    }
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+/* Стили для карточек направлений */
+.destination-card img {
+    transition: transform 0.3s ease;
+    width: 100%;
+    height: 200px; /* Фиксированная высота */
+    object-fit: cover; /* Обрезаем изображение чтобы заполнить контейнер */
+    object-position: center; /* Центрируем изображение */
+}
+
+.destination-card:hover img {
+    transform: scale(1.05);
+}
+
+.destination-card .card-body {
+    padding: 1.25rem;
+    min-height: 120px; /* Минимальная высота для текстового контента */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.destination-card .card-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.destination-card .card-text {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #0379D9;
+    margin-bottom: 0.25rem;
+}
+
+.destination-card .text-muted {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+}
+
+/* Адаптивность для карточек направлений */
+@media (max-width: 768px) {
+    .destination-card img {
+        height: 180px; /* Немного меньше высота на планшетах */
+    }
+
+    .destination-card .card-body {
+        min-height: 110px;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .destination-card img {
+        height: 160px; /* Еще меньше на мобильных */
+    }
+
+    .destination-card .card-body {
+        min-height: 100px;
+        padding: 0.75rem;
+    }
+
+    .destination-card .card-title {
+        font-size: 1rem;
+    }
+
+    .destination-card .card-text {
+        font-size: 1.1rem;
     }
 }

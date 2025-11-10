@@ -23,17 +23,32 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Railway()
+    {
+        return View();
+    }
+
     public IActionResult Hotels()
     {
         return View();
     }
 
-    public IActionResult Guides()
+    public IActionResult Trips()
     {
         return View();
     }
 
-    public IActionResult Assistant()
+    public IActionResult Groups()
+    {
+        return View();
+    }
+
+    public IActionResult Budget()
+    {
+        return View();
+    }
+
+    public IActionResult Activities()
     {
         return View();
     }

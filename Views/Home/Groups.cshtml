@@ -1,0 +1,178 @@
+﻿@{
+    ViewData["Title"] = "Группы";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
+                Группы путешественников
+            </h1>
+            <p class="lead">Создавайте группы для совместных путешествий и приглашайте друзей</p>
+
+            @if (Context.Session.GetInt32("UserId") == null)
+            {
+                <div class="alert alert-info">
+                    <h5>Войдите в аккаунт</h5>
+                    <p>Чтобы создавать группы и участвовать в совместных поездках, войдите в свой аккаунт.</p>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Создание новой группы -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Создать новую группу</h5>
+                                <form id="createGroupForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Название группы</label>
+                                            <input type="text" class="form-control" placeholder="Например: Отдых с друзьями" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Направление</label>
+                                            <input type="text" class="form-control" placeholder="Куда планируем?" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Описание</label>
+                                            <textarea class="form-control" rows="3" placeholder="Расскажите о планах..."></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">Создать группу</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Мои группы -->
+                        <h4 class="mb-3">Мои группы</h4>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card group-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h5 class="card-title">Отдых в Крыму</h5>
+                                            <span class="badge bg-success">Активна</span>
+                                        </div>
+                                        <p class="card-text text-muted">Планируем поездку в Крым на лето</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="avatar-group me-3">
+                                                <img src="https://via.placeholder.com/32" class="rounded-circle" alt="Участник">
+                                                <img src="https://via.placeholder.com/32" class="rounded-circle" alt="Участник">
+                                                <img src="https://via.placeholder.com/32" class="rounded-circle" alt="Участник">
+                                                <span class="avatar-count">+2</span>
+                                            </div>
+                                            <span class="text-muted small">5 участников</span>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-outline-primary btn-sm me-2">Открыть</button>
+                                            <button class="btn btn-outline-secondary btn-sm">Пригласить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card group-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h5 class="card-title">Горные лыжи</h5>
+                                            <span class="badge bg-warning">Планируется</span>
+                                        </div>
+                                        <p class="card-text text-muted">Зимний отдых в горах</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="avatar-group me-3">
+                                                <img src="https://via.placeholder.com/32" class="rounded-circle" alt="Участник">
+                                                <img src="https://via.placeholder.com/32" class="rounded-circle" alt="Участник">
+                                                <span class="avatar-count">+1</span>
+                                            </div>
+                                            <span class="text-muted small">3 участника</span>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-outline-primary btn-sm me-2">Открыть</button>
+                                            <button class="btn btn-outline-secondary btn-sm">Пригласить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <!-- Приглашения -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Приглашения в группы</h5>
+                                <div class="invitation-item">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong>Поездка в Сочи</strong>
+                                        <span class="badge bg-info">Новое</span>
+                                    </div>
+                                    <p class="text-muted small">Иван приглашает вас в группу</p>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-success btn-sm">Принять</button>
+                                        <button class="btn btn-outline-secondary btn-sm">Отклонить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .group-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .group-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+    .avatar-group {
+        display: flex;
+        align-items: center;
+    }
+
+        .avatar-group img {
+            width: 32px;
+            height: 32px;
+            border: 2px solid white;
+            margin-left: -8px;
+        }
+
+            .avatar-group img:first-child {
+                margin-left: 0;
+            }
+
+    .avatar-count {
+        background: #f8f9fa;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        margin-left: -8px;
+    }
+
+    .invitation-item {
+        padding: 15px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+        .invitation-item:last-child {
+            border-bottom: none;
+        }
+</style>

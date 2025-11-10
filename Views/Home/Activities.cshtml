@@ -1,0 +1,211 @@
+﻿@{
+    ViewData["Title"] = "Активности";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
+                Активности и развлечения
+            </h1>
+            <p class="lead">Планируйте экскурсии, мероприятия и развлечения для вашего путешествия</p>
+
+            @if (Context.Session.GetInt32("UserId") == null)
+            {
+                <div class="alert alert-info">
+                    <h5>Войдите в аккаунт</h5>
+                    <p>Чтобы планировать активности и развлечения, войдите в свой аккаунт.</p>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Поиск активностей -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Найти активности</h5>
+                                <form id="searchActivitiesForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Место</label>
+                                            <input type="text" class="form-control" placeholder="Город или регион" value="Сочи">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Дата</label>
+                                            <input type="date" class="form-control">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Категория</label>
+                                            <select class="form-select">
+                                                <option value="">Все</option>
+                                                <option value="sightseeing">Достопримечательности</option>
+                                                <option value="museums">Музеи</option>
+                                                <option value="tours">Экскурсии</option>
+                                                <option value="sports">Спорт</option>
+                                                <option value="entertainment">Развлечения</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">Найти</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Рекомендуемые активности -->
+                        <h4 class="mb-3">Рекомендуем в Сочи</h4>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card activity-card h-100">
+                                    <img src="https://via.placeholder.com/300x200/0379D9/ffffff?text=Сочи-Парк" class="card-img-top" alt="Сочи Парк">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Сочи Парк</h5>
+                                        <p class="card-text">Крупнейший тематический парк России с аттракционами и шоу.</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold text-success">от 2 500 ₽</span>
+                                            <div>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <small class="text-muted">4.8 (1247)</small>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-outline-primary btn-sm me-2">Подробнее</button>
+                                            <button class="btn btn-primary btn-sm">Добавить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card activity-card h-100">
+                                    <img src="https://via.placeholder.com/300x200/40B624/ffffff?text=Красная+Поляна" class="card-img-top" alt="Красная Поляна">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Красная Поляна</h5>
+                                        <p class="card-text">Горнолыжный курорт с канатными дорогами и пешими маршрутами.</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold text-success">от 1 800 ₽</span>
+                                            <div>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <small class="text-muted">4.9 (893)</small>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-outline-primary btn-sm me-2">Подробнее</button>
+                                            <button class="btn btn-primary btn-sm">Добавить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Запланированные активности -->
+                        <div class="mt-5">
+                            <h4 class="mb-3">Запланированные активности</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="activity-plan-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                                        <div class="d-flex align-items-center">
+                                            <div class="activity-icon me-3">
+                                                <i class="fas fa-umbrella-beach text-primary fa-2x"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Пляж "Ривьера"</h6>
+                                                <small class="text-muted">17 июля, 10:00 - 16:00</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-success me-2">Подтверждено</span>
+                                            <button class="btn btn-outline-danger btn-sm">Отменить</button>
+                                        </div>
+                                    </div>
+                                    <div class="activity-plan-item d-flex justify-content-between align-items-center py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="activity-icon me-3">
+                                                <i class="fas fa-hiking text-success fa-2x"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Экскурсия в Агурское ущелье</h6>
+                                                <small class="text-muted">18 июля, 09:00 - 14:00</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-warning me-2">Ожидание</span>
+                                            <button class="btn btn-outline-danger btn-sm">Отменить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <!-- Календарь активностей -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Календарь</h5>
+                                <div class="calendar-placeholder text-center py-4">
+                                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Здесь будет календарь с запланированными активностями</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Популярные категории -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Популярные категории</h5>
+                                <div class="category-tags">
+                                    <span class="badge bg-primary me-2 mb-2">Достопримечательности</span>
+                                    <span class="badge bg-success me-2 mb-2">Экскурсии</span>
+                                    <span class="badge bg-info me-2 mb-2">Музеи</span>
+                                    <span class="badge bg-warning me-2 mb-2">Спорт</span>
+                                    <span class="badge bg-danger me-2 mb-2">Шоппинг</span>
+                                    <span class="badge bg-secondary me-2 mb-2">Рестораны</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .activity-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .activity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+    .activity-plan-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .activity-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .category-tags {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .calendar-placeholder {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
