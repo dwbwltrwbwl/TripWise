@@ -1,0 +1,200 @@
+﻿@model TripWise.Models.User
+@{
+    ViewData["Title"] = "Мой аккаунт";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-user-circle me-2"></i>Мой аккаунт
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Информация о пользователе -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <div class="avatar-circle mb-3">
+                                <i class="fas fa-user fa-3x text-primary"></i>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-camera me-1"></i>Сменить фото
+                            </button>
+                        </div>
+                        <div class="col-md-9">
+                            <h5 style="font-family: 'Nunito', sans-serif;">Основная информация</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium text-muted">Имя пользователя</label>
+                                        <div class="form-control bg-light">@Model.Name</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium text-muted">Email</label>
+                                        <div class="form-control bg-light">@Model.Email</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Редактировать профиль
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Статистика -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 style="font-family: 'Nunito', sans-serif;">Статистика путешествий</h5>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 border rounded">
+                                        <div class="stat-number text-primary fw-bold fs-4">5</div>
+                                        <div class="stat-label text-muted">Поездок</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 border rounded">
+                                        <div class="stat-number text-success fw-bold fs-4">12</div>
+                                        <div class="stat-label text-muted">Стран</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 border rounded">
+                                        <div class="stat-number text-warning fw-bold fs-4">3</div>
+                                        <div class="stat-label text-muted">Группы</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 border rounded">
+                                        <div class="stat-number text-info fw-bold fs-4">47</div>
+                                        <div class="stat-label text-muted">Дней в пути</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Быстрые действия -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 style="font-family: 'Nunito', sans-serif;">Быстрые действия</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <a asp-controller="Home" asp-action="Trips" class="btn btn-outline-primary w-100 h-100 py-3">
+                                        <i class="fas fa-map-marked-alt fa-2x mb-2"></i>
+                                        <div>Мои поездки</div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a asp-controller="Home" asp-action="Favorites" class="btn btn-outline-success w-100 h-100 py-3">
+                                        <i class="fas fa-heart fa-2x mb-2"></i>
+                                        <div>Избранное</div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a asp-controller="Home" asp-action="Budget" class="btn btn-outline-warning w-100 h-100 py-3">
+                                        <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                                        <div>Бюджет</div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Настройки безопасности -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 style="font-family: 'Nunito', sans-serif;">Безопасность</h5>
+                            <div class="list-group">
+                                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-key me-2 text-warning"></i>
+                                        Сменить пароль
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-envelope me-2 text-info"></i>
+                                        Настройки уведомлений
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-shield-alt me-2 text-success"></i>
+                                        Двухфакторная аутентификация
+                                    </div>
+                                    <span class="badge bg-secondary">Не активно</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">Зарегистрирован с 2024 года</small>
+                        <a asp-controller="Account" asp-action="Logout" class="text-danger text-decoration-none">
+                            <i class="fas fa-sign-out-alt me-1"></i>Выйти из аккаунта
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        border: 3px solid #e9ecef;
+    }
+
+    .stat-card {
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+    .list-group-item {
+        border: 1px solid #e9ecef;
+        margin-bottom: 5px;
+        border-radius: 8px !important;
+        transition: all 0.3s ease;
+    }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+            border-color: #0379D9;
+        }
+
+    .btn-hover {
+        transition: all 0.3s ease;
+    }
+
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+</style>

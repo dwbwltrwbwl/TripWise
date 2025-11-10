@@ -179,6 +179,34 @@ namespace TripWise.Controllers
             }
         }
 
+        // GET: /Account/Profile
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            // Проверяем авторизацию
+            if (HttpContext.Session.GetInt32("UserId") == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Получаем ID пользователя из сессии
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            // Получаем полные данные пользователя из базы
+            var user = await _context.Users
+                .Include(u => u.IdRoleNavigation)
+                .FirstOrDefaultAsync(u => u.IdUser == userId);
+
+            if (user == null)
+            {
+                // Если пользователь не найден в базе, разлогиниваем
+                HttpContext.Session.Clear();
+                return RedirectToAction("Login", "Account");
+            }
+
+            return View(user);
+        }
+
         // Метод для хэширования пароля
         private string HashPassword(string password)
         {

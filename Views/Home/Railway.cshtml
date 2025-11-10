@@ -11,46 +11,69 @@
             <p class="lead">Найдите билеты на поезда по России и СНГ</p>
 
             <!-- Форма поиска ЖД билетов -->
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0" style="margin-top: 0;">
                 <div class="card-body p-4">
                     <form id="railwaySearchForm">
-                        <div class="row g-3">
+                        <!-- Первая строка -->
+                        <div class="row g-3 align-items-end mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Откуда</label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="railwayDeparture"
-                                       placeholder="Станция отправления"
-                                       required>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Откуда</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-train"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="railwayDeparture"
+                                           placeholder="Станция отправления"
+                                           required
+                                           style="font-family: 'Nunito', sans-serif;">
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Куда</label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="railwayArrival"
-                                       placeholder="Станция назначения"
-                                       required>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Куда</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-train"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="railwayArrival"
+                                           placeholder="Станция назначения"
+                                           required
+                                           style="font-family: 'Nunito', sans-serif;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Вторая строка -->
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Туда</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    <input type="date" class="form-control" id="railwayDepartureDate" required style="font-family: 'Nunito', sans-serif;">
+                                </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Туда</label>
-                                <input type="date" class="form-control" id="railwayDepartureDate" required>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Обратно</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    <input type="date" class="form-control" id="railwayReturnDate" style="font-family: 'Nunito', sans-serif;">
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Обратно</label>
-                                <input type="date" class="form-control" id="railwayReturnDate">
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Пассажиры</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-users"></i></span>
+                                    <select class="form-select" id="railwayPassengers" style="font-family: 'Nunito', sans-serif;">
+                                        <option value="1">1 пассажир</option>
+                                        <option value="2" selected>2 пассажира</option>
+                                        <option value="3">3 пассажира</option>
+                                        <option value="4">4 пассажира</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Пассажиры</label>
-                                <select class="form-select" id="railwayPassengers">
-                                    <option value="1">1 пассажир</option>
-                                    <option value="2" selected>2 пассажира</option>
-                                    <option value="3">3 пассажира</option>
-                                    <option value="4">4 пассажира</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary w-100">Найти билеты</button>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-lg w-100 text-center" style="font-family: 'Nunito', sans-serif; height: 46px;">
+                                    <i class="fas fa-search me-2"></i>Найти
+                                </button>
                             </div>
                         </div>
                     </form>
