@@ -1,0 +1,131 @@
+﻿@{
+    ViewData["Title"] = "О нас";
+    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-info-circle me-2"></i>О нас
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <div class="about-icon mb-3">
+                                <i class="fas fa-route fa-4x text-primary"></i>
+                            </div>
+                            <h4 style="font-family: 'Nunito', sans-serif;">Вместе В Путь</h4>
+                            <p class="text-muted">С 2024 года</p>
+                        </div>
+                        <div class="col-md-8">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Наша миссия</h3>
+                            <p class="lead">Сделать планирование путешествий простым, удобным и доступным для каждого.</p>
+                            <p>Мы верим, что путешествия объединяют людей, расширяют горизонты и дарят незабываемые впечатления. Наша цель — помочь вам создать идеальное путешествие без лишних хлопот.</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Что мы предлагаем</h3>
+                            <div class="row mt-4">
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-card p-3 border rounded h-100">
+                                        <i class="fas fa-plane-departure fa-2x text-primary mb-3"></i>
+                                        <h5>Авиабилеты</h5>
+                                        <p class="text-muted">Поиск и бронирование авиабилетов по лучшим ценам</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-card p-3 border rounded h-100">
+                                        <i class="fas fa-train fa-2x text-success mb-3"></i>
+                                        <h5>ЖД билеты</h5>
+                                        <p class="text-muted">Билеты на поезда по России и СНГ</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-card p-3 border rounded h-100">
+                                        <i class="fas fa-hotel fa-2x text-warning mb-3"></i>
+                                        <h5>Отели</h5>
+                                        <p class="text-muted">Подбор жилья для любого бюджета</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Наши преимущества</h3>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Удобный поиск и сравнение цен</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Безопасные платежи</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Круглосуточная поддержка</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Мобильное приложение</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Система скидок и бонусов</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Поддержка групповых поездок</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Контакты</h3>
+                            <div class="contact-info bg-light p-4 rounded mt-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><i class="fas fa-envelope me-2 text-primary"></i> info@vmestevput.ru</p>
+                                        <p><i class="fas fa-phone me-2 text-primary"></i> +7 (800) 123-45-67</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><i class="fas fa-clock me-2 text-primary"></i> Пн-Пт: 9:00-18:00</p>
+                                        <p><i class="fas fa-map-marker-alt me-2 text-primary"></i> Россия, Москва</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .about-icon {
+        width: 120px;
+        height: 120px;
+        background: #f8f9fa;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        border: 3px solid #e9ecef;
+    }
+
+    .feature-card {
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+    .contact-info {
+        border-left: 4px solid #0379D9;
+    }
+</style>

@@ -62,6 +62,38 @@ public class HomeController : Controller
     {
         return View();
     }
+ 
+    public IActionResult Terms()
+    {
+        return View();
+    }
+    public IActionResult About()
+    {
+        return View();
+    }
+
+    public IActionResult Partners()
+    {
+        return View();
+    }
+    public IActionResult Help()
+    {
+        return View();
+    }
+
+    public IActionResult Contact()
+    {
+        return View();
+    }
+
+    public IActionResult FAQ()
+    {
+        return View();
+    }
+    public IActionResult Reviews()
+    {
+        return View();
+    }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

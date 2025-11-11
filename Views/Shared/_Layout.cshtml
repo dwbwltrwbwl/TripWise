@@ -171,37 +171,185 @@
                 <div class="col-md-4 mb-3">
                     <h5 class="fw-bold">Вместе В Путь</h5>
                     <p class="text-muted">Планируйте путешествия вместе с друзьями и семьей</p>
+                    <div class="social-links">
+                        <a href="#" class="social-icon" title="ВКонтакте">
+                            <i class="fab fa-vk"></i>
+                        </a>
+                        <a href="#" class="social-icon" title="Телеграм">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                        <a href="#" class="social-icon" title="Одноклассники">
+                            <i class="fab fa-odnoklassniki"></i>
+                        </a>
+                        <a href="#" class="social-icon" title="Яндекс Дзен">
+                            <i class="fab fa-yandex"></i>
+                        </a>
+                    </div>
                 </div>
                 <div class="col-md-2 mb-3">
-                    <h6 class="fw-bold">О сервисе</h6>
+                    <h6 class="fw-bold">Сервисы</h6>
                     <ul class="list-unstyled">
-                        <li><a href="#" class="text-muted text-decoration-none">О нас</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Контакты</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Помощь</a></li>
+                        <li><a asp-controller="Home" asp-action="Flights" class="text-muted text-decoration-none">Авиабилеты</a></li>
+                        <li><a asp-controller="Home" asp-action="Railway" class="text-muted text-decoration-none">ЖД билеты</a></li>
+                        <li><a asp-controller="Home" asp-action="Hotels" class="text-muted text-decoration-none">Отели</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Туры</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">
-                    <h6 class="fw-bold">Направления</h6>
+                    <h6 class="fw-bold">Поддержка</h6>
                     <ul class="list-unstyled">
-                        <li><a href="#" class="text-muted text-decoration-none">Россия</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Европа</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Азия</a></li>
+                        <li><a asp-controller="Home" asp-action="Help" target="_blank" class="text-muted text-decoration-none">Помощь</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" target="_blank" class="text-muted text-decoration-none">Контакты</a></li>
+                        <li><a asp-controller="Home" asp-action="FAQ" target="_blank" class="text-muted text-decoration-none">FAQ</a></li>
+                        <li><a asp-controller="Home" asp-action="Reviews" target="_blank" class="text-muted text-decoration-none">Отзывы</a></li>
                     </ul>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-md-2 mb-3">
+                    <h6 class="fw-bold">Компания</h6>
+                    <ul class="list-unstyled">
+                        <li><a asp-controller="Home" asp-action="About" target="_blank" class="text-muted text-decoration-none">О нас</a></li>
+                        <li><a asp-controller="Home" asp-action="Partners" target="_blank" class="text-muted text-decoration-none">Партнеры</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <h6 class="fw-bold">Правовая информация</h6>
+                    <ul class="list-unstyled">
+                        <li><a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-muted text-decoration-none">Политика конфиденциальности</a></li>
+                        <li><a asp-controller="Home" asp-action="Terms" target="_blank" class="text-muted text-decoration-none">Условия использования</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6 mb-3">
                     <h6 class="fw-bold">Подпишитесь на рассылку</h6>
-                    <div class="input-group">
+                    <div class="input-group" style="max-width: 400px;">
                         <input type="email" class="form-control" placeholder="Ваш email">
                         <button class="btn btn-primary">Подписаться</button>
                     </div>
                 </div>
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold">Способы оплаты</h6>
+                    <div class="payment-methods">
+                        <div class="payment-icon" title="Мир">
+                            <span class="payment-text">Мир</span>
+                        </div>
+                        <div class="payment-icon" title="Сбербанк">
+                            <span class="payment-text">Сбер</span>
+                        </div>
+                        <div class="payment-icon" title="Тинькофф">
+                            <span class="payment-text">Тинькофф</span>
+                        </div>
+                        <div class="payment-icon" title="ЮMoney">
+                            <span class="payment-text">ЮMoney</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <hr class="my-4">
-            <div class="text-center text-muted">
-                <small>© 2025 Вместе В Путь. Все права защищены.</small>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="text-center text-md-start text-muted">
+                        <small>© 2025 Вместе В Путь. Все права защищены.</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-center text-md-end">
+                        <small class="text-muted">
+                            <i class="fas fa-globe me-1"></i>Русский |
+                            <i class="fas fa-map-marker-alt ms-2 me-1"></i>Россия
+                        </small>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
+
+    <style>
+        .social-links {
+            display: flex;
+            gap: 12px;
+            margin-top: 1rem;
+        }
+
+        .social-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: #40B624;
+            color: white;
+        }
+
+            .social-icon i {
+                color: white;
+                transition: color 0.3s ease;
+            }
+
+            .social-icon:hover {
+                transform: translateY(-3px) scale(1.1);
+                box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+                background: #245f16;
+            }
+
+                .social-icon:hover i {
+                    color: white;
+                }
+
+        .payment-methods {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .payment-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 70px;
+            height: 36px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            padding: 0 12px;
+            background: #40B624;
+        }
+
+            .payment-icon:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                background: #245f16;
+            }
+
+        .payment-text {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .list-unstyled li {
+            margin-bottom: 0.5rem;
+        }
+
+        .list-unstyled a {
+            transition: color 0.3s ease;
+        }
+
+            .list-unstyled a:hover {
+                color: #245f16 !important;
+            }
+    </style>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

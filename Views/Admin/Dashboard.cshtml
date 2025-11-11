@@ -1,0 +1,304 @@
+﻿@{
+    ViewData["Title"] = "Админ панель";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Вместе В Путь</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #4a5f7a;
+            text-align: center;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #4a5f7a;
+        }
+
+        .sidebar-menu a {
+            color: #bdc3c7;
+            text-decoration: none;
+            padding: 1rem 1.5rem;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: #34495e;
+            color: white;
+            border-left: 4px solid #0379D9;
+        }
+
+        .sidebar-menu i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+        }
+
+        .admin-header {
+            background: white;
+            height: var(--header-height);
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .admin-body {
+            padding: 2rem;
+        }
+
+        /* Cards */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid #0379D9;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Tables */
+        .admin-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .table th {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .badge-success { background: #28a745; }
+        .badge-warning { background: #ffc107; color: #000; }
+        .badge-danger { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-lock me-2"></i>Админ
+                </h4>
+                <small class="text-muted">Вместе В Путь</small>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Дашборд</a></li>
+                <li><a href="#"><i class="fas fa-users"></i> Пользователи</a></li>
+                <li><a href="#"><i class="fas fa-plane"></i> Авиабилеты</a></li>
+                <li><a href="#"><i class="fas fa-train"></i> ЖД билеты</a></li>
+                <li><a href="#"><i class="fas fa-hotel"></i> Отели</a></li>
+                <li><a href="#"><i class="fas fa-chart-bar"></i> Аналитика</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Настройки</a></li>
+                <li><a href="/"><i class="fas fa-sign-out-alt"></i> На сайт</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="admin-header">
+                <h5 class="mb-0">Дашборд</h5>
+                <div class="d-flex align-items-center">
+                    <span class="me-3">Администратор</span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Профиль</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Настройки</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/Admin"><i class="fas fa-sign-out-alt me-2"></i>Выйти</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="admin-body">
+                <!-- Статистика -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="card-icon text-primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-number">1,247</div>
+                            <div class="stat-label">Пользователей</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="card-icon text-success">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <div class="stat-number">5,892</div>
+                            <div class="stat-label">Броней</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="card-icon text-warning">
+                                <i class="fas fa-ruble-sign"></i>
+                            </div>
+                            <div class="stat-number">2.1M ₽</div>
+                            <div class="stat-label">Оборот</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <div class="card-icon text-info">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="stat-number">4.8/5</div>
+                            <div class="stat-label">Рейтинг</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Последние бронирования -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="admin-table">
+                            <div class="p-3 border-bottom">
+                                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Последние бронирования</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Пользователь</th>
+                                            <th>Тип</th>
+                                            <th>Направление</th>
+                                            <th>Сумма</th>
+                                            <th>Статус</th>
+                                            <th>Дата</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>#12345</td>
+                                            <td>Иван Иванов</td>
+                                            <td><i class="fas fa-plane text-primary me-1"></i> Авиа</td>
+                                            <td>Москва → Сочи</td>
+                                            <td>8,500 ₽</td>
+                                            <td><span class="badge badge-success">Оплачено</span></td>
+                                            <td>15.12.2024</td>
+                                        </tr>
+                                        <tr>
+                                            <td>#12344</td>
+                                            <td>Анна Петрова</td>
+                                            <td><i class="fas fa-train text-success me-1"></i> ЖД</td>
+                                            <td>СПб → Москва</td>
+                                            <td>2,300 ₽</td>
+                                            <td><span class="badge badge-warning">Ожидание</span></td>
+                                            <td>14.12.2024</td>
+                                        </tr>
+                                        <tr>
+                                            <td>#12343</td>
+                                            <td>Петр Сидоров</td>
+                                            <td><i class="fas fa-hotel text-warning me-1"></i> Отель</td>
+                                            <td>Отель в Казани</td>
+                                            <td>12,000 ₽</td>
+                                            <td><span class="badge badge-success">Оплачено</span></td>
+                                            <td>13.12.2024</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

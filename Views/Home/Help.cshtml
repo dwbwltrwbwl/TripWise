@@ -1,0 +1,154 @@
+﻿@{
+    ViewData["Title"] = "Помощь";
+    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-question-circle me-2"></i>Помощь
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <p class="lead">Здесь вы найдете ответы на часто задаваемые вопросы и инструкции по использованию сервиса.</p>
+                    </div>
+
+                    <!-- Быстрые ссылки -->
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Быстрые разделы</h3>
+                            <div class="row mt-3">
+                                <div class="col-md-3 mb-3">
+                                    <a href="#booking" class="help-category card text-decoration-none h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-ticket-alt fa-2x text-primary mb-2"></i>
+                                            <h6>Бронирование</h6>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="#payment" class="help-category card text-decoration-none h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-credit-card fa-2x text-success mb-2"></i>
+                                            <h6>Оплата</h6>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="#cancellation" class="help-category card text-decoration-none h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-undo fa-2x text-warning mb-2"></i>
+                                            <h6>Отмена</h6>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="#account" class="help-category card text-decoration-none h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-user fa-2x text-info mb-2"></i>
+                                            <h6>Аккаунт</h6>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Бронирование -->
+                    <section id="booking" class="mb-5">
+                        <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-ticket-alt me-2"></i>Бронирование
+                        </h3>
+                        <div class="accordion mt-3" id="bookingAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#booking1">
+                                        Как забронировать билет?
+                                    </button>
+                                </h2>
+                                <div id="booking1" class="accordion-collapse collapse show" data-bs-parent="#bookingAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Выберите направление и даты в форме поиска</li>
+                                            <li>Выберите подходящий рейс/поезд из списка</li>
+                                            <li>Заполните данные пассажиров</li>
+                                            <li>Оплатите бронирование</li>
+                                            <li>Получите билет на email</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#booking2">
+                                        Нужна ли регистрация для бронирования?
+                                    </button>
+                                </h2>
+                                <div id="booking2" class="accordion-collapse collapse" data-bs-parent="#bookingAccordion">
+                                    <div class="accordion-body">
+                                        Да, для бронирования билетов и отелей требуется регистрация. Это необходимо для сохранения ваших данных и истории заказов.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Оплата -->
+                    <section id="payment" class="mb-5">
+                        <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-credit-card me-2"></i>Оплата
+                        </h3>
+                        <div class="accordion mt-3" id="paymentAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#payment1">
+                                        Какие способы оплаты доступны?
+                                    </button>
+                                </h2>
+                                <div id="payment1" class="accordion-collapse collapse show" data-bs-parent="#paymentAccordion">
+                                    <div class="accordion-body">
+                                        Мы принимаем: банковские карты (Мир, Visa, Mastercard), электронные кошельки (ЮMoney), интернет-банкинг (Сбербанк, Тинькофф).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Экстренная помощь -->
+                    <div class="alert alert-warning mt-4">
+                        <h5><i class="fas fa-life-ring me-2"></i>Не нашли ответ?</h5>
+                        <p class="mb-2">Обратитесь в нашу службу поддержки:</p>
+                        <a asp-controller="Home" asp-action="Contact" class="btn btn-primary btn-sm me-2">
+                            <i class="fas fa-envelope me-1"></i>Написать нам
+                        </a>
+                        <a href="tel:+78001234567" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-phone me-1"></i>Позвонить
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .help-category {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .help-category:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #0379D9;
+        }
+
+    .accordion-button:not(.collapsed) {
+        background-color: #e3f2fd;
+        color: #0379D9;
+    }
+</style>

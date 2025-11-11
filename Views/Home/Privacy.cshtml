@@ -1,6 +1,191 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Политика конфиденциальности";
+    Layout = "~/Views/Shared/_LegalLayout.cshtml";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-shield-alt me-2"></i>Политика конфиденциальности
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <p class="text-muted">Последнее обновление: @DateTime.Now.ToString("dd.MM.yyyy")</p>
+                    </div>
+
+                    <!-- 1. Общие положения -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-file-contract me-2"></i>1. Общие положения
+                        </h2>
+                        <p>Настоящая политика конфиденциальности определяет порядок обработки и защиты информации о пользователях, которую может получить сервис "Вместе В Путь" (далее — "Сервис") при использовании ими веб-сайта и сопутствующих услуг.</p>
+                        <p>Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.</p>
+                    </section>
+
+                    <!-- 2. Собираемая информация -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-database me-2"></i>2. Собираемая информация
+                        </h2>
+                        <p>Мы можем собирать следующую информацию:</p>
+                        <ul>
+                            <li><strong>Персональные данные:</strong> имя, адрес электронной почты, номер телефона, дата рождения</li>
+                            <li><strong>Данные о поездках:</strong> направления, даты путешествий, предпочтения</li>
+                            <li><strong>Техническая информация:</strong> IP-адрес, тип браузера, данные об устройстве</li>
+                            <li><strong>Платежная информация:</strong> данные для обработки платежей (обрабатываются платежными системами)</li>
+                        </ul>
+                    </section>
+
+                    <!-- 3. Цели сбора информации -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-bullseye me-2"></i>3. Цели сбора информации
+                        </h2>
+                        <p>Собранная информация используется для:</p>
+                        <ul>
+                            <li>Предоставления и улучшения наших услуг</li>
+                            <li>Обработки бронирований и платежей</li>
+                            <li>Персонализации пользовательского опыта</li>
+                            <li>Отправки уведомлений и обновлений</li>
+                            <li>Обеспечения безопасности и предотвращения мошенничества</li>
+                            <li>Соблюдения юридических обязательств</li>
+                        </ul>
+                    </section>
+
+                    <!-- 4. Защита информации -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-lock me-2"></i>4. Защита информации
+                        </h2>
+                        <p>Мы принимаем необходимые организационные и технические меры для защиты вашей персональной информации от неправомерного или случайного доступа, уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.</p>
+                        <p>Все данные передаются по защищенному соединению (HTTPS), а конфиденциальная информация хранится в зашифрованном виде.</p>
+                    </section>
+
+                    <!-- 5. Передача информации третьим лицам -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-share-alt me-2"></i>5. Передача информации третьим лицам
+                        </h2>
+                        <p>Мы не передаем вашу персональную информацию третьим лицам, за исключением:</p>
+                        <ul>
+                            <li>Партнеров, необходимых для предоставления услуг (авиакомпании, железные дороги, отели)</li>
+                            <li>Платежных систем для обработки транзакций</li>
+                            <li>Случаев, предусмотренных законодательством РФ</li>
+                            <li>С вашего явного согласия</li>
+                        </ul>
+                    </section>
+
+                    <!-- 6. Файлы cookie -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-cookie me-2"></i>6. Файлы cookie
+                        </h2>
+                        <p>Мы используем файлы cookie для:</p>
+                        <ul>
+                            <li>Аутентификации пользователей</li>
+                            <li>Сохранения пользовательских настроек</li>
+                            <li>Сбора аналитической информации</li>
+                            <li>Улучшения работы сервиса</li>
+                        </ul>
+                        <p>Вы можете отключить cookies в настройках браузера, однако это может повлиять на функциональность Сервиса.</p>
+                    </section>
+
+                    <!-- 7. Права пользователей -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-user-check me-2"></i>7. Права пользователей
+                        </h2>
+                        <p>Вы имеете право:</p>
+                        <ul>
+                            <li>На доступ к вашим персональным данным</li>
+                            <li>На исправление неточных данных</li>
+                            <li>На удаление ваших данных</li>
+                            <li>На отзыв согласия на обработку данных</li>
+                            <li>На перенос данных</li>
+                            <li>На ограничение обработки данных</li>
+                        </ul>
+                        <p>Для реализации ваших прав обратитесь в службу поддержки.</p>
+                    </section>
+
+                    <!-- 8. Хранение данных -->
+                    <section class="mb-5">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-archive me-2"></i>8. Хранение данных
+                        </h2>
+                        <p>Мы храним ваши персональные данные только в течение срока, необходимого для достижения целей, для которых они были собраны, или в течение срока, установленного законодательством.</p>
+                        <p>Данные о совершенных транзакциях хранятся в соответствии с требованиями налогового законодательства.</p>
+                    </section>
+
+                    <!-- 9. Контакты -->
+                    <section class="mb-4">
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-envelope me-2"></i>9. Контакты
+                        </h2>
+                        <p>По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться:</p>
+                        <div class="contact-info bg-light p-3 rounded">
+                            <p class="mb-1"><strong>Электронная почта:</strong> privacy@vmestevput.ru</p>
+                            <p class="mb-1"><strong>Телефон:</strong> +7 (800) 123-45-67</p>
+                            <p class="mb-0"><strong>Время работы:</strong> Пн-Пт с 9:00 до 18:00 по московскому времени</p>
+                        </div>
+                    </section>
+
+                    <!-- 10. Изменения в политике -->
+                    <section>
+                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
+                            <i class="fas fa-sync-alt me-2"></i>10. Изменения в политике
+                        </h2>
+                        <p>Мы оставляем за собой право вносить изменения в настоящую Политику конфиденциальности. При внесении изменений в актуальной редакции указывается дата последнего обновления. Новая редакция Политики вступает в силу с момента ее размещения на Сайте.</p>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Рекомендуем</strong> периодически просматривать эту страницу для получения информации о любых изменениях.
+                        </div>
+                    </section>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Версия 1.0</small>
+                        <a href="javascript:window.print()" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-print me-1"></i>Распечатать
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 12px;
+    }
+
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+    }
+
+    .card-footer {
+        border-radius: 0 0 12px 12px !important;
+    }
+
+    section h2 {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+    }
+
+    .contact-info {
+        border-left: 4px solid #0379D9;
+    }
+
+    ul {
+        padding-left: 1.5rem;
+    }
+
+    li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+</style>

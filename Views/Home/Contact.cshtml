@@ -1,0 +1,121 @@
+﻿@{
+    ViewData["Title"] = "Контакты";
+    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-envelope me-2"></i>Контакты
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <!-- Контактная информация -->
+                        <div class="col-md-6">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Свяжитесь с нами</h3>
+
+                            <div class="contact-item mb-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-phone-alt text-primary me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Телефон</h5>
+                                        <p class="mb-1">+7 (800) 123-45-67</p>
+                                        <small class="text-muted">Бесплатно по России</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="contact-item mb-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-envelope text-primary me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Email</h5>
+                                        <p class="mb-1">support@vmestevput.ru</p>
+                                        <small class="text-muted">Основная поддержка</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="contact-item mb-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-clock text-primary me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Время работы</h5>
+                                        <p class="mb-1">Пн-Вс: 8:00 - 22:00</p>
+                                        <small class="text-muted">По московскому времени</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="contact-item">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-map-marker-alt text-primary me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Адрес</h5>
+                                        <p class="mb-1">Москва, ул. Примерная, д. 123</p>
+                                        <small class="text-muted">БЦ "Путешественник"</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Форма обратной связи -->
+                        <div class="col-md-6">
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Обратная связь</h3>
+                            <form>
+                                <div class="mb-3">
+                                    <label class="form-label">Имя *</label>
+                                    <input type="text" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <input type="email" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Тема</label>
+                                    <select class="form-select">
+                                        <option>Общий вопрос</option>
+                                        <option>Проблема с бронированием</option>
+                                        <option>Возврат средств</option>
+                                        <option>Техническая проблема</option>
+                                        <option>Сотрудничество</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Сообщение *</label>
+                                    <textarea class="form-control" rows="4" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-paper-plane me-1"></i>Отправить сообщение
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Экстренные контакты -->
+                    <div class="alert alert-danger mt-4">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Экстренная связь</h5>
+                        <p class="mb-1">Для срочных вопросов (отмена рейса, проблемы в поездке):</p>
+                        <p class="mb-0"><strong>+7 (495) 123-45-67</strong> (круглосуточно)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .contact-item {
+        padding: 1rem;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+
+        .contact-item:hover {
+            background-color: #f8f9fa;
+        }
+</style>

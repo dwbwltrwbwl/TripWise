@@ -1,0 +1,98 @@
+﻿@{
+    ViewData["Title"] = "Часто задаваемые вопросы";
+    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
+                        <i class="fas fa-comments me-2"></i>Часто задаваемые вопросы
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <p class="lead">Здесь собраны ответы на самые популярные вопросы наших пользователей.</p>
+                    </div>
+
+                    <div class="accordion" id="faqAccordion">
+                        <!-- Общие вопросы -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Нужно ли распечатывать электронный билет?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Для авиаперелетов обычно достаточно электронного билета на смартфоне. Для ЖД билетов рекомендуется иметь распечатанную копию или показывать QR-код на устройстве.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Можно ли изменить данные пассажира после оплаты?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Изменение данных пассажира после оплаты возможно только в соответствии с правилами перевозчика и может потребовать дополнительной оплаты. Рекомендуем внимательно проверять данные перед оплатой.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Как получить налоговый вычет за покупку билетов?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Мы предоставляем все необходимые документы для налогового вычета. После поездки вы можете запросить справки через личный кабинет или обратившись в поддержку.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    Что делать, если рейс задержали или отменили?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Сразу свяжитесь с нашей поддержкой. Мы поможем перебронировать билет или оформить возврат согласно правилам авиакомпании.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    Как работает система бонусов и скидок?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    За каждое бронирование вы получаете бонусные баллы, которые можно использовать для оплаты следующих поездок. Также действуют сезонные акции и специальные предложения для постоянных клиентов.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Не нашли ответ на свой вопрос?</p>
+                        <a asp-controller="Home" asp-action="Contact" class="btn btn-primary">
+                            <i class="fas fa-headset me-1"></i>Задать вопрос
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
