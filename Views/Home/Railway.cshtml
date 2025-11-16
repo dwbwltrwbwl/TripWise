@@ -152,7 +152,195 @@
 
 @section Scripts {
     <script>
+        let currentDropdown = null;
+        let currentInput = null;
+        let timeoutId;
+
+        // Функция для поиска ЖД станций через API РЖД
+        async function searchRailwayStations(query, dropdown) {
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            try {
+                // API РЖД для автозаполнения станций
+                const url = `https://api.rasp.yandex.net/v3.0/stations_list/?apikey=YOUR_API_KEY&format=json&lang=ru_RU&field=settlements&term=${encodeURIComponent(query)}`;
+
+                // Временное решение - используем статичный список популярных станций
+                // На практике нужно получить API ключ от Яндекс.Расписаний
+                const stations = getPopularStations(query);
+                showAutocompleteResults(stations, dropdown, query);
+
+            } catch (error) {
+                console.error('Ошибка при поиске станций:', error);
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // Статичный список популярных ЖД станций
+        function getPopularStations(query) {
+            const allStations = [
+                { name: 'Москва (Ярославский вокзал)', city: 'Москва', code: '2000000', type: 'station' },
+                { name: 'Москва (Казанский вокзал)', city: 'Москва', code: '2000001', type: 'station' },
+                { name: 'Москва (Курский вокзал)', city: 'Москва', code: '2000002', type: 'station' },
+                { name: 'Москва (Ленинградский вокзал)', city: 'Москва', code: '2000003', type: 'station' },
+                { name: 'Санкт-Петербург (Главный)', city: 'Санкт-Петербург', code: '2004000', type: 'station' },
+                { name: 'Санкт-Петербург (Витебский)', city: 'Санкт-Петербург', code: '2004001', type: 'station' },
+                { name: 'Екатеринбург (Главный)', city: 'Екатеринбург', code: '2030000', type: 'station' },
+                { name: 'Новосибирск (Главный)', city: 'Новосибирск', code: '2044000', type: 'station' },
+                { name: 'Казань (Главный)', city: 'Казань', code: '2060000', type: 'station' },
+                { name: 'Нижний Новгород (Московский)', city: 'Нижний Новгород', code: '2060001', type: 'station' },
+                { name: 'Краснодар (Главный)', city: 'Краснодар', code: '2064000', type: 'station' },
+                { name: 'Сочи (Главный)', city: 'Сочи', code: '2064130', type: 'station' },
+                { name: 'Калининград (Южный)', city: 'Калининград', code: '2058000', type: 'station' },
+                { name: 'Владивосток (Главный)', city: 'Владивосток', code: '2034000', type: 'station' },
+                { name: 'Самара (Главный)', city: 'Самара', code: '2024000', type: 'station' },
+                { name: 'Омск (Главный)', city: 'Омск', code: '2044700', type: 'station' },
+                { name: 'Челябинск (Главный)', city: 'Челябинск', code: '2040700', type: 'station' },
+                { name: 'Ростов-на-Дону (Главный)', city: 'Ростов-на-Дону', code: '2064001', type: 'station' },
+                { name: 'Уфа (Главный)', city: 'Уфа', code: '2024700', type: 'station' },
+                { name: 'Волгоград (Главный)', city: 'Волгоград', code: '2020000', type: 'station' }
+            ];
+
+            const queryLower = query.toLowerCase();
+            return allStations.filter(station =>
+                station.name.toLowerCase().includes(queryLower) ||
+                station.city.toLowerCase().includes(queryLower)
+            ).slice(0, 8);
+        }
+
+        // Функция показа результатов автозаполнения
+        function showAutocompleteResults(stations, dropdown, query) {
+            dropdown.innerHTML = '';
+
+            if (stations.length === 0) {
+                const noResults = document.createElement('div');
+                noResults.className = 'autocomplete-item';
+                noResults.textContent = 'Ничего не найдено';
+                dropdown.appendChild(noResults);
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            stations.forEach(station => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+
+                const displayText = `
+                    <div class="station-name">${highlightMatch(station.name, query)}</div>
+                    <div class="station-city">${highlightMatch(station.city, query)}</div>
+                `;
+
+                item.innerHTML = displayText;
+
+                item.addEventListener('click', () => {
+                    currentInput.value = station.name;
+                    dropdown.style.display = 'none';
+                });
+
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+        }
+
+        // Функция подсветки совпадений
+        function highlightMatch(text, query) {
+            if (!text) return '';
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<strong>$1</strong>');
+        }
+
+        // Debounce для оптимизации запросов
+        function debounceSearch(input, dropdown, delay = 300) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                searchRailwayStations(input.value, dropdown);
+            }, delay);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            const departureInput = document.getElementById('railwayDeparture');
+            const arrivalInput = document.getElementById('railwayArrival');
+            const departureDropdown = document.getElementById('railwayDepartureDropdown');
+            const arrivalDropdown = document.getElementById('railwayArrivalDropdown');
+
+            // Обработчики для поля "Откуда"
+            departureInput.addEventListener('input', () => {
+                currentDropdown = departureDropdown;
+                currentInput = departureInput;
+                debounceSearch(departureInput, departureDropdown);
+            });
+
+            departureInput.addEventListener('focus', () => {
+                if (departureInput.value.length >= 2) {
+                    currentDropdown = departureDropdown;
+                    currentInput = departureInput;
+                    searchRailwayStations(departureInput.value, departureDropdown);
+                }
+            });
+
+            // Обработчики для поля "Куда"
+            arrivalInput.addEventListener('input', () => {
+                currentDropdown = arrivalDropdown;
+                currentInput = arrivalInput;
+                debounceSearch(arrivalInput, arrivalDropdown);
+            });
+
+            arrivalInput.addEventListener('focus', () => {
+                if (arrivalInput.value.length >= 2) {
+                    currentDropdown = arrivalDropdown;
+                    currentInput = arrivalInput;
+                    searchRailwayStations(arrivalInput.value, arrivalDropdown);
+                }
+            });
+
+            // Закрытие dropdown при клике вне
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.station-autocomplete')) {
+                    departureDropdown.style.display = 'none';
+                    arrivalDropdown.style.display = 'none';
+                }
+            });
+
+            // Навигация с клавиатуры
+            document.addEventListener('keydown', (e) => {
+                if (!currentDropdown || currentDropdown.style.display === 'none') return;
+
+                const items = currentDropdown.querySelectorAll('.autocomplete-item');
+                let activeItem = currentDropdown.querySelector('.autocomplete-item.active');
+                let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (activeIndex < items.length - 1) {
+                            if (activeItem) activeItem.classList.remove('active');
+                            items[activeIndex + 1].classList.add('active');
+                        } else if (items.length > 0 && activeIndex === -1) {
+                            items[0].classList.add('active');
+                        }
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (activeIndex > 0) {
+                            if (activeItem) activeItem.classList.remove('active');
+                            items[activeIndex - 1].classList.add('active');
+                        }
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (activeItem) {
+                            activeItem.click();
+                        }
+                        break;
+                    case 'Escape':
+                        currentDropdown.style.display = 'none';
+                        break;
+                }
+            });
+
             // Установка минимальной даты
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('railwayDepartureDate').min = today;
@@ -167,8 +355,8 @@
             document.getElementById('railwaySearchForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                const departure = document.getElementById('railwayDeparture').value;
-                const arrival = document.getElementById('railwayArrival').value;
+                const departure = departureInput.value;
+                const arrival = arrivalInput.value;
                 const departureDate = document.getElementById('railwayDepartureDate').value;
                 const returnDate = document.getElementById('railwayReturnDate').value;
                 const passengers = document.getElementById('railwayPassengers').value;
@@ -178,7 +366,6 @@
                     return;
                 }
 
-                // Здесь будет логика поиска билетов
                 console.log('Поиск ЖД билетов:', {
                     departure,
                     arrival,

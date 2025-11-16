@@ -269,36 +269,66 @@
         }
 
         try {
-            // TravelPayouts API для автозаполнения
-            const url = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(query)}&locale=ru&types[]=airport&types[]=city`;
+            // Пробуем разные API endpoints
+            const endpoints = [
+                `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(query)}&locale=ru&types[]=airport&types[]=city`,
+                `https://api.travelpayouts.com/data/ru/cities.json?term=${encodeURIComponent(query)}`,
+                // Альтернативный API через CORS proxy
+                `https://corsproxy.io/?${encodeURIComponent(`https://autocomplete.travelpayouts.com/places2?term=${query}&locale=ru&types[]=airport&types[]=city`)}`
+            ];
 
-            const response = await fetch(url);
-            const data = await response.json();
+            let data = null;
 
-            // Преобразуем данные в нужный формат
-            const cities = data.map(item => {
-                let cityName, airportName, country, code;
+            // Пробуем каждый endpoint пока не получим данные
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        mode: 'cors'
+                    });
 
-                if (item.type === 'airport') {
-                    cityName = item.city_name || item.name;
-                    airportName = item.name;
-                    country = item.country_name || item.country_code;
-                    code = item.code;
-                } else {
-                    cityName = item.name;
-                    airportName = '';
-                    country = item.country_name || item.country_code;
-                    code = item.code;
+                    if (response.ok) {
+                        data = await response.json();
+                        break;
+                    }
+                } catch (error) {
+                    console.log(`Endpoint ${endpoint} failed, trying next...`);
+                    continue;
                 }
+            }
 
-                return {
-                    name: cityName,
-                    country: country,
-                    airport: airportName,
-                    code: code,
-                    type: item.type
-                };
-            });
+            if (!data) {
+                throw new Error('All endpoints failed');
+            }
+
+            // Обрабатываем разные форматы ответов
+            let cities = [];
+
+            if (Array.isArray(data)) {
+                cities = data.map(item => {
+                    // Формат TravelPayouts autocomplete
+                    if (item.code && item.name) {
+                        return {
+                            name: item.name,
+                            country: item.country_name || item.country_code || '',
+                            airport: item.type === 'airport' ? item.name : '',
+                            code: item.code,
+                            type: item.type || 'city'
+                        };
+                    }
+                    // Формат cities.json
+                    return {
+                        name: item.name || item.city_name || '',
+                        country: item.country || item.country_name || '',
+                        airport: '',
+                        code: item.code || item.iata || '',
+                        type: 'city'
+                    };
+                }).filter(item => item.name && item.code);
+            }
 
             showAutocompleteResults(cities, dropdown, query);
 
