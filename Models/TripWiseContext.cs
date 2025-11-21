@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+using TripWise.Controllers;
 
 namespace TripWise.Models;
 
@@ -42,6 +43,8 @@ public partial class TripWiseContext : DbContext
     public virtual DbSet<UserVote> UserVotes { get; set; }
 
     public virtual DbSet<VoteOption> VoteOptions { get; set; }
+    public virtual DbSet<TrainSearchRequest> TrainSearchRequests { get; set; }
+    public virtual DbSet<TrainsController> TrainsControllers { get; set; }
 
     public virtual DbSet<VotingSystem> VotingSystems { get; set; }
 
