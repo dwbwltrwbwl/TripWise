@@ -264,35 +264,51 @@
         }
 </style>
 <script>
-
-        const stationsData = [
-        { id: "2000000", name: "Москва", region: "Москва" },
-        { id: "2004000", name: "Санкт-Петербург", region: "Санкт-Петербург" },
-        { id: "2078001", name: "Симферополь", region: "Крым" },
-        { id: "2064188", name: "Анапа", region: "Краснодарский край" },
-        { id: "2064130", name: "Сочи", region: "Краснодарский край" },
-        { id: "2060615", name: "Казань", region: "Татарстан" },
-        { id: "2064000", name: "Ростов-на-Дону", region: "Ростовская обл." },
-        { id: "2064788", name: "Краснодар", region: "Краснодарский край" },
-        { id: "2064110", name: "Новороссийск", region: "Краснодарский край" },
-        { id: "2014000", name: "Воронеж", region: "Воронежская обл." },
-        { id: "2060000", name: "Нижний Новгород", region: "Нижегородская обл." },
-        { id: "2064150", name: "Адлер", region: "Краснодарский край" },
-        { id: "2060001", name: "Нижний Новгород Моск.", region: "Нижегородская обл." },
-        { id: "2010000", name: "Ярославль", region: "Ярославская обл." },
-        { id: "2058000", name: "Калининград", region: "Калининградская обл." },
-        { id: "2060340", name: "Владимир", region: "Владимирская обл." }
-    ];
-
-        // Tutu.ru API
-    const TUTU_API_URL = 'https://suggest.travelpayouts.com/search';
+    // Убрали статический stationsData - будем загружать с сервера
+    let stationsData = [];
 
     // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Загружаем станции с сервера
+        const stations = await loadStations();
+        window.stationsData = stations;
+
         initializeAutocomplete();
         initializeDateInputs();
         setupFormHandler();
     });
+
+    // Загрузка станций с сервера
+    async function loadStations() {
+        try {
+            const response = await fetch('/api/trains/stations');
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки станций:', error);
+        }
+
+        // Возвращаем станции по умолчанию если API недоступно
+        return [
+            { id: "2000000", name: "Москва", region: "Москва" },
+            { id: "2004000", name: "Санкт-Петербург", region: "Санкт-Петербург" },
+            { id: "2078001", name: "Симферополь", region: "Крым" },
+            { id: "2064188", name: "Анапа", region: "Краснодарский край" },
+            { id: "2064130", name: "Сочи", region: "Краснодарский край" },
+            { id: "2060615", name: "Казань", region: "Татарстан" },
+            { id: "2064000", name: "Ростов-на-Дону", region: "Ростовская обл." },
+            { id: "2064788", name: "Краснодар", region: "Краснодарский край" },
+            { id: "2064110", name: "Новороссийск", region: "Краснодарский край" },
+            { id: "2014000", name: "Воронеж", region: "Воронежская обл." },
+            { id: "2060000", name: "Нижний Новгород", region: "Нижегородская обл." },
+            { id: "2064150", name: "Адлер", region: "Краснодарский край" },
+            { id: "2060001", name: "Нижний Новгород Моск.", region: "Нижегородская обл." },
+            { id: "2010000", name: "Ярославль", region: "Ярославская обл." },
+            { id: "2058000", name: "Калининград", region: "Калининградская обл." },
+            { id: "2060340", name: "Владимир", region: "Владимирская обл." }
+        ];
+    }
 
     // Автодополнение для станций
     function initializeAutocomplete() {
@@ -442,22 +458,32 @@
         });
     }
 
-    // Поиск поездов через Tutu.ru API
+    // Поиск поездов через ваше ASP.NET API
     async function searchTrains(searchData) {
-        const params = new URLSearchParams({
-            service: 'tutu_trains',
-            term: searchData.departureStationId,
-            term2: searchData.arrivalStationId
+        const response = await fetch('/api/trains/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                departureStationId: searchData.departureStationId,
+                arrivalStationId: searchData.arrivalStationId,
+                departureDate: searchData.departureDate,
+                passengers: searchData.passengers
+            })
         });
 
-        const response = await fetch(`${TUTU_API_URL}?${params}`);
-
         if (!response.ok) {
-            throw new Error('Ошибка при поиске поездов');
+            throw new Error('Ошибка сервера');
         }
 
-        const data = await response.json();
-        return data.trips || [];
+        const result = await response.json();
+
+        if (result.success) {
+            return result.trains;
+        } else {
+            throw new Error(result.message || 'Ошибка при поиске поездов');
+        }
     }
 
     // Отображение результатов поиска
@@ -501,7 +527,7 @@
                                                 <div class="text-muted small">${getStationName(train.departureStation)}</div>
                                             </div>
                                             <div class="col-4 text-center">
-                                                <div class="train-duration">${formatDuration(train.travelTimeInSeconds)}</div>
+                                                <div class="train-duration">${formatDurationFromString(train.travelTime)}</div>
                                                 <div class="route-line">───────</div>
                                             </div>
                                             <div class="col-4 text-center">
@@ -525,7 +551,7 @@
                                     </div>
                                     <div class="col-md-4 text-end">
                                         <div class="train-price text-primary mb-2">
-                                            ${getMinPrice(train.categories)} ₽
+                                            ${getMinPrice(train.categories)}
                                         </div>
                                         <button class="btn btn-primary mb-2"
                                                 onclick="viewSchedule('${train.departureStation}', '${train.arrivalStation}', '${searchData.departureDate}')">
@@ -533,7 +559,7 @@
                                         </button>
                                         <br>
                                         <button class="btn btn-success"
-                                                onclick="bookTicket('${train.departureStation}', '${train.arrivalStation}', '${train.numberForUrl}', '${searchData.departureDate}')">
+                                                onclick="bookTicket('${train.departureStation}', '${train.arrivalStation}', '${train.trainNumber}', '${searchData.departureDate}')">
                                             Забронировать
                                         </button>
                                     </div>
@@ -552,11 +578,10 @@
         return timeString.substring(0, 5);
     }
 
-    function formatDuration(seconds) {
-        if (!seconds) return '';
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        return `${hours}ч ${minutes}м`;
+    function formatDurationFromString(durationString) {
+        if (!durationString) return '';
+        // Преобразуем "4ч 30м" или подобный формат
+        return durationString;
     }
 
     function getCategoryName(type) {
@@ -565,14 +590,16 @@
             'coupe': 'Купе',
             'sedentary': 'Сидячий',
             'lux': 'Люкс',
-            'soft': 'Мягкий'
+            'soft': 'Мягкий',
+            'other': 'Другой'
         };
         return categories[type] || type;
     }
 
     function getMinPrice(categories) {
         if (!categories || categories.length === 0) return 'Цена не указана';
-        return Math.min(...categories.map(cat => cat.price));
+        const prices = categories.map(cat => cat.price).filter(price => price > 0);
+        return prices.length > 0 ? Math.min(...prices) + ' ₽' : 'Цена не указана';
     }
 
     function getStationName(stationId) {
@@ -580,7 +607,7 @@
         return station ? station.name : stationId;
     }
 
-    // Функции для переходов на Tutu.ru
+    // Функции для переходов на Tutu.ru (оставим как fallback)
     function viewSchedule(departureStation, arrivalStation, date) {
         const formattedDate = formatDateForTutu(date);
         const url = `https://www.tutu.ru/poezda/rasp_d.php?nnst1=${departureStation}&nnst2=${arrivalStation}&date=${formattedDate}`;

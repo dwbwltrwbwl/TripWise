@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
+using TripWise.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +18,10 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Добавьте эту строку для HttpClient
-builder.Services.AddHttpClient();
+// Добавьте эти строки для API и HttpClient
+builder.Services.AddControllers(); // для Web API
+builder.Services.AddHttpClient<RzdApiService>(); // для вашего сервиса
+builder.Services.AddScoped<RzdApiService>(); // регистрация сервиса
 
 var app = builder.Build();
 
@@ -37,11 +40,20 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Добавьте CORS перед UseAuthorization или после
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
 // Добавьте эту строку для использования сессий
 app.UseSession();
 
+// Map both MVC controllers and API controllers
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllers(); // Это для API контроллеров (атрибут [ApiController])
 
 app.Run();
