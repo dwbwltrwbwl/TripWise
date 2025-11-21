@@ -263,4 +263,342 @@
             object-fit: cover;
         }
 </style>
+<script>
+
+        const stationsData = [
+        { id: "2000000", name: "Москва", region: "Москва" },
+        { id: "2004000", name: "Санкт-Петербург", region: "Санкт-Петербург" },
+        { id: "2078001", name: "Симферополь", region: "Крым" },
+        { id: "2064188", name: "Анапа", region: "Краснодарский край" },
+        { id: "2064130", name: "Сочи", region: "Краснодарский край" },
+        { id: "2060615", name: "Казань", region: "Татарстан" },
+        { id: "2064000", name: "Ростов-на-Дону", region: "Ростовская обл." },
+        { id: "2064788", name: "Краснодар", region: "Краснодарский край" },
+        { id: "2064110", name: "Новороссийск", region: "Краснодарский край" },
+        { id: "2014000", name: "Воронеж", region: "Воронежская обл." },
+        { id: "2060000", name: "Нижний Новгород", region: "Нижегородская обл." },
+        { id: "2064150", name: "Адлер", region: "Краснодарский край" },
+        { id: "2060001", name: "Нижний Новгород Моск.", region: "Нижегородская обл." },
+        { id: "2010000", name: "Ярославль", region: "Ярославская обл." },
+        { id: "2058000", name: "Калининград", region: "Калининградская обл." },
+        { id: "2060340", name: "Владимир", region: "Владимирская обл." }
+    ];
+
+        // Tutu.ru API
+    const TUTU_API_URL = 'https://suggest.travelpayouts.com/search';
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeAutocomplete();
+        initializeDateInputs();
+        setupFormHandler();
+    });
+
+    // Автодополнение для станций
+    function initializeAutocomplete() {
+        const departureInput = document.getElementById('railwayDeparture');
+        const arrivalInput = document.getElementById('railwayArrival');
+        const departureDropdown = document.getElementById('departureDropdown');
+        const arrivalDropdown = document.getElementById('arrivalDropdown');
+
+        setupAutocomplete(departureInput, departureDropdown);
+        setupAutocomplete(arrivalInput, arrivalDropdown);
+    }
+
+    function setupAutocomplete(input, dropdown) {
+        let searchTimeout;
+
+        input.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            clearTimeout(searchTimeout);
+
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                const stations = searchStations(query);
+                showAutocompleteResults(stations, dropdown, input);
+            }, 150);
+        });
+
+        input.addEventListener('focus', function() {
+            const query = this.value.trim();
+            if (query.length >= 2) {
+                const stations = searchStations(query);
+                showAutocompleteResults(stations, dropdown, input);
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    }
+
+    // Поиск станций в локальных данных
+    function searchStations(query) {
+        const lowerQuery = query.toLowerCase();
+        return stationsData.filter(station =>
+            station.name.toLowerCase().includes(lowerQuery) ||
+            station.region.toLowerCase().includes(lowerQuery)
+        ).slice(0, 10);
+    }
+
+    function showAutocompleteResults(stations, dropdown, input) {
+        if (stations.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        dropdown.innerHTML = stations.map(station => `
+            <div class="autocomplete-item" data-station='${JSON.stringify(station)}'>
+                <div class="station-name">${station.name}</div>
+                <div class="station-region">${station.region}</div>
+            </div>
+        `).join('');
+
+        dropdown.style.display = 'block';
+
+        dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const station = JSON.parse(this.getAttribute('data-station'));
+                input.value = station.name;
+                input.setAttribute('data-station-id', station.id);
+                dropdown.style.display = 'none';
+            });
+        });
+    }
+
+    // Инициализация дат
+    function initializeDateInputs() {
+        const today = new Date();
+        const departureDateInput = document.getElementById('railwayDepartureDate');
+        const returnDateInput = document.getElementById('railwayReturnDate');
+
+        departureDateInput.min = today.toISOString().split('T')[0];
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        departureDateInput.value = tomorrow.toISOString().split('T')[0];
+
+        returnDateInput.min = tomorrow.toISOString().split('T')[0];
+    }
+
+    // Обработчик формы
+    function setupFormHandler() {
+        const form = document.getElementById('railwaySearchForm');
+        const resultsContainer = document.getElementById('railwayResults');
+        const loadingIndicator = document.getElementById('railwayLoading');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const departureStation = document.getElementById('railwayDeparture');
+            const arrivalStation = document.getElementById('railwayArrival');
+            const departureDate = document.getElementById('railwayDepartureDate');
+            const returnDate = document.getElementById('railwayReturnDate');
+            const passengers = document.getElementById('railwayPassengers');
+
+            if (!departureStation.getAttribute('data-station-id') ||
+                !arrivalStation.getAttribute('data-station-id')) {
+                alert('Пожалуйста, выберите станции из списка');
+                return;
+            }
+
+            if (departureStation.getAttribute('data-station-id') === arrivalStation.getAttribute('data-station-id')) {
+                alert('Станции отправления и назначения не могут совпадать');
+                return;
+            }
+
+            loadingIndicator.classList.remove('d-none');
+            resultsContainer.innerHTML = '';
+
+            try {
+                const searchData = {
+                    departureStationId: departureStation.getAttribute('data-station-id'),
+                    arrivalStationId: arrivalStation.getAttribute('data-station-id'),
+                    departureDate: departureDate.value,
+                    passengers: parseInt(passengers.value)
+                };
+
+                const trains = await searchTrains(searchData);
+                displaySearchResults(trains, searchData);
+
+            } catch (error) {
+                console.error('Ошибка поиска:', error);
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>Произошла ошибка при поиске</h5>
+                        <p>${error.message || 'Пожалуйста, попробуйте позже'}</p>
+                    </div>
+                `;
+            } finally {
+                loadingIndicator.classList.add('d-none');
+            }
+        });
+    }
+
+    // Поиск поездов через Tutu.ru API
+    async function searchTrains(searchData) {
+        const params = new URLSearchParams({
+            service: 'tutu_trains',
+            term: searchData.departureStationId,
+            term2: searchData.arrivalStationId
+        });
+
+        const response = await fetch(`${TUTU_API_URL}?${params}`);
+
+        if (!response.ok) {
+            throw new Error('Ошибка при поиске поездов');
+        }
+
+        const data = await response.json();
+        return data.trips || [];
+    }
+
+    // Отображение результатов поиска
+    function displaySearchResults(trains, searchData) {
+        const resultsContainer = document.getElementById('railwayResults');
+
+        if (!trains || trains.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <h5>Поезда не найдены</h5>
+                    <p>Попробуйте изменить параметры поиска или даты</p>
+                </div>
+            `;
+            return;
+        }
+
+        resultsContainer.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Найдено поездов: ${trains.length}</h3>
+                <div class="text-muted">
+                    ${document.getElementById('railwayDeparture').value} →
+                    ${document.getElementById('railwayArrival').value}
+                </div>
+            </div>
+            <div class="row g-4">
+                ${trains.map(train => `
+                    <div class="col-12">
+                        <div class="card train-card shadow-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="train-number me-3">№ ${train.trainNumber}</span>
+                                            <span class="train-name">${train.name || ''}</span>
+                                            ${train.firm ? '<span class="badge bg-warning ms-2">Фирменный</span>' : ''}
+                                        </div>
+
+                                        <div class="row align-items-center mt-3">
+                                            <div class="col-4 text-center">
+                                                <div class="train-time">${formatTime(train.departureTime)}</div>
+                                                <div class="text-muted small">${getStationName(train.departureStation)}</div>
+                                            </div>
+                                            <div class="col-4 text-center">
+                                                <div class="train-duration">${formatDuration(train.travelTimeInSeconds)}</div>
+                                                <div class="route-line">───────</div>
+                                            </div>
+                                            <div class="col-4 text-center">
+                                                <div class="train-time">${formatTime(train.arrivalTime)}</div>
+                                                <div class="text-muted small">${getStationName(train.arrivalStation)}</div>
+                                            </div>
+                                        </div>
+
+                                        ${train.categories && train.categories.length > 0 ? `
+                                        <div class="mt-3">
+                                            <h6>Доступные места:</h6>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                ${train.categories.map(category => `
+                                                    <span class="badge bg-light text-dark">
+                                                        ${getCategoryName(category.type)}: ${category.price} ₽
+                                                    </span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="train-price text-primary mb-2">
+                                            ${getMinPrice(train.categories)} ₽
+                                        </div>
+                                        <button class="btn btn-primary mb-2"
+                                                onclick="viewSchedule('${train.departureStation}', '${train.arrivalStation}', '${searchData.departureDate}')">
+                                            Расписание
+                                        </button>
+                                        <br>
+                                        <button class="btn btn-success"
+                                                onclick="bookTicket('${train.departureStation}', '${train.arrivalStation}', '${train.numberForUrl}', '${searchData.departureDate}')">
+                                            Забронировать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // Вспомогательные функции
+    function formatTime(timeString) {
+        if (!timeString) return '--:--';
+        return timeString.substring(0, 5);
+    }
+
+    function formatDuration(seconds) {
+        if (!seconds) return '';
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours}ч ${minutes}м`;
+    }
+
+    function getCategoryName(type) {
+        const categories = {
+            'plazcard': 'Плацкарт',
+            'coupe': 'Купе',
+            'sedentary': 'Сидячий',
+            'lux': 'Люкс',
+            'soft': 'Мягкий'
+        };
+        return categories[type] || type;
+    }
+
+    function getMinPrice(categories) {
+        if (!categories || categories.length === 0) return 'Цена не указана';
+        return Math.min(...categories.map(cat => cat.price));
+    }
+
+    function getStationName(stationId) {
+        const station = stationsData.find(s => s.id === stationId);
+        return station ? station.name : stationId;
+    }
+
+    // Функции для переходов на Tutu.ru
+    function viewSchedule(departureStation, arrivalStation, date) {
+        const formattedDate = formatDateForTutu(date);
+        const url = `https://www.tutu.ru/poezda/rasp_d.php?nnst1=${departureStation}&nnst2=${arrivalStation}&date=${formattedDate}`;
+        window.open(url, '_blank');
+    }
+
+    function bookTicket(departureStation, arrivalStation, trainNumber, date) {
+        const formattedDate = formatDateForTutu(date);
+        const url = `https://www.tutu.ru/poezda/order/?dep_st=${departureStation}&arr_st=${arrivalStation}&tn=${trainNumber}&date=${formattedDate}`;
+        window.open(url, '_blank');
+    }
+
+    function formatDateForTutu(dateString) {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+</script>
 
