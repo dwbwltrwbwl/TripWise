@@ -14,7 +14,6 @@ namespace TripWise.Services
             _httpClient = httpClient;
             _logger = logger;
 
-            // Настраиваем HttpClient для имитации браузера
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8");
@@ -25,9 +24,8 @@ namespace TripWise.Services
         {
             try
             {
-                _logger.LogInformation($"Начало поиска поездов: {request.DepartureStationId} -> {request.ArrivalStationId} на {request.DepartureDate}");
+                _logger.LogInformation($"Поиск поездов: {request.DepartureStationId} -> {request.ArrivalStationId}");
 
-                // Первый запрос для получения RID
                 var rzdRequest = new RzdApiRequest
                 {
                     Code0 = request.DepartureStationId,
@@ -38,124 +36,73 @@ namespace TripWise.Services
                     CheckSeats = 1
                 };
 
-                _logger.LogInformation($"Первый запрос к RZD API: {rzdRequest.Code0} -> {rzdRequest.Code1} на {rzdRequest.Dt0}");
-
                 var firstResponse = await MakeFirstRequest(rzdRequest);
 
                 if (firstResponse?.Result == "RID" && !string.IsNullOrEmpty(firstResponse.Rid))
                 {
-                    _logger.LogInformation($"Получен RID: {firstResponse.Rid}");
-
-                    // Второй запрос с полученным RID
                     var trains = await MakeSecondRequest(firstResponse.Rid);
-                    _logger.LogInformation($"Найдено поездов: {trains?.Count ?? 0}");
-
                     return MapToTrainResponse(trains, request);
                 }
                 else
                 {
-                    _logger.LogWarning($"Не удалось получить RID от RZD API. Result: {firstResponse?.Result}, RID: {firstResponse?.Rid}");
+                    _logger.LogWarning("Не удалось получить RID от RZD API");
                     return new List<TrainSearchResponse>();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при поиске поездов через RZD API");
+                _logger.LogError(ex, "Ошибка при поиске поездов");
                 throw new Exception($"Ошибка поиска: {ex.Message}");
             }
         }
 
         private async Task<RzdApiResponse> MakeFirstRequest(RzdApiRequest request)
         {
-            try
+            var parameters = new Dictionary<string, string>
             {
-                var parameters = new Dictionary<string, string>
-                {
-                    ["layer_id"] = "5827",
-                    ["dir"] = request.Dir.ToString(),
-                    ["tfl"] = request.Tfl.ToString(),
-                    ["checkSeats"] = request.CheckSeats.ToString(),
-                    ["code0"] = request.Code0,
-                    ["code1"] = request.Code1,
-                    ["dt0"] = request.Dt0
-                };
+                ["layer_id"] = "5827",
+                ["dir"] = request.Dir.ToString(),
+                ["tfl"] = request.Tfl.ToString(),
+                ["checkSeats"] = request.CheckSeats.ToString(),
+                ["code0"] = request.Code0,
+                ["code1"] = request.Code1,
+                ["dt0"] = request.Dt0
+            };
 
-                var queryString = string.Join("&", parameters.Select(x => $"{x.Key}={HttpUtility.UrlEncode(x.Value)}"));
-                var url = $"https://pass.rzd.ru/timetable/public/ru?{queryString}";
+            var queryString = string.Join("&", parameters.Select(x => $"{x.Key}={HttpUtility.UrlEncode(x.Value)}"));
+            var url = $"https://pass.rzd.ru/timetable/public/ru?{queryString}";
 
-                _logger.LogInformation($"URL первого запроса: {url}");
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
 
-                var response = await _httpClient.GetAsync(url);
-                _logger.LogInformation($"Статус ответа первого запроса: {response.StatusCode}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError($"Ошибка HTTP: {response.StatusCode}");
-                    return new RzdApiResponse { Result = "ERROR" };
-                }
-
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ответ первого запроса: {content}");
-
-                var apiResponse = JsonSerializer.Deserialize<RzdApiResponse>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                return apiResponse ?? new RzdApiResponse { Result = "ERROR" };
-            }
-            catch (Exception ex)
+            var content = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<RzdApiResponse>(content, new JsonSerializerOptions
             {
-                _logger.LogError(ex, "Ошибка в первом запросе к RZD API");
-                return new RzdApiResponse { Result = "ERROR" };
-            }
+                PropertyNameCaseInsensitive = true
+            });
         }
 
         private async Task<List<RzdRoute>> MakeSecondRequest(string rid)
         {
-            try
+            var url = $"https://pass.rzd.ru/timetable/public/ru?layer_id=5827&rid={rid}";
+
+            await Task.Delay(1000);
+
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonSerializer.Deserialize<RzdApiResponse>(content, new JsonSerializerOptions
             {
-                var url = $"https://pass.rzd.ru/timetable/public/ru?layer_id=5827&rid={rid}";
-                _logger.LogInformation($"URL второго запроса: {url}");
+                PropertyNameCaseInsensitive = true
+            });
 
-                // Ждем немного перед вторым запросом (как в оригинальном API)
-                await Task.Delay(2000);
-
-                var response = await _httpClient.GetAsync(url);
-                _logger.LogInformation($"Статус ответа второго запроса: {response.StatusCode}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError($"Ошибка HTTP второго запроса: {response.StatusCode}");
-                    return new List<RzdRoute>();
-                }
-
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ответ второго запроса: {content}");
-
-                var apiResponse = JsonSerializer.Deserialize<RzdApiResponse>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                return apiResponse?.Lst ?? new List<RzdRoute>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка во втором запросе к RZD API");
-                return new List<RzdRoute>();
-            }
+            return apiResponse?.Lst ?? new List<RzdRoute>();
         }
 
         private List<TrainSearchResponse> MapToTrainResponse(List<RzdRoute> routes, TrainSearchRequest request)
         {
-            if (routes == null || routes.Count == 0)
-            {
-                _logger.LogInformation("Нет маршрутов для преобразования");
-                return new List<TrainSearchResponse>();
-            }
-
-            var result = routes.Select(route => new TrainSearchResponse
+            return routes.Select(route => new TrainSearchResponse
             {
                 Name = route.Brand ?? "Поезд",
                 DepartureStation = request.DepartureStationId,
@@ -171,9 +118,6 @@ namespace TripWise.Services
                     Price = car.Tariff
                 }).ToList() ?? new List<TrainCategory>()
             }).ToList();
-
-            _logger.LogInformation($"Преобразовано {result.Count} поездов");
-            return result;
         }
 
         private string MapCarType(string typeLoc)

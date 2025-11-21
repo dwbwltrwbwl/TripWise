@@ -1,5 +1,32 @@
 ﻿namespace TripWise.Models
 {
+    public class TrainSearchRequest
+    {
+        public string DepartureStationId { get; set; }
+        public string ArrivalStationId { get; set; }
+        public string DepartureDate { get; set; }
+        public int Passengers { get; set; } = 1;
+    }
+
+    public class TrainSearchResponse
+    {
+        public string Name { get; set; }
+        public string DepartureStation { get; set; }
+        public string ArrivalStation { get; set; }
+        public string DepartureTime { get; set; }
+        public string ArrivalTime { get; set; }
+        public string TrainNumber { get; set; }
+        public string TravelTime { get; set; }
+        public List<TrainCategory> Categories { get; set; }
+        public bool Firm { get; set; }
+    }
+
+    public class TrainCategory
+    {
+        public string Type { get; set; }
+        public decimal Price { get; set; }
+    }
+
     public class RzdApiRequest
     {
         public string Code0 { get; set; }
@@ -40,5 +67,12 @@
         public string ServCls { get; set; }
         public int FreeSeats { get; set; }
         public decimal Tariff { get; set; }
+    }
+
+    public class Station
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Region { get; set; }
     }
 }

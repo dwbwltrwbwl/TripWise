@@ -22,8 +22,6 @@ namespace TripWise.Controllers
         {
             try
             {
-                _logger.LogInformation($"Поиск поездов: {request.DepartureStationId} -> {request.ArrivalStationId} на {request.DepartureDate}");
-
                 var trains = await _rzdApiService.SearchTrains(request);
 
                 return Ok(new
