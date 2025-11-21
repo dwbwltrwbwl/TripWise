@@ -52,7 +52,7 @@ namespace TripWise.Controllers
                 return Ok(new List<object>());
             }
 
-            var allStations = GetAllStations();
+            var allStations = GetAllStationsData();
             var lowerQuery = query.ToLower();
 
             var results = allStations
@@ -68,14 +68,14 @@ namespace TripWise.Controllers
         [HttpGet("stations")]
         public IActionResult GetAllStations()
         {
-            var stations = GetAllStations()
+            var stations = GetAllStationsData()
                 .Select(s => new { id = s.Id, name = s.Name, region = s.Region })
                 .ToList();
 
             return Ok(stations);
         }
 
-        private List<Station> GetAllStations()
+        private List<Station> GetAllStationsData()
         {
             return new List<Station>
             {
