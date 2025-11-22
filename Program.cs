@@ -23,6 +23,22 @@ builder.Services.AddSession(options =>
 builder.Services.AddHttpClient<RzdApiService>();
 builder.Services.AddScoped<RzdApiService>();
 
+// === ДОБАВЬТЕ ЭТО ДЛЯ АВИАБИЛЕТОВ ===
+builder.Services.AddHttpClient<IAviasalesServiceV2, AviasalesServiceV2>();
+builder.Services.AddScoped<IAviasalesServiceV2, AviasalesServiceV2>();
+// Настройка CORS (уже есть выше, но можно обновить если нужно)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// === КОНЕЦ ДОБАВЛЕНИЯ ДЛЯ АВИАБИЛЕТОВ ===
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -39,11 +55,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-// Добавьте CORS
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+// Добавьте CORS (используйте ту политику, которую определили выше)
+app.UseCors("AllowAll");
 
 // Добавьте эту строку для использования сессий
 app.UseSession();
