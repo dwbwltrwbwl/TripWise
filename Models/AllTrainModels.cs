@@ -40,33 +40,41 @@
     public class RzdApiResponse
     {
         public string Result { get; set; }
-        public string Rid { get; set; }
+        public string Rid { get; set; } // строковый RID
+        public long? RID { get; set; } // числовой RID
         public string Timestamp { get; set; }
         public List<RzdRoute> Lst { get; set; }
+
+        public string GetRid() => Rid ?? RID?.ToString();
     }
 
     public class RzdRoute
     {
-        public string Date0 { get; set; }
-        public string Date1 { get; set; }
-        public string Time0 { get; set; }
-        public string Time1 { get; set; }
-        public string Route0 { get; set; }
-        public string Route1 { get; set; }
-        public string Number { get; set; }
-        public string TimeInWay { get; set; }
-        public string Brand { get; set; }
-        public string Carrier { get; set; }
+        public string Number { get; set; } // "022А"
+        public string Number2 { get; set; } // "022А"
+        public string Brand { get; set; } // "Night Express" 
+        public string Carrier { get; set; } // "ТВЕРСК"
+        public string Route0 { get; set; } // "МОСКВА ОКТ"
+        public string Route1 { get; set; } // "С-ПЕТЕР-ГЛ"
+        public string Station0 { get; set; } // "МОСКВА ОКТЯБРЬСКАЯ (ЛЕНИНГРАДСКИЙ ВОКЗАЛ)"
+        public string Station1 { get; set; } // "САНКТ-ПЕТЕРБУРГ-ГЛАВН. (МОСКОВСКИЙ ВОКЗАЛ)"
+        public string Date0 { get; set; } // "23.11.2025"
+        public string Time0 { get; set; } // "00:25"
+        public string Date1 { get; set; } // "23.11.2025" 
+        public string Time1 { get; set; } // "09:30"
+        public string TimeInWay { get; set; } // "09:05"
+        public bool BFirm { get; set; } // true/firm
         public List<RzdCar> Cars { get; set; }
     }
 
     public class RzdCar
     {
-        public string Type { get; set; }
-        public string TypeLoc { get; set; }
-        public string ServCls { get; set; }
-        public int FreeSeats { get; set; }
-        public decimal Tariff { get; set; }
+        public string Type { get; set; } // "Люкс", "Купе", "Плац"
+        public string TypeLoc { get; set; } // "СВ", "Купе", "Плацкартный" 
+        public string ServCls { get; set; } // "1Б", "2Ф", "3Б"
+        public int FreeSeats { get; set; } // 17, 55, 5
+        public decimal Tariff { get; set; } // 14335, 5123, 3099
+        public int IType { get; set; } // 6, 4, 1
     }
 
     public class Station
