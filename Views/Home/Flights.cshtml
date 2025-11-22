@@ -299,72 +299,384 @@
         padding: 10px;
         border-radius: 8px;
         background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+        .price-block:hover {
+            background-color: #e9ecef;
+            transform: scale(1.02);
+        }
+
+    @keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .destination-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+        .destination-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .destination-card img {
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .destination-card:hover img {
+            transform: scale(1.05);
+        }
+
+    .loading-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0%
+
+    {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+
+    }
+
+    .alert {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0379D9, #0356a8);
+        border: none;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(3, 121, 217, 0.3);
+        }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #0379D9;
+        box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .flight-card .row
+
+    {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .flight-card .col-md-2,
+    .flight-card .col-md-5,
+    .flight-card .col-md-3 {
+        text-align: center !important;
+    }
+
+    .price-block {
+        margin-top: 10px;
+    }
+
+    .flight-duration:before {
+        display: none;
+    }
+
+    .flight-duration i {
+        background: transparent;
+    }
+
+    }
+
+    /* Стили для состояния загрузки */
+    .search-loading {
+        position: relative;
+        pointer-events: none;
+    }
+
+        .search-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+    /* Стили для пересадок */
+    .transfer-info {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 0.85em;
+    }
+
+    /* Стили для лучшего отображения времени */
+    .time-display {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+
+    /* Градиент для заголовков */
+    .gradient-text {
+        background: linear-gradient(135deg, #0379D9, #0356a8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 </style>
 
 <script>
-        // Обработка отправки формы
-    document.getElementById('flightSearchForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    let currentDropdown = null;
+    let currentInput = null;
+    let timeoutId;
 
-        const departure = document.getElementById('departureCity').value;
-        const arrival = document.getElementById('arrivalCity').value;
-        const departureDate = document.getElementById('departureDate').value;
-        const returnDate = document.getElementById('returnDate').value;
-        const passengers = document.getElementById('passengers').value;
-
-        if (!departure || !arrival) {
-            showAlert('Пожалуйста, заполните города вылета и прилета', 'warning');
+    // Функция для поиска городов через TravelPayouts API
+    async function searchCitiesFromTravelPayouts(query, dropdown) {
+        if (query.length < 2) {
+            dropdown.style.display = 'none';
             return;
         }
-
-        if (!departureDate) {
-            showAlert('Пожалуйста, выберите дату вылета', 'warning');
-            return;
-        }
-
-        // Показываем индикатор загрузки
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
-        submitBtn.disabled = true;
 
         try {
-            const searchData = {
-                departureCity: extractCityName(departure),
-                arrivalCity: extractCityName(arrival),
-                departureDate: departureDate,
-                returnDate: returnDate || null,
-                passengers: parseInt(passengers),
-                tripType: returnDate ? "round" : "oneway",
-                class: "economy"
-            };
+            // Используем один надежный endpoint
+            const endpoint = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(query)}&locale=ru&types[]=airport&types[]=city`;
 
-            console.log('Отправка запроса:', searchData);
+            console.log('Searching cities with query:', query);
 
-            const response = await fetch('/api/flights/search', {
-                method: 'POST',
+            const response = await fetch(endpoint, {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(searchData)
             });
 
-            const result = await response.json();
-
-            if (result.success) {
-                showFlightResults(result.flights);
-            } else {
-                showAlert(result.error || 'Произошла ошибка при поиске', 'danger');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const data = await response.json();
+            console.log('Received cities data:', data);
+
+            let cities = [];
+
+            if (Array.isArray(data)) {
+                cities = data.map(item => {
+                    // Обрабатываем разные форматы ответов
+                    if (item.code && item.name) {
+                        return {
+                            name: item.name,
+                            country: item.country_name || item.country_code || '',
+                            airport: item.type === 'airport' ? item.name : '',
+                            code: item.code,
+                            type: item.type || 'city'
+                        };
+                    }
+                    return null;
+                }).filter(item => item !== null && item.name && item.code);
+            }
+
+            console.log('Processed cities:', cities);
+            showAutocompleteResults(cities, dropdown, query);
+
         } catch (error) {
-            console.error('Ошибка:', error);
-            showAlert('Ошибка соединения с сервером', 'danger');
-        } finally {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+            console.error('Ошибка при поиске городов:', error);
+
+            // Fallback на mock данные
+            const mockCities = getMockCities(query);
+            showAutocompleteResults(mockCities, dropdown, query);
         }
-    });
+    }
+
+    // Функция для mock данных городов
+    function getMockCities(query) {
+        const allCities = [
+            { code: "MOW", name: "Москва", country: "Россия", type: "city", airport: "" },
+            { code: "LED", name: "Санкт-Петербург", country: "Россия", type: "city", airport: "" },
+            { code: "AER", name: "Сочи", country: "Россия", type: "city", airport: "" },
+            { code: "KZN", name: "Казань", country: "Россия", type: "city", airport: "" },
+            { code: "SVX", name: "Екатеринбург", country: "Россия", type: "city", airport: "" },
+            { code: "OVB", name: "Новосибирск", country: "Россия", type: "city", airport: "" },
+            { code: "KRR", name: "Краснодар", country: "Россия", type: "city", airport: "" },
+            { code: "SIP", name: "Симферополь", country: "Россия", type: "city", airport: "" },
+            { code: "MRV", name: "Минеральные Воды", country: "Россия", type: "city", airport: "" },
+            { code: "KGD", name: "Калининград", country: "Россия", type: "city", airport: "" },
+            { code: "SVO", name: "Шереметьево", country: "Россия", type: "airport", airport: "Шереметьево" },
+            { code: "DME", name: "Домодедово", country: "Россия", type: "airport", airport: "Домодедово" },
+            { code: "VKO", name: "Внуково", country: "Россия", type: "airport", airport: "Внуково" }
+        ];
+
+        return allCities.filter(city =>
+            city.name.toLowerCase().includes(query.toLowerCase()) ||
+            city.code.toLowerCase().includes(query.toLowerCase())
+        );
+    }
+
+    // Функция показа результатов автозаполнения
+    function showAutocompleteResults(cities, dropdown, query) {
+        dropdown.innerHTML = '';
+
+        if (!cities || cities.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'autocomplete-item';
+            noResults.textContent = 'Ничего не найдено';
+            dropdown.appendChild(noResults);
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        // Ограничиваем количество результатов
+        const limitedCities = cities.slice(0, 8);
+
+        limitedCities.forEach(city => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+
+            let displayText = '';
+            if (city.type === 'airport') {
+                displayText = `
+                    <div class="city-name">${city.name}
+                        <span class="city-country">${city.country}</span>
+                    </div>
+                    <div class="city-airport">Аэропорт (${city.code})</div>
+                `;
+            } else {
+                displayText = `
+                    <div class="city-name">${city.name}
+                        <span class="city-country">${city.country}</span>
+                    </div>
+                    <div class="city-airport">Город (${city.code})</div>
+                `;
+            }
+
+            item.innerHTML = displayText;
+
+            item.addEventListener('click', () => {
+                let displayValue;
+                if (city.type === 'airport') {
+                    displayValue = `${city.name} (${city.code})`;
+                } else {
+                    displayValue = `${city.name} (${city.code})`;
+                }
+                currentInput.value = displayValue;
+                dropdown.style.display = 'none';
+            });
+
+            dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = 'block';
+    }
+
+    // Функция подсветки совпадений
+    function highlightMatch(text, query) {
+        if (!text) return '';
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<strong>$1</strong>');
+    }
+
+    // Debounce для оптимизации запросов
+    function debounceSearch(input, dropdown, delay = 300) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            searchCitiesFromTravelPayouts(input.value, dropdown);
+        }, delay);
+    }
+
+    // Функция для mock данных рейсов
+    function getMockFlights(searchData) {
+        const airlines = ["Аэрофлот", "S7 Airlines", "UTair", "Ural Airlines", "Победа"];
+        const airports = {
+            "MOW": ["SVO", "DME", "VKO"],
+            "LED": ["LED"],
+            "AER": ["AER"],
+            "KZN": ["KZN"],
+            "SVX": ["SVX"]
+        };
+
+        const flights = [];
+
+        // Генерируем 3-6 рейсов
+        const count = Math.floor(Math.random() * 4) + 3;
+
+        for (let i = 0; i < count; i++) {
+            const departureTime = new Date(searchData.departureDate + 'T' +
+                `${String(6 + i * 3).padStart(2, '0')}:00:00`);
+            const duration = 60 + Math.floor(Math.random() * 120);
+            const arrivalTime = new Date(departureTime.getTime() + duration * 60000);
+
+            const departureCode = extractIataCode(searchData.departureCity);
+            const arrivalCode = extractIataCode(searchData.arrivalCity);
+
+            flights.push({
+                id: `flight-${i}`,
+                airline: airlines[Math.floor(Math.random() * airlines.length)],
+                flightNumber: `SU${1000 + i}`,
+                departureCity: searchData.departureCity,
+                arrivalCity: searchData.arrivalCity,
+                departureAirport: airports[departureCode] ? airports[departureCode][0] : departureCode,
+                arrivalAirport: airports[arrivalCode] ? airports[arrivalCode][0] : arrivalCode,
+                departureTime: departureTime.toISOString(),
+                arrivalTime: arrivalTime.toISOString(),
+                price: 2500 + Math.floor(Math.random() * 5000),
+                duration: duration,
+                transfers: Math.random() > 0.7 ? 1 : 0,
+                currency: "RUB"
+            });
+        }
+
+        return flights.sort((a, b) => a.price - b.price);
+    }
+
+    // Вспомогательная функция для извлечения IATA кода
+    function extractIataCode(cityString) {
+        const match = cityString.match(/\(([A-Z]{3})\)/);
+        return match ? match[1] : cityString;
+    }
 
     // Функция для извлечения названия города из строки автозаполнения
     function extractCityName(fullString) {
@@ -486,4 +798,172 @@
             }
         }, 5000);
     }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        const departureInput = document.getElementById('departureCity');
+        const arrivalInput = document.getElementById('arrivalCity');
+        const departureDropdown = document.getElementById('departureDropdown');
+        const arrivalDropdown = document.getElementById('arrivalDropdown');
+
+        // Обработчики для поля "Откуда"
+        departureInput.addEventListener('input', () => {
+            currentDropdown = departureDropdown;
+            currentInput = departureInput;
+            debounceSearch(departureInput, departureDropdown);
+        });
+
+        departureInput.addEventListener('focus', () => {
+            if (departureInput.value.length >= 2) {
+                currentDropdown = departureDropdown;
+                currentInput = departureInput;
+                searchCitiesFromTravelPayouts(departureInput.value, departureDropdown);
+            }
+        });
+
+        // Обработчики для поля "Куда"
+        arrivalInput.addEventListener('input', () => {
+            currentDropdown = arrivalDropdown;
+            currentInput = arrivalInput;
+            debounceSearch(arrivalInput, arrivalDropdown);
+        });
+
+        arrivalInput.addEventListener('focus', () => {
+            if (arrivalInput.value.length >= 2) {
+                currentDropdown = arrivalDropdown;
+                currentInput = arrivalInput;
+                searchCitiesFromTravelPayouts(arrivalInput.value, arrivalDropdown);
+            }
+        });
+
+        // Закрытие dropdown при клике вне
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.city-autocomplete')) {
+                departureDropdown.style.display = 'none';
+                arrivalDropdown.style.display = 'none';
+            }
+        });
+
+        // Навигация с клавиатуры
+        document.addEventListener('keydown', (e) => {
+            if (!currentDropdown || currentDropdown.style.display === 'none') return;
+
+            const items = currentDropdown.querySelectorAll('.autocomplete-item');
+            let activeItem = currentDropdown.querySelector('.autocomplete-item.active');
+            let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (activeIndex < items.length - 1) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[activeIndex + 1].classList.add('active');
+                    } else if (items.length > 0 && activeIndex === -1) {
+                        items[0].classList.add('active');
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (activeIndex > 0) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[activeIndex - 1].classList.add('active');
+                    }
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (activeItem) {
+                        activeItem.click();
+                    }
+                    break;
+                case 'Escape':
+                    currentDropdown.style.display = 'none';
+                    break;
+            }
+        });
+
+        // Обработка отправки формы
+        document.getElementById('flightSearchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const departure = document.getElementById('departureCity').value;
+            const arrival = document.getElementById('arrivalCity').value;
+            const departureDate = document.getElementById('departureDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+            const passengers = document.getElementById('passengers').value;
+
+            if (!departure || !arrival) {
+                showAlert('Пожалуйста, заполните города вылета и прилета', 'warning');
+                return;
+            }
+
+            if (!departureDate) {
+                showAlert('Пожалуйста, выберите дату вылета', 'warning');
+                return;
+            }
+
+            // Показываем индикатор загрузки
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
+            submitBtn.disabled = true;
+
+            try {
+                const searchData = {
+                    departureCity: extractCityName(departure),
+                    arrivalCity: extractCityName(arrival),
+                    departureDate: departureDate,
+                    returnDate: returnDate || null,
+                    passengers: parseInt(passengers),
+                    tripType: returnDate ? "round" : "oneway",
+                    class: "economy"
+                };
+
+                console.log('Отправка запроса:', searchData);
+
+                // ВРЕМЕННО: используем mock данные вместо реального API
+                // Раскомментируйте когда API будет готово
+                
+                const response = await fetch('/api/flights/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(searchData)
+                });
+
+                const result = await response.json();
+                
+
+                // ВРЕМЕННО: mock данные для тестирования
+                // await new Promise(resolve => setTimeout(resolve, 1000)); Имитация загрузки
+
+                const result = {
+                    success: true,
+                    flights: getMockFlights(searchData)
+                };
+
+                if (result.success) {
+                    showFlightResults(result.flights);
+                } else {
+                    showAlert(result.error || 'Произошла ошибка при поиске', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showAlert('Ошибка соединения с сервером', 'danger');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Установка минимальной даты (сегодня)
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('departureDate').min = today;
+        document.getElementById('returnDate').min = today;
+
+        // Обновление минимальной даты для обратного билета
+        document.getElementById('departureDate').addEventListener('change', function() {
+            document.getElementById('returnDate').min = this.value;
+        });
+    });
 </script>
