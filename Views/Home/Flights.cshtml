@@ -307,19 +307,26 @@
             transform: scale(1.02);
         }
 
-    @keyframes fadeIn {
-        from
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
 
-    {
-        opacity: 0;
-        transform: translateY(20px);
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
 
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     .destination-card {
@@ -347,19 +354,6 @@
     .loading-spinner {
         display: inline-block;
         animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0%
-
-    {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-
     }
 
     .alert {
@@ -396,36 +390,31 @@
         border: 1px solid #ced4da;
     }
 
-    /* Адаптивность для мобильных устройств */
-    @media (max-width: 768px) {
-        .flight-card .row
+    @@media (max-width: 768px) {
+        .flight-card .row {
+            flex-direction: column;
+            gap: 15px;
+        }
 
-    {
-        flex-direction: column;
-        gap: 15px;
+        .flight-card .col-md-2,
+        .flight-card .col-md-5,
+        .flight-card .col-md-3 {
+            text-align: center !important;
+        }
+
+        .price-block {
+            margin-top: 10px;
+        }
+
+        .flight-duration:before {
+            display: none;
+        }
+
+        .flight-duration i {
+            background: transparent;
+        }
     }
 
-    .flight-card .col-md-2,
-    .flight-card .col-md-5,
-    .flight-card .col-md-3 {
-        text-align: center !important;
-    }
-
-    .price-block {
-        margin-top: 10px;
-    }
-
-    .flight-duration:before {
-        display: none;
-    }
-
-    .flight-duration i {
-        background: transparent;
-    }
-
-    }
-
-    /* Стили для состояния загрузки */
     .search-loading {
         position: relative;
         pointer-events: none;
@@ -445,7 +434,6 @@
             border-radius: 12px;
         }
 
-    /* Стили для пересадок */
     .transfer-info {
         background-color: #fff3cd;
         border: 1px solid #ffeaa7;
@@ -454,13 +442,11 @@
         font-size: 0.85em;
     }
 
-    /* Стили для лучшего отображения времени */
     .time-display {
         font-family: 'Courier New', monospace;
         font-weight: bold;
     }
 
-    /* Градиент для заголовков */
     .gradient-text {
         background: linear-gradient(135deg, #0379D9, #0356a8);
         -webkit-background-clip: text;
@@ -907,53 +893,50 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
             submitBtn.disabled = true;
 
-            try {
-                const searchData = {
-                    departureCity: extractCityName(departure),
-                    arrivalCity: extractCityName(arrival),
-                    departureDate: departureDate,
-                    returnDate: returnDate || null,
-                    passengers: parseInt(passengers),
-                    tripType: returnDate ? "round" : "oneway",
-                    class: "economy"
-                };
+                try {
+            const searchData = {
+                departureCity: extractCityName(departure),
+                arrivalCity: extractCityName(arrival),
+                departureDate: departureDate,
+                returnDate: returnDate || null,
+                passengers: parseInt(passengers),
+                tripType: returnDate ? "round" : "oneway",
+                class: "economy"
+            };
 
-                console.log('Отправка запроса:', searchData);
+            console.log('Отправка запроса к API:', searchData);
 
-                // ВРЕМЕННО: используем mock данные вместо реального API
-                // Раскомментируйте когда API будет готово
-                
-                const response = await fetch('/api/flights/search', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(searchData)
-                });
+            // РЕАЛЬНЫЙ ЗАПРОС К API
+            const response = await fetch('/api/flights/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(searchData)
+            });
 
-                const result = await response.json();
-                
-
-                // ВРЕМЕННО: mock данные для тестирования
-                // await new Promise(resolve => setTimeout(resolve, 1000)); Имитация загрузки
-
-                const result = {
-                    success: true,
-                    flights: getMockFlights(searchData)
-                };
-
-                if (result.success) {
-                    showFlightResults(result.flights);
-                } else {
-                    showAlert(result.error || 'Произошла ошибка при поиске', 'danger');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showAlert('Ошибка соединения с сервером', 'danger');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const result = await response.json();
+            console.log('Ответ от API:', result);
+
+            if (result.success) {
+                showFlightResults(result.flights);
+            } else {
+                showAlert(result.error || 'Произошла ошибка при поиске', 'danger');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+
+            // Если API не отвечает, показываем информационное сообщение
+            if (error.message.includes('Failed to fetch')) {
+                showAlert('Сервер временно недоступен. Пожалуйста, попробуйте позже.', 'warning');
+            } else {
+                showAlert('Ошибка соединения с сервером: ' + error.message, 'danger');
+            }
+        }
         });
 
         // Установка минимальной даты (сегодня)

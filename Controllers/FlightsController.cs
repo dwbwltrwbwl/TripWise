@@ -22,13 +22,29 @@ namespace TripWise.Controllers
         {
             try
             {
+                // Используем реальный сервис Aviasales
                 var flights = await _aviasalesService.SearchFlightsAsync(request);
+
+                if (flights == null || !flights.Any())
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        flights = new List<Flight>(),
+                        message = "Рейсы не найдены для указанного направления"
+                    });
+                }
+
                 return Ok(new { success = true, flights });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при поиске авиабилетов");
-                return StatusCode(500, new { success = false, error = "Ошибка при поиске авиабилетов" });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Внутренняя ошибка сервера при поиске рейсов"
+                });
             }
         }
 
