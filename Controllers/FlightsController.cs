@@ -8,10 +8,10 @@ namespace TripWise.Controllers
     [Route("api/[controller]")]
     public class FlightsController : ControllerBase
     {
-        private readonly IAviasalesServiceV2 _aviasalesService;
+        private readonly IAviasalesRealService _aviasalesService;
         private readonly ILogger<FlightsController> _logger;
 
-        public FlightsController(IAviasalesServiceV2 aviasalesService, ILogger<FlightsController> logger)
+        public FlightsController(IAviasalesRealService aviasalesService, ILogger<FlightsController> logger)
         {
             _aviasalesService = aviasalesService;
             _logger = logger;
@@ -22,19 +22,7 @@ namespace TripWise.Controllers
         {
             try
             {
-                // Используем реальный сервис Aviasales
                 var flights = await _aviasalesService.SearchFlightsAsync(request);
-
-                if (flights == null || !flights.Any())
-                {
-                    return Ok(new
-                    {
-                        success = true,
-                        flights = new List<Flight>(),
-                        message = "Рейсы не найдены для указанного направления"
-                    });
-                }
-
                 return Ok(new { success = true, flights });
             }
             catch (Exception ex)
@@ -43,10 +31,27 @@ namespace TripWise.Controllers
                 return StatusCode(500, new
                 {
                     success = false,
-                    error = "Внутренняя ошибка сервера при поиске рейсов"
+                    error = "Не удалось выполнить поиск. Пожалуйста, попробуйте позже."
                 });
             }
         }
+
+        [HttpGet("cities")]
+        public async Task<ActionResult<List<City>>> SearchCities([FromQuery] string query)
+        {
+            try
+            {
+                var cities = await _aviasalesService.SearchCitiesAsync(query);
+                return Ok(cities);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при поиске городов");
+                return Ok(new List<City>());
+            }
+        }
+
+
 
         [HttpPost("start-search")]
         public async Task<ActionResult> StartSearch([FromBody] FlightSearchRequest request)

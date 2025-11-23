@@ -907,6 +907,7 @@
             console.log('Отправка запроса к API:', searchData);
 
             // РЕАЛЬНЫЙ ЗАПРОС К API
+            // Используем реальный API endpoint
             const response = await fetch('/api/flights/search', {
                 method: 'POST',
                 headers: {
