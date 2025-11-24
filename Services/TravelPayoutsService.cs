@@ -4,13 +4,13 @@ using TripWise.Models;
 
 namespace TripWise.Services
 {
-    public class RussianHotelService : IHotelService
+    public class TravelPayoutsService : IHotelService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<RussianHotelService> _logger;
+        private readonly ILogger<TravelPayoutsService> _logger;
         private const string API_TOKEN = "5a678657e1cb469daa5d36f87bb12064";
 
-        public RussianHotelService(HttpClient httpClient, ILogger<RussianHotelService> logger)
+        public TravelPayoutsService(HttpClient httpClient, ILogger<TravelPayoutsService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
@@ -27,12 +27,12 @@ namespace TripWise.Services
 
                 var hotels = await SearchTravelPayoutsHotels(request);
 
-                _logger.LogInformation($"🏨 Найдено отелей: {hotels.Count}");
+                _logger.LogInformation($"🏨 Найдено отелей через TravelPayouts: {hotels.Count}");
                 return hotels;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Ошибка при поиске отелей");
+                _logger.LogError(ex, "❌ Ошибка при поиске отелей через TravelPayouts API");
                 return GenerateRealHotels(request.City);
             }
         }
@@ -68,7 +68,7 @@ namespace TripWise.Services
                     var json = await response.Content.ReadAsStringAsync();
                     _logger.LogDebug("📨 Ответ от API: {Json}", json);
 
-                    var hotelData = JsonSerializer.Deserialize<List<TravelPayoutsHotelData>>(json);
+                    var hotelData = JsonSerializer.Deserialize<List<HotelLookResponse>>(json);
 
                     if (hotelData != null && hotelData.Any())
                     {
@@ -108,12 +108,12 @@ namespace TripWise.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var lookupResponse = JsonSerializer.Deserialize<TravelPayoutsLookupData>(json);
+                    var lookupResponse = JsonSerializer.Deserialize<LookupResponse>(json);
 
-                    var city = lookupResponse?.Results?.Locations
-                        ?.FirstOrDefault(l => l.Type == "city");
+                    var city = lookupResponse?.results?.locations
+                        ?.FirstOrDefault(l => l.type == "city");
 
-                    return city?.Iata ?? GetDefaultIataCode(cityName);
+                    return city?.iata ?? GetDefaultIataCode(cityName);
                 }
             }
             catch (Exception ex)
@@ -147,7 +147,7 @@ namespace TripWise.Services
             return cityMap.GetValueOrDefault(cityName.ToLower()) ?? cityName;
         }
 
-        private List<Hotel> ConvertHotelLookData(List<TravelPayoutsHotelData> data, string city)
+        private List<Hotel> ConvertHotelLookData(List<HotelLookResponse> data, string city)
         {
             var hotels = new List<Hotel>();
             var random = new Random();
@@ -158,21 +158,21 @@ namespace TripWise.Services
                 {
                     var hotel = new Hotel
                     {
-                        Id = item.HotelId.ToString(),
-                        Name = !string.IsNullOrEmpty(item.HotelName) ? item.HotelName : GetRandomHotelName(city),
-                        Address = !string.IsNullOrEmpty(item.Location?.Name) ? item.Location.Name : $"{city}, центр",
-                        Price = item.PriceFrom > 0 ? item.PriceFrom : random.Next(2000, 8000),
-                        Rating = item.Stars > 0 ? (decimal)item.Stars / 2 : Math.Round((decimal)(random.NextDouble() * 2 + 3), 1),
-                        Stars = item.Stars > 0 ? item.Stars : random.Next(3, 5),
-                        Description = $"Отель {item.Stars} звезд в {city}",
-                        Photos = GenerateHotelPhotos(item.HotelId),
+                        Id = item.hotelId.ToString(),
+                        Name = !string.IsNullOrEmpty(item.hotelName) ? item.hotelName : GetRandomHotelName(city),
+                        Address = !string.IsNullOrEmpty(item.location?.name) ? item.location.name : $"{city}, центр",
+                        Price = item.priceFrom > 0 ? item.priceFrom : random.Next(2000, 8000),
+                        Rating = item.stars > 0 ? (decimal)item.stars / 2 : Math.Round((decimal)(random.NextDouble() * 2 + 3), 1),
+                        Stars = item.stars > 0 ? item.stars : random.Next(3, 5),
+                        Description = $"Отель {item.stars} звезд в {city}",
+                        Photos = GenerateHotelPhotos(item.hotelId),
                         Amenities = GetRandomAmenities(),
                         Location = new Location
                         {
                             City = city,
                             Country = "Россия",
-                            Lat = item.Location?.Lat ?? (55.7558m + (decimal)(random.NextDouble() - 0.5) * 0.1m),
-                            Lng = item.Location?.Lon ?? (37.6173m + (decimal)(random.NextDouble() - 0.5) * 0.1m)
+                            Lat = item.location?.lat ?? (55.7558m + (decimal)(random.NextDouble() - 0.5) * 0.1m),
+                            Lng = item.location?.lon ?? (37.6173m + (decimal)(random.NextDouble() - 0.5) * 0.1m)
                         },
                         Provider = "TravelPayouts"
                     };
@@ -181,7 +181,7 @@ namespace TripWise.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Ошибка конвертации отеля ID: {HotelId}", item.HotelId);
+                    _logger.LogWarning(ex, "Ошибка конвертации отеля ID: {HotelId}", item.hotelId);
                 }
             }
 
@@ -326,15 +326,15 @@ namespace TripWise.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var lookupResponse = JsonSerializer.Deserialize<TravelPayoutsLookupData>(json);
+                    var lookupResponse = JsonSerializer.Deserialize<LookupResponse>(json);
 
-                    var cities = lookupResponse?.Results?.Locations
-                        ?.Where(l => l.Type == "city")
+                    var cities = lookupResponse?.results?.locations
+                        ?.Where(l => l.type == "city")
                         .Select(l => new City
                         {
-                            Code = l.Iata,
-                            Name = l.Name,
-                            Country = l.CountryName,
+                            Code = l.iata,
+                            Name = l.name,
+                            Country = l.countryName,
                             Type = "city"
                         })
                         .Take(10)
@@ -369,67 +369,67 @@ namespace TripWise.Services
         }
     }
 
-    // Модели для TravelPayouts API (уникальные имена)
-    public class TravelPayoutsHotelData
+    // Модели для TravelPayouts API
+    public class HotelLookResponse
     {
         [JsonPropertyName("hotelId")]
-        public int HotelId { get; set; }
+        public int hotelId { get; set; }
 
         [JsonPropertyName("priceFrom")]
-        public decimal PriceFrom { get; set; }
+        public decimal priceFrom { get; set; }
 
         [JsonPropertyName("stars")]
-        public int Stars { get; set; }
+        public int stars { get; set; }
 
         [JsonPropertyName("hotelName")]
-        public string HotelName { get; set; }
+        public string hotelName { get; set; }
 
         [JsonPropertyName("location")]
-        public TravelPayoutsLocationData Location { get; set; }
+        public HotelLocation location { get; set; }
     }
 
-    public class TravelPayoutsLocationData
+    public class HotelLocation
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string name { get; set; }
 
         [JsonPropertyName("country")]
-        public string Country { get; set; }
+        public string country { get; set; }
 
         [JsonPropertyName("lat")]
-        public decimal Lat { get; set; }
+        public decimal lat { get; set; }
 
         [JsonPropertyName("lon")]
-        public decimal Lon { get; set; }
+        public decimal lon { get; set; }
     }
 
-    public class TravelPayoutsLookupData
+    public class LookupResponse
     {
         [JsonPropertyName("results")]
-        public TravelPayoutsLookupResults Results { get; set; }
+        public LookupResults results { get; set; }
     }
 
-    public class TravelPayoutsLookupResults
+    public class LookupResults
     {
         [JsonPropertyName("locations")]
-        public List<TravelPayoutsLookupLocation> Locations { get; set; }
+        public List<LookupLocation> locations { get; set; }
     }
 
-    public class TravelPayoutsLookupLocation
+    public class LookupLocation
     {
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public int id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string name { get; set; }
 
         [JsonPropertyName("countryName")]
-        public string CountryName { get; set; }
+        public string countryName { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string type { get; set; }
 
         [JsonPropertyName("iata")]
-        public string Iata { get; set; }
+        public string iata { get; set; }
     }
 }
