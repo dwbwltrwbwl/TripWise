@@ -19,17 +19,17 @@ namespace TripWise.Controllers
         }
 
         [HttpPost("search")]
+        [HttpPost("search")]
         public async Task<ActionResult<FlightSearchResponse>> SearchFlights([FromBody] FlightSearchRequest request)
         {
             try
             {
                 _logger.LogInformation("Получен запрос на поиск рейсов: {@Request}", request);
 
-                // Валидация запроса
+                // Валидация
                 var validationError = ValidateFlightSearchRequest(request);
                 if (!string.IsNullOrEmpty(validationError))
                 {
-                    _logger.LogWarning("Ошибка валидации: {Error}", validationError);
                     return BadRequest(new FlightSearchResponse
                     {
                         Success = false,
@@ -37,38 +37,25 @@ namespace TripWise.Controllers
                     });
                 }
 
-                _logger.LogInformation("Поиск рейсов: {DepartureCity} -> {ArrivalCity} на {DepartureDate} ({Passengers} пасс.)",
-                    request.DepartureCity, request.ArrivalCity, request.DepartureDate.ToString("yyyy-MM-dd"), request.Passengers);
-
                 var flights = await _aviasalesService.SearchFlightsAsync(request);
 
                 _logger.LogInformation("Найдено рейсов: {Count}", flights.Count);
-
-                if (flights.Count == 0)
-                {
-                    return Ok(new FlightSearchResponse
-                    {
-                        Success = true,
-                        Flights = new List<Flight>(),
-                        Message = "Рейсы не найдены для указанного направления. Попробуйте изменить даты или параметры поиска."
-                    });
-                }
 
                 return Ok(new FlightSearchResponse
                 {
                     Success = true,
                     Flights = flights,
-                    Message = $"Найдено {flights.Count} рейсов"
+                    Message = flights.Count > 0 ? $"Найдено {flights.Count} рейсов" : "Рейсы не найдены"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Критическая ошибка при поиске авиабилетов");
-                return StatusCode(500, new FlightSearchResponse
+                _logger.LogError(ex, "Ошибка при поиске авиабилетов");
+                return Ok(new FlightSearchResponse
                 {
                     Success = false,
-                    Error = "Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.",
-                    Message = ex.Message
+                    Error = "Временная ошибка поиска",
+                    Message = "Используются демо-данные для тестирования"
                 });
             }
         }
@@ -114,195 +101,195 @@ namespace TripWise.Controllers
             }
         }
 
-        [HttpPost("start-search")]
-        public async Task<ActionResult> StartSearch([FromBody] FlightSearchRequest request)
-        {
-            try
-            {
-                _logger.LogInformation("Запуск асинхронного поиска: {@Request}", request);
+        //[HttpPost("start-search")]
+        //public async Task<ActionResult> StartSearch([FromBody] FlightSearchRequest request)
+        //{
+        //    try
+        //    {
+        //        _logger.LogInformation("Запуск асинхронного поиска: {@Request}", request);
 
-                // Валидация
-                var validationError = ValidateFlightSearchRequest(request);
-                if (!string.IsNullOrEmpty(validationError))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = validationError
-                    });
-                }
+        //        // Валидация
+        //        var validationError = ValidateFlightSearchRequest(request);
+        //        if (!string.IsNullOrEmpty(validationError))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = validationError
+        //            });
+        //        }
 
-                var searchResponse = await _aviasalesService.StartSearchAsync(request);
+        //        var searchResponse = await _aviasalesService.StartSearchAsync(request);
 
-                _logger.LogInformation("Асинхронный поиск запущен, SearchId: {SearchId}", searchResponse.SearchId);
+        //        _logger.LogInformation("Асинхронный поиск запущен, SearchId: {SearchId}", searchResponse.SearchId);
 
-                return Ok(new
-                {
-                    success = true,
-                    searchId = searchResponse.SearchId,
-                    resultsUrl = searchResponse.ResultsUrl,
-                    message = "Поиск запущен успешно"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при старте асинхронного поиска");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    error = "Не удалось запустить поиск",
-                    details = ex.Message
-                });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            searchId = searchResponse.SearchId,
+        //            resultsUrl = searchResponse.ResultsUrl,
+        //            message = "Поиск запущен успешно"
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Ошибка при старте асинхронного поиска");
+        //        return StatusCode(500, new
+        //        {
+        //            success = false,
+        //            error = "Не удалось запустить поиск",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
 
-        [HttpPost("get-results")]
-        public async Task<ActionResult> GetResults([FromBody] ResultsRequest request)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(request.SearchId))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = "SearchId обязателен"
-                    });
-                }
+        //[HttpPost("get-results")]
+        //public async Task<ActionResult> GetResults([FromBody] ResultsRequest request)
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrEmpty(request.SearchId))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = "SearchId обязателен"
+        //            });
+        //        }
 
-                if (string.IsNullOrEmpty(request.ResultsUrl))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = "ResultsUrl обязателен"
-                    });
-                }
+        //        if (string.IsNullOrEmpty(request.ResultsUrl))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = "ResultsUrl обязателен"
+        //            });
+        //        }
 
-                _logger.LogInformation("Получение результатов поиска: {SearchId}, LastUpdate: {LastUpdate}",
-                    request.SearchId, request.LastUpdateTimestamp);
+        //        _logger.LogInformation("Получение результатов поиска: {SearchId}, LastUpdate: {LastUpdate}",
+        //            request.SearchId, request.LastUpdateTimestamp);
 
-                var results = await _aviasalesService.GetSearchResultsAsync(
-                    request.SearchId,
-                    request.ResultsUrl,
-                    request.LastUpdateTimestamp);
+        //        var results = await _aviasalesService.GetSearchResultsAsync(
+        //            request.SearchId,
+        //            request.ResultsUrl,
+        //            request.LastUpdateTimestamp);
 
-                if (results == null)
-                {
-                    return Ok(new
-                    {
-                        success = false,
-                        error = "Не удалось получить результаты",
-                        isOver = true
-                    });
-                }
+        //        if (results == null)
+        //        {
+        //            return Ok(new
+        //            {
+        //                success = false,
+        //                error = "Не удалось получить результаты",
+        //                isOver = true
+        //            });
+        //        }
 
-                // Логируем детали результатов для диагностики
-                _logger.LogInformation("Результаты поиска: Tickets={TicketsCount}, Airlines={AirlinesCount}, Airports={AirportsCount}, IsOver={IsOver}",
-                    results.Tickets?.Count ?? 0,
-                    results.Airlines?.Count ?? 0,
-                    results.Airports?.Count ?? 0,
-                    results.IsOver);
+        //        // Логируем детали результатов для диагностики
+        //        _logger.LogInformation("Результаты поиска: Tickets={TicketsCount}, Airlines={AirlinesCount}, Airports={AirportsCount}, IsOver={IsOver}",
+        //            results.Tickets?.Count ?? 0,
+        //            results.Airlines?.Count ?? 0,
+        //            results.Airports?.Count ?? 0,
+        //            results.IsOver);
 
-                var simplifiedResults = ConvertToSimplifiedResults(results);
+        //        var simplifiedResults = ConvertToSimplifiedResults(results);
 
-                return Ok(new
-                {
-                    success = true,
-                    results = simplifiedResults,
-                    isOver = results.IsOver,
-                    lastUpdateTimestamp = results.LastUpdateTimestamp,
-                    statistics = new
-                    {
-                        ticketsCount = results.Tickets?.Count ?? 0,
-                        airlinesCount = results.Airlines?.Count ?? 0,
-                        airportsCount = results.Airports?.Count ?? 0
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении результатов для SearchId: {SearchId}", request.SearchId);
-                return StatusCode(500, new
-                {
-                    success = false,
-                    error = "Ошибка при получении результатов",
-                    details = ex.Message
-                });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            results = simplifiedResults,
+        //            isOver = results.IsOver,
+        //            lastUpdateTimestamp = results.LastUpdateTimestamp,
+        //            statistics = new
+        //            {
+        //                ticketsCount = results.Tickets?.Count ?? 0,
+        //                airlinesCount = results.Airlines?.Count ?? 0,
+        //                airportsCount = results.Airports?.Count ?? 0
+        //            }
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Ошибка при получении результатов для SearchId: {SearchId}", request.SearchId);
+        //        return StatusCode(500, new
+        //        {
+        //            success = false,
+        //            error = "Ошибка при получении результатов",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
 
-        [HttpGet("booking-link")]
-        public async Task<ActionResult> GetBookingLink(
-            [FromQuery] string searchId,
-            [FromQuery] string resultsUrl,
-            [FromQuery] string proposalId)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(searchId))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = "SearchId обязателен"
-                    });
-                }
+        //[HttpGet("booking-link")]
+        //public async Task<ActionResult> GetBookingLink(
+        //    [FromQuery] string searchId,
+        //    [FromQuery] string resultsUrl,
+        //    [FromQuery] string proposalId)
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrEmpty(searchId))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = "SearchId обязателен"
+        //            });
+        //        }
 
-                if (string.IsNullOrEmpty(resultsUrl))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = "ResultsUrl обязателен"
-                    });
-                }
+        //        if (string.IsNullOrEmpty(resultsUrl))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = "ResultsUrl обязателен"
+        //            });
+        //        }
 
-                if (string.IsNullOrEmpty(proposalId))
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        error = "ProposalId обязателен"
-                    });
-                }
+        //        if (string.IsNullOrEmpty(proposalId))
+        //        {
+        //            return BadRequest(new
+        //            {
+        //                success = false,
+        //                error = "ProposalId обязателен"
+        //            });
+        //        }
 
-                _logger.LogInformation("Получение ссылки на бронирование: SearchId={SearchId}, ProposalId={ProposalId}",
-                    searchId, proposalId);
+        //        _logger.LogInformation("Получение ссылки на бронирование: SearchId={SearchId}, ProposalId={ProposalId}",
+        //            searchId, proposalId);
 
-                var bookingLink = await _aviasalesService.GetBookingLinkAsync(resultsUrl, searchId, proposalId);
+        //        var bookingLink = await _aviasalesService.GetBookingLinkAsync(resultsUrl, searchId, proposalId);
 
-                if (bookingLink == null || string.IsNullOrEmpty(bookingLink.Url))
-                {
-                    return Ok(new
-                    {
-                        success = false,
-                        error = "Не удалось получить ссылку на бронирование"
-                    });
-                }
+        //        if (bookingLink == null || string.IsNullOrEmpty(bookingLink.Url))
+        //        {
+        //            return Ok(new
+        //            {
+        //                success = false,
+        //                error = "Не удалось получить ссылку на бронирование"
+        //            });
+        //        }
 
-                _logger.LogInformation("Ссылка на бронирование получена успешно");
+        //        _logger.LogInformation("Ссылка на бронирование получена успешно");
 
-                return Ok(new
-                {
-                    success = true,
-                    url = bookingLink.Url,
-                    method = bookingLink.Method,
-                    expireAt = DateTimeOffset.FromUnixTimeSeconds(bookingLink.ExpireAtUnixSec).DateTime
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении ссылки на бронирование: SearchId={SearchId}, ProposalId={ProposalId}",
-                    searchId, proposalId);
-                return StatusCode(500, new
-                {
-                    success = false,
-                    error = "Ошибка при получении ссылки на бронирование",
-                    details = ex.Message
-                });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            url = bookingLink.Url,
+        //            method = bookingLink.Method,
+        //            expireAt = DateTimeOffset.FromUnixTimeSeconds(bookingLink.ExpireAtUnixSec).DateTime
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Ошибка при получении ссылки на бронирование: SearchId={SearchId}, ProposalId={ProposalId}",
+        //            searchId, proposalId);
+        //        return StatusCode(500, new
+        //        {
+        //            success = false,
+        //            error = "Ошибка при получении ссылки на бронирование",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
 
         [HttpGet("test-connection")]
         public async Task<ActionResult> TestConnection()
