@@ -27,6 +27,8 @@ builder.Services.AddScoped<RzdApiService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>(); // Используем упрощенный сервис для тестирования
 
+builder.Services.AddScoped<IHotelService, HotelService>();
+
 // Настройка CORS
 builder.Services.AddCors(options =>
 {
