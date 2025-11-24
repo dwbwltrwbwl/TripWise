@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Web;
 using TripWise.Models;
 
 namespace TripWise.Services
@@ -14,8 +15,7 @@ namespace TripWise.Services
             _httpClient = httpClient;
             _logger = logger;
 
-            // Настраиваем HttpClient для российских API
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "TripWise/1.0");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
@@ -23,16 +23,15 @@ namespace TripWise.Services
         {
             try
             {
-                _logger.LogInformation("🔍 Поиск отелей: {@Request}", request);
+                _logger.LogInformation("🔍 Поиск отелей через российские API: {@Request}", request);
 
-                // Пробуем разные российские API по очереди
+                // Используем Ostrovok.ru API (работает в России)
                 var hotels = await TryOstrovokApi(request) ??
                            await TryTvilApi(request) ??
-                           await TryHotelLookApi(request);
+                           await TryTravelataApi(request);
 
                 _logger.LogInformation($"🏨 Найдено отелей: {hotels?.Count ?? 0}");
                 return hotels ?? new List<Hotel>();
-
             }
             catch (Exception ex)
             {
@@ -41,31 +40,84 @@ namespace TripWise.Services
             }
         }
 
-        // 1. Ostrovok.ru API - один из крупнейших в России
+        // 1. Ostrovok.ru API (крупнейший в России)
         private async Task<List<Hotel>> TryOstrovokApi(HotelSearchRequest request)
         {
             try
             {
-                var url = $"https://ostrovok.ru/ibis/search/hotels?" +
-                         $"query={Uri.EscapeDataString(request.City)}&" +
-                         $"checkin={request.CheckIn:yyyy-MM-dd}&" +
-                         $"checkout={request.CheckOut:yyyy-MM-dd}&" +
-                         $"adults={request.Adults}&" +
-                         $"rooms={request.Rooms}&" +
-                         $"language=ru&" +
-                         $"currency=RUB";
+                // Ostrovok GraphQL API
+                var graphqlQuery = new
+                {
+                    query = @"
+                    query SearchHotels($input: HotelSearchInput!) {
+                        hotelSearch(input: $input) {
+                            hotels {
+                                id
+                                name
+                                address {
+                                    full
+                                }
+                                price {
+                                    min
+                                    currency
+                                }
+                                rating {
+                                    value
+                                }
+                                stars
+                                photos {
+                                    url
+                                }
+                                amenities {
+                                    name
+                                }
+                                location {
+                                    lat
+                                    lng
+                                    city {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }",
+                    variables = new
+                    {
+                        input = new
+                        {
+                            location = new
+                            {
+                                query = request.City
+                            },
+                            checkIn = request.CheckIn.ToString("yyyy-MM-dd"),
+                            checkOut = request.CheckOut.ToString("yyyy-MM-dd"),
+                            rooms = new[] { new
+                            {
+                                adults = request.Adults,
+                                children = request.Children > 0 ? new[] { new { age = 10 } } : Array.Empty<object>()
+                            }},
+                            currency = "RUB",
+                            language = "ru"
+                        }
+                    }
+                };
 
-                _logger.LogInformation("🌐 Запрос к Ostrovok API: {Url}", url);
+                var jsonContent = JsonSerializer.Serialize(graphqlQuery);
+                var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.GetAsync(url);
+                // Прямой запрос к API Ostrovok
+                var response = await _httpClient.PostAsync("https://ostrovok.ru/api/graphql", content);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    _logger.LogDebug("📨 Ответ Ostrovok API получен");
+                    var result = JsonSerializer.Deserialize<OstrovokGraphQLResponse>(json);
 
-                    // Парсим HTML ответ (Ostrovok не имеет открытого JSON API)
-                    return ParseOstrovokHotels(json, request.City);
+                    if (result?.Data?.HotelSearch?.Hotels != null)
+                    {
+                        _logger.LogInformation("✅ Ostrovok API: найдено {Count} отелей", result.Data.HotelSearch.Hotels.Count);
+                        return ConvertOstrovokHotels(result.Data.HotelSearch.Hotels);
+                    }
                 }
             }
             catch (Exception ex)
@@ -76,17 +128,16 @@ namespace TripWise.Services
             return null;
         }
 
-        // 2. TVIL.ru API - российский сервис бронирования
+        // 2. TVIL.ru API (российский агрегатор)
         private async Task<List<Hotel>> TryTvilApi(HotelSearchRequest request)
         {
             try
             {
-                var url = $"https://engine.tvil.ru/api/hotel/search?" +
-                         $"city={Uri.EscapeDataString(request.City)}&" +
+                var url = $"https://engine.tvil.ru/api/search/region?" +
+                         $"q={HttpUtility.UrlEncode(request.City)}&" +
                          $"checkin={request.CheckIn:yyyy-MM-dd}&" +
                          $"checkout={request.CheckOut:yyyy-MM-dd}&" +
                          $"adults={request.Adults}&" +
-                         $"rooms={request.Rooms}&" +
                          $"lang=ru";
 
                 _logger.LogInformation("🌐 Запрос к TVIL API: {Url}", url);
@@ -96,12 +147,12 @@ namespace TripWise.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var apiResponse = JsonSerializer.Deserialize<TvilApiResponse>(json);
+                    var result = JsonSerializer.Deserialize<TvilSearchResponse>(json);
 
-                    if (apiResponse?.Data?.Hotels != null)
+                    if (result?.Hotels != null)
                     {
-                        _logger.LogInformation("✅ TVIL API: найдено {Count} отелей", apiResponse.Data.Hotels.Count);
-                        return ConvertTvilHotels(apiResponse.Data.Hotels, request.City);
+                        _logger.LogInformation("✅ TVIL API: найдено {Count} отелей", result.Hotels.Count);
+                        return ConvertTvilHotels(result.Hotels, request.City);
                     }
                 }
             }
@@ -113,67 +164,110 @@ namespace TripWise.Services
             return null;
         }
 
-        // 3. HotelLook API (российская версия)
-        private async Task<List<Hotel>> TryHotelLookApi(HotelSearchRequest request)
+        // 3. Travelata.ru API (популярный в России)
+        private async Task<List<Hotel>> TryTravelataApi(HotelSearchRequest request)
         {
             try
             {
-                var url = $"https://yasen.hotellook.com/api/v2/cache.json?" +
-                         $"location={Uri.EscapeDataString(request.City)}&" +
-                         $"checkIn={request.CheckIn:yyyy-MM-dd}&" +
-                         $"checkOut={request.CheckOut:yyyy-MM-dd}&" +
+                var url = $"https://travelata.ru/api/engine/search/search?" +
+                         $"search={HttpUtility.UrlEncode(request.City)}&" +
+                         $"fromDate={request.CheckIn:yyyy-MM-dd}&" +
+                         $"toDate={request.CheckOut:yyyy-MM-dd}&" +
                          $"adults={request.Adults}&" +
-                         $"currency=rub&" +
-                         $"lang=ru";
-
-                _logger.LogInformation("🌐 Запрос к HotelLook API: {Url}", url);
+                         $"children={request.Children}";
 
                 var response = await _httpClient.GetAsync(url);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var hotelsData = JsonSerializer.Deserialize<List<HotelLookData>>(json);
+                    var result = JsonSerializer.Deserialize<TravelataResponse>(json);
 
-                    if (hotelsData != null)
+                    if (result?.Hotels != null)
                     {
-                        _logger.LogInformation("✅ HotelLook API: найдено {Count} отелей", hotelsData.Count);
-                        return ConvertHotelLookHotels(hotelsData, request.City);
+                        _logger.LogInformation("✅ Travelata API: найдено {Count} отелей", result.Hotels.Count);
+                        return ConvertTravelataHotels(result.Hotels, request.City);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "⚠️ HotelLook API не доступен");
+                _logger.LogWarning(ex, "⚠️ Travelata API не доступен");
             }
 
             return null;
         }
 
-        // Конвертеры данных из разных API
-        private List<Hotel> ConvertTvilHotels(List<TvilHotelData> tvilHotels, string city)
+        // Конвертеры данных
+        private List<Hotel> ConvertOstrovokHotels(List<OstrovokHotel> ostrovokHotels)
         {
             var hotels = new List<Hotel>();
 
-            foreach (var hotelData in tvilHotels.Take(20)) // Ограничиваем количество
+            foreach (var hotel in ostrovokHotels.Take(20))
             {
                 try
                 {
-                    var hotel = new Hotel
+                    var convertedHotel = new Hotel
                     {
-                        Id = hotelData.Id.ToString(),
-                        Name = hotelData.Name ?? "Отель",
-                        Address = hotelData.Address ?? $"{city}, центр города",
-                        Price = hotelData.Price > 0 ? hotelData.Price : 3000,
-                        Stars = hotelData.Stars,
-                        Rating = hotelData.Rating,
-                        Description = hotelData.Description ?? $"Комфортабельный отель в {city}",
-                        Photos = hotelData.Photos?.Take(3).ToList() ?? new List<string>(),
-                        Amenities = hotelData.Amenities ?? new List<string> { "Wi-Fi", "Кондиционер" },
-                        Location = new Location { City = city, Country = "Россия" }
+                        Id = hotel.Id ?? Guid.NewGuid().ToString(),
+                        Name = hotel.Name ?? "Отель",
+                        Address = hotel.Address?.Full ?? "Адрес не указан",
+                        Price = hotel.Price?.Min ?? 0,
+                        Currency = hotel.Price?.Currency ?? "RUB",
+                        Rating = hotel.Rating?.Value ?? 0,
+                        Stars = hotel.Stars,
+                        Description = $"Отель {hotel.Stars} звезд",
+                        Photos = hotel.Photos?.Select(p => p.Url).Where(url => !string.IsNullOrEmpty(url)).Take(3).ToList() ?? new List<string>(),
+                        Amenities = hotel.Amenities?.Select(a => a.Name).Where(name => !string.IsNullOrEmpty(name)).Take(5).ToList() ?? new List<string>(),
+                        Location = new Location
+                        {
+                            Lat = hotel.Location?.Lat ?? 0,
+                            Lng = hotel.Location?.Lng ?? 0,
+                            City = hotel.Location?.City?.Name ?? "",
+                            Country = "Россия"
+                        },
+                        Provider = "Ostrovok.ru"
                     };
 
-                    hotels.Add(hotel);
+                    hotels.Add(convertedHotel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Ошибка конвертации отеля Ostrovok");
+                }
+            }
+
+            return hotels.Where(h => h.Price > 0).OrderBy(h => h.Price).ToList();
+        }
+
+        private List<Hotel> ConvertTvilHotels(List<TvilHotel> tvilHotels, string city)
+        {
+            var hotels = new List<Hotel>();
+
+            foreach (var hotel in tvilHotels.Take(20))
+            {
+                try
+                {
+                    var convertedHotel = new Hotel
+                    {
+                        Id = hotel.Id?.ToString() ?? Guid.NewGuid().ToString(),
+                        Name = hotel.Name ?? "Отель",
+                        Address = hotel.Address ?? $"{city}, центр",
+                        Price = hotel.Price > 0 ? hotel.Price : 3000,
+                        Rating = hotel.Rating,
+                        Stars = hotel.Stars > 0 ? hotel.Stars : 3,
+                        Description = hotel.Description ?? $"Отель в {city}",
+                        Photos = hotel.Photos?.Take(3).ToList() ?? new List<string>(),
+                        Amenities = hotel.Amenities?.Take(5).ToList() ?? new List<string> { "Wi-Fi", "Кондиционер" },
+                        Location = new Location
+                        {
+                            City = city,
+                            Country = "Россия"
+                        },
+                        Provider = "TVIL.ru"
+                    };
+
+                    hotels.Add(convertedHotel);
                 }
                 catch (Exception ex)
                 {
@@ -181,82 +275,45 @@ namespace TripWise.Services
                 }
             }
 
-            return hotels.OrderBy(h => h.Price).ToList();
+            return hotels.Where(h => h.Price > 0).OrderBy(h => h.Price).ToList();
         }
 
-        private List<Hotel> ConvertHotelLookHotels(List<HotelLookData> hotelsData, string city)
+        private List<Hotel> ConvertTravelataHotels(List<TravelataHotel> travelataHotels, string city)
         {
             var hotels = new List<Hotel>();
-            var random = new Random();
 
-            foreach (var data in hotelsData.Take(20))
+            foreach (var hotel in travelataHotels.Take(20))
             {
                 try
                 {
-                    var hotel = new Hotel
+                    var convertedHotel = new Hotel
                     {
-                        Id = data.HotelId.ToString(),
-                        Name = data.HotelName ?? "Отель",
-                        Address = data.Address ?? $"{city}, центральный район",
-                        Price = data.PriceAvg > 0 ? data.PriceAvg : data.Price,
-                        Stars = data.Stars,
-                        Rating = data.Rating,
-                        Description = $"Отель {data.Stars} звезд в {city}",
-                        Photos = data.PhotosCount > 0 ?
-                            new List<string> { $"https://photo.hotellook.com/image_v2/limit/h{data.HotelId}_1/800/520.auto" } :
-                            new List<string>(),
-                        Amenities = GetRandomAmenities(),
-                        Location = new Location { City = city, Country = "Россия" }
+                        Id = hotel.Id?.ToString() ?? Guid.NewGuid().ToString(),
+                        Name = hotel.Name ?? "Отель",
+                        Address = hotel.Address ?? $"{city}, курортная зона",
+                        Price = hotel.Price > 0 ? hotel.Price : 4000,
+                        Rating = hotel.Rating,
+                        Stars = hotel.Stars,
+                        Description = hotel.Description ?? $"Тур в {city}",
+                        Photos = hotel.Photos?.Take(3).ToList() ?? new List<string>(),
+                        Amenities = hotel.Amenities ?? new List<string> { "Питание", "Бассейн", "SPA" },
+                        Location = new Location
+                        {
+                            City = city,
+                            Country = "Россия"
+                        },
+                        Provider = "Travelata.ru"
                     };
 
-                    hotels.Add(hotel);
+                    hotels.Add(convertedHotel);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Ошибка конвертации отеля HotelLook");
+                    _logger.LogWarning(ex, "Ошибка конвертации отеля Travelata");
                 }
             }
 
-            return hotels.OrderBy(h => h.Price).ToList();
-        }
-
-        // Парсинг HTML ответа от Ostrovok (упрощенный)
-        private List<Hotel> ParseOstrovokHotels(string html, string city)
-        {
-            var hotels = new List<Hotel>();
-            var random = new Random();
-
-            // Генерируем демо-отели на основе реальных данных Ostrovok
-            var ostrovokHotels = new[]
-            {
-                new { Name = "Ibis", Price = 3200, Stars = 3, Rating = 4.1m },
-                new { Name = "Novotel", Price = 4500, Stars = 4, Rating = 4.3m },
-                new { Name = "Azimut", Price = 2800, Stars = 3, Rating = 3.9m },
-                new { Name = "Hilton", Price = 6200, Stars = 5, Rating = 4.5m },
-                new { Name = "Marriott", Price = 5800, Stars = 5, Rating = 4.6m },
-                new { Name = "Radisson", Price = 4900, Stars = 4, Rating = 4.2m },
-                new { Name = "Park Inn", Price = 3500, Stars = 3, Rating = 4.0m },
-                new { Name = "Golden Ring", Price = 4100, Stars = 4, Rating = 4.1m }
-            };
-
-            foreach (var ostrovokHotel in ostrovokHotels)
-            {
-                hotels.Add(new Hotel
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Name = $"{ostrovokHotel.Name} {city}",
-                    Address = $"{city}, центр",
-                    Price = ostrovokHotel.Price + random.Next(500),
-                    Stars = ostrovokHotel.Stars,
-                    Rating = ostrovokHotel.Rating,
-                    Description = $"Сетевой отель {ostrovokHotel.Name} в центре {city}",
-                    Photos = new List<string>(),
-                    Amenities = GetRandomAmenities(),
-                    Location = new Location { City = city, Country = "Россия" }
-                });
-            }
-
-            return hotels.OrderBy(h => h.Price).ToList();
+            return hotels.Where(h => h.Price > 0).OrderBy(h => h.Price).ToList();
         }
 
         public async Task<List<City>> SearchHotelCitiesAsync(string query)
@@ -268,124 +325,230 @@ namespace TripWise.Services
 
                 _logger.LogInformation("🔍 Поиск городов: {Query}", query);
 
-                // Используем комбинированный поиск по российским городам
-                var cities = await SearchRussianCities(query);
-                return cities.Take(10).ToList();
+                // Используем комбинированный поиск
+                var cities = await SearchViaOstrovok(query) ??
+                           await SearchViaTvil(query) ??
+                           GetPopularRussianCities(query);
 
+                return cities.Take(10).ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "❌ Ошибка при поиске городов");
-                return GetRussianCities()
-                    .Where(c => c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-                    .Take(10)
-                    .ToList();
+                return GetPopularRussianCities(query).Take(10).ToList();
             }
         }
 
-        private async Task<List<City>> SearchRussianCities(string query)
+        private async Task<List<City>> SearchViaOstrovok(string query)
         {
-            var cities = new List<City>();
-
             try
             {
-                // Поиск через открытые данные российских городов
-                var url = $"https://api.hotellook.com/api/v2/lookup.json?" +
-                         $"query={Uri.EscapeDataString(query)}&" +
-                         $"lang=ru&" +
-                         $"lookFor=city";
+                var url = $"https://ostrovok.ru/api/suggest/v2/hotel/desktop?" +
+                         $"query={HttpUtility.UrlEncode(query)}&" +
+                         $"lang=ru";
 
                 var response = await _httpClient.GetAsync(url);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var lookupResponse = JsonSerializer.Deserialize<CityLookupResponse>(json);
+                    var result = JsonSerializer.Deserialize<OstrovokSuggestResponse>(json);
 
-                    if (lookupResponse?.Results?.Locations != null)
-                    {
-                        foreach (var location in lookupResponse.Results.Locations.Take(10))
+                    var cities = result?.Results?
+                        .Where(r => r.Type == "city")
+                        .Select(r => new City
                         {
-                            cities.Add(new City
-                            {
-                                Code = location.Id.ToString(),
-                                Name = location.Name ?? "",
-                                Country = location.Country ?? "Россия",
-                                Type = "city"
-                            });
-                        }
-                    }
+                            Code = r.Id?.ToString(),
+                            Name = r.Name ?? "",
+                            Country = r.Country ?? "Россия",
+                            Type = "city"
+                        })
+                        .ToList();
+
+                    return cities ?? new List<City>();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "⚠️ API поиска городов не доступен");
+                _logger.LogWarning(ex, "⚠️ Ostrovok поиск городов не доступен");
             }
 
-            // Если API не ответил, используем встроенный список
-            if (!cities.Any())
+            return null;
+        }
+
+        private async Task<List<City>> SearchViaTvil(string query)
+        {
+            try
             {
-                cities = GetRussianCities()
-                    .Where(c => c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-                    .Take(10)
-                    .ToList();
+                var url = $"https://engine.tvil.ru/api/search/suggest?" +
+                         $"q={HttpUtility.UrlEncode(query)}&" +
+                         $"lang=ru";
+
+                var response = await _httpClient.GetAsync(url);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<TvilSuggestResponse>(json);
+
+                    var cities = result?.Cities?
+                        .Select(c => new City
+                        {
+                            Code = c.Id?.ToString(),
+                            Name = c.Name ?? "",
+                            Country = c.Country ?? "Россия",
+                            Type = "city"
+                        })
+                        .ToList();
+
+                    return cities ?? new List<City>();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ TVIL поиск городов не доступен");
             }
 
-            return cities;
+            return null;
         }
 
-        // Вспомогательные методы
-        private List<string> GetRandomAmenities()
+        private List<City> GetPopularRussianCities(string query)
         {
-            var amenities = new List<string>
+            var allCities = new List<City>
             {
-                "Wi-Fi", "Кондиционер", "Телевизор", "Холодильник", "Сейф",
-                "Фен", "Тапочки", "Халаты", "Чайник", "Мини-бар"
+                new City { Code = "moscow", Name = "Москва", Country = "Россия", Type = "city" },
+                new City { Code = "saint-petersburg", Name = "Санкт-Петербург", Country = "Россия", Type = "city" },
+                new City { Code = "sochi", Name = "Сочи", Country = "Россия", Type = "city" },
+                new City { Code = "kazan", Name = "Казань", Country = "Россия", Type = "city" },
+                new City { Code = "ekaterinburg", Name = "Екатеринбург", Country = "Россия", Type = "city" },
+                new City { Code = "novosibirsk", Name = "Новосибирск", Country = "Россия", Type = "city" },
+                new City { Code = "krasnodar", Name = "Краснодар", Country = "Россия", Type = "city" },
+                new City { Code = "kaliningrad", Name = "Калининград", Country = "Россия", Type = "city" },
+                new City { Code = "vladivostok", Name = "Владивосток", Country = "Россия", Type = "city" },
+                new City { Code = "rostov-on-don", Name = "Ростов-на-Дону", Country = "Россия", Type = "city" },
+                new City { Code = "ufa", Name = "Уфа", Country = "Россия", Type = "city" },
+                new City { Code = "samara", Name = "Самара", Country = "Россия", Type = "city" },
+                new City { Code = "omsk", Name = "Омск", Country = "Россия", Type = "city" },
+                new City { Code = "chelyabinsk", Name = "Челябинск", Country = "Россия", Type = "city" },
+                new City { Code = "volgograd", Name = "Волгоград", Country = "Россия", Type = "city" }
             };
 
-            return amenities.OrderBy(x => Guid.NewGuid()).Take(4).ToList();
-        }
-
-        private List<City> GetRussianCities()
-        {
-            return new List<City>
-            {
-                new City { Code = "MOW", Name = "Москва", Country = "Россия", Type = "city" },
-                new City { Code = "LED", Name = "Санкт-Петербург", Country = "Россия", Type = "city" },
-                new City { Code = "AER", Name = "Сочи", Country = "Россия", Type = "city" },
-                new City { Code = "KZN", Name = "Казань", Country = "Россия", Type = "city" },
-                new City { Code = "SVX", Name = "Екатеринбург", Country = "Россия", Type = "city" },
-                new City { Code = "OVB", Name = "Новосибирск", Country = "Россия", Type = "city" },
-                new City { Code = "KRR", Name = "Краснодар", Country = "Россия", Type = "city" },
-                new City { Code = "KGD", Name = "Калининград", Country = "Россия", Type = "city" },
-                new City { Code = "VVO", Name = "Владивосток", Country = "Россия", Type = "city" },
-                new City { Code = "ROV", Name = "Ростов-на-Дону", Country = "Россия", Type = "city" },
-                new City { Code = "UFA", Name = "Уфа", Country = "Россия", Type = "city" },
-                new City { Code = "SAM", Name = "Самара", Country = "Россия", Type = "city" },
-                new City { Code = "OMS", Name = "Омск", Country = "Россия", Type = "city" },
-                new City { Code = "CEK", Name = "Челябинск", Country = "Россия", Type = "city" },
-                new City { Code = "VOG", Name = "Волгоград", Country = "Россия", Type = "city" }
-            };
+            return allCities
+                .Where(c => c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
     }
 
     // Модели для API ответов
-    public class TvilApiResponse
+    public class OstrovokGraphQLResponse
     {
         [JsonPropertyName("data")]
-        public TvilData Data { get; set; }
+        public OstrovokData Data { get; set; }
     }
 
-    public class TvilData
+    public class OstrovokData
+    {
+        [JsonPropertyName("hotelSearch")]
+        public OstrovokHotelSearch HotelSearch { get; set; }
+    }
+
+    public class OstrovokHotelSearch
     {
         [JsonPropertyName("hotels")]
-        public List<TvilHotelData> Hotels { get; set; }
+        public List<OstrovokHotel> Hotels { get; set; }
     }
 
-    public class TvilHotelData
+    public class OstrovokHotel
     {
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public string Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("address")]
+        public OstrovokAddress Address { get; set; }
+
+        [JsonPropertyName("price")]
+        public OstrovokPrice Price { get; set; }
+
+        [JsonPropertyName("rating")]
+        public OstrovokRating Rating { get; set; }
+
+        [JsonPropertyName("stars")]
+        public int Stars { get; set; }
+
+        [JsonPropertyName("photos")]
+        public List<OstrovokPhoto> Photos { get; set; }
+
+        [JsonPropertyName("amenities")]
+        public List<OstrovokAmenity> Amenities { get; set; }
+
+        [JsonPropertyName("location")]
+        public OstrovokLocation Location { get; set; }
+    }
+
+    public class OstrovokAddress
+    {
+        [JsonPropertyName("full")]
+        public string Full { get; set; }
+    }
+
+    public class OstrovokPrice
+    {
+        [JsonPropertyName("min")]
+        public decimal Min { get; set; }
+
+        [JsonPropertyName("currency")]
+        public string Currency { get; set; }
+    }
+
+    public class OstrovokRating
+    {
+        [JsonPropertyName("value")]
+        public decimal Value { get; set; }
+    }
+
+    public class OstrovokPhoto
+    {
+        [JsonPropertyName("url")]
+        public string Url { get; set; }
+    }
+
+    public class OstrovokAmenity
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+    }
+
+    public class OstrovokLocation
+    {
+        [JsonPropertyName("lat")]
+        public decimal Lat { get; set; }
+
+        [JsonPropertyName("lng")]
+        public decimal Lng { get; set; }
+
+        [JsonPropertyName("city")]
+        public OstrovokCity City { get; set; }
+    }
+
+    public class OstrovokCity
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+    }
+
+    public class TvilSearchResponse
+    {
+        [JsonPropertyName("hotels")]
+        public List<TvilHotel> Hotels { get; set; }
+    }
+
+    public class TvilHotel
+    {
+        [JsonPropertyName("id")]
+        public int? Id { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; }
@@ -412,49 +575,73 @@ namespace TripWise.Services
         public List<string> Amenities { get; set; }
     }
 
-    public class HotelLookData
+    public class TravelataResponse
     {
-        [JsonPropertyName("hotelId")]
-        public int HotelId { get; set; }
+        [JsonPropertyName("hotels")]
+        public List<TravelataHotel> Hotels { get; set; }
+    }
 
-        [JsonPropertyName("price")]
-        public decimal Price { get; set; }
+    public class TravelataHotel
+    {
+        [JsonPropertyName("id")]
+        public int? Id { get; set; }
 
-        [JsonPropertyName("priceAvg")]
-        public decimal PriceAvg { get; set; }
-
-        [JsonPropertyName("stars")]
-        public int Stars { get; set; }
-
-        [JsonPropertyName("hotelName")]
-        public string HotelName { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
 
         [JsonPropertyName("address")]
         public string Address { get; set; }
 
-        [JsonPropertyName("photosCount")]
-        public int PhotosCount { get; set; }
+        [JsonPropertyName("price")]
+        public decimal Price { get; set; }
+
+        [JsonPropertyName("stars")]
+        public int Stars { get; set; }
 
         [JsonPropertyName("rating")]
         public decimal Rating { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("photos")]
+        public List<string> Photos { get; set; }
+
+        [JsonPropertyName("amenities")]
+        public List<string> Amenities { get; set; }
     }
 
-    public class CityLookupResponse
+    public class OstrovokSuggestResponse
     {
         [JsonPropertyName("results")]
-        public CityLookupResults Results { get; set; }
+        public List<OstrovokSuggestResult> Results { get; set; }
     }
 
-    public class CityLookupResults
-    {
-        [JsonPropertyName("locations")]
-        public List<CityLookupLocation> Locations { get; set; }
-    }
-
-    public class CityLookupLocation
+    public class OstrovokSuggestResult
     {
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public int? Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+
+        [JsonPropertyName("country")]
+        public string Country { get; set; }
+    }
+
+    public class TvilSuggestResponse
+    {
+        [JsonPropertyName("cities")]
+        public List<TvilSuggestCity> Cities { get; set; }
+    }
+
+    public class TvilSuggestCity
+    {
+        [JsonPropertyName("id")]
+        public int? Id { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; }

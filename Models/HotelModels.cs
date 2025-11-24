@@ -35,6 +35,7 @@ namespace TripWise.Models
         public List<string> Photos { get; set; } = new List<string>();
         public List<string> Amenities { get; set; } = new List<string>();
         public Location Location { get; set; }
+        public string Provider { get; set; }
     }
 
     public class Location
