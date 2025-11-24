@@ -35,31 +35,44 @@ namespace TripWise.Services
         {
             try
             {
-                _logger.LogInformation("Поиск рейсов: {DepartureCity} -> {ArrivalCity} на {Date}",
-                    request.DepartureCity, request.ArrivalCity, request.DepartureDate.ToString("yyyy-MM-dd"));
+                _logger.LogInformation("=== НАЧАЛО ПОИСКА РЕЙСОВ ===");
+                _logger.LogInformation("Запрос: {@Request}", request);
 
-                // Получаем коды городов
+                // Тест прямого вызова API
+                var token = _configuration["TravelPayouts:Token"];
+                var testUrl = $"https://api.travelpayouts.com/aviasales/v3/prices_for_dates?origin=MOW&destination=LED&departure_at=2025-11-24&currency=rub&limit=5&token={token}";
+
+                _logger.LogInformation("Тестовый URL API: {Url}", testUrl);
+
+                var testResponse = await _httpClient.GetAsync(testUrl);
+                _logger.LogInformation("Тестовый запрос статус: {StatusCode}", testResponse.StatusCode);
+
+                if (testResponse.IsSuccessStatusCode)
+                {
+                    var testContent = await testResponse.Content.ReadAsStringAsync();
+                    _logger.LogInformation("Тестовый ответ: {Content}", testContent);
+                }
+
+                // Продолжаем обычный поиск...
                 var departureCode = await GetCityCode(request.DepartureCity);
                 var arrivalCode = await GetCityCode(request.ArrivalCity);
 
+                _logger.LogInformation("Коды городов: {Departure} -> {Arrival}", departureCode, arrivalCode);
+
                 if (string.IsNullOrEmpty(departureCode) || string.IsNullOrEmpty(arrivalCode))
                 {
-                    _logger.LogWarning("Не удалось определить коды городов: {Departure} -> {Arrival}",
-                        request.DepartureCity, request.ArrivalCity);
+                    _logger.LogWarning("Не удалось определить коды городов");
                     return new List<Flight>();
                 }
 
-                _logger.LogInformation("Используем коды: {DepartureCode} -> {ArrivalCode}", departureCode, arrivalCode);
-
-                // Используем API для поиска рейсов
                 var flights = await SearchFlightsViaAPI(departureCode, arrivalCode, request.DepartureDate, request.Passengers);
 
-                _logger.LogInformation("Найдено рейсов: {Count}", flights.Count);
+                _logger.LogInformation("=== ПОИСК ЗАВЕРШЕН: {Count} рейсов ===", flights.Count);
                 return flights;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при поиске рейсов");
+                _logger.LogError(ex, "=== КРИТИЧЕСКАЯ ОШИБКА ===");
                 return new List<Flight>();
             }
         }

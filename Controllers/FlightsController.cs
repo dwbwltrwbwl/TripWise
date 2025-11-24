@@ -10,6 +10,7 @@ namespace TripWise.Controllers
     public class FlightsController : ControllerBase
     {
         private readonly IAviasalesRealService _aviasalesService;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<FlightsController> _logger;
 
         public FlightsController(IAviasalesRealService aviasalesService, ILogger<FlightsController> logger)
@@ -319,6 +320,75 @@ namespace TripWise.Controllers
                     details = ex.Message
                 });
             }
+        }
+
+        [HttpGet("debug-test")]
+        public async Task<ActionResult> DebugTest()
+        {
+            try
+            {
+                _logger.LogInformation("=== ТЕСТИРОВАНИЕ СЕРВИСА ===");
+
+                // Тест поиска городов
+                _logger.LogInformation("Тест поиска городов...");
+                var cities = await _aviasalesService.SearchCitiesAsync("Москва");
+                _logger.LogInformation("Найдено городов: {Count}", cities.Count);
+
+                // Тест простого запроса к API
+                var token = _configuration["TravelPayouts:Token"];
+                var testUrl = $"https://api.travelpayouts.com/aviasales/v3/prices_for_dates?origin=MOW&destination=LED&departure_at=2024-12-01&currency=rub&limit=5&token={token}";
+
+                _logger.LogInformation("Тест API запроса...");
+                var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(testUrl);
+
+                _logger.LogInformation("Статус ответа API: {StatusCode}", response.StatusCode);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation("Успешный ответ API");
+                    return Ok(new
+                    {
+                        success = true,
+                        citiesCount = cities.Count,
+                        apiStatus = response.StatusCode,
+                        message = "Сервис работает корректно"
+                    });
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Ошибка API: {Error}", error);
+                    return StatusCode(500, new
+                    {
+                        success = false,
+                        error = "API не отвечает",
+                        details = error
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при тестировании сервиса");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
+        }
+
+        [HttpGet("simple-test")]
+        public ActionResult SimpleTest()
+        {
+            return Ok(new
+            {
+                message = "Контроллер работает!",
+                timestamp = DateTime.Now,
+                token = _configuration["TravelPayouts:Token"]?.Substring(0, 10) + "..."
+            });
         }
 
         // Вспомогательные методы
