@@ -24,10 +24,10 @@ builder.Services.AddHttpClient<RzdApiService>();
 builder.Services.AddScoped<RzdApiService>();
 
 // === ДОБАВЬТЕ ЭТО ДЛЯ АВИАБИЛЕТОВ ===
-builder.Services.AddHttpClient<IAviasalesRealService, AviasalesRealService>();
-builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IAviasalesRealService, SimpleAviasalesService>(); // Используем упрощенный сервис для тестирования
 
-// Настройка CORS (уже есть выше, но можно обновить если нужно)
+// Настройка CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
