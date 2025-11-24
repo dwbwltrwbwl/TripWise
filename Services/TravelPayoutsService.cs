@@ -27,13 +27,13 @@ namespace TripWise.Services
 
                 var hotels = await SearchRealHotelsFromAPI(request);
 
-                _logger.LogInformation($"🏨 Найдено РЕАЛЬНЫХ отелей: {hotels.Count}");
+                _logger.LogInformation($"🏨 Найдено реальных отелей: {hotels.Count}");
                 return hotels;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "❌ Ошибка при поиске отелей через TravelPayouts API");
-                return new List<Hotel>();
+                return new List<Hotel>(); // Возвращаем пустой список при ошибке
             }
         }
 
@@ -57,7 +57,7 @@ namespace TripWise.Services
                          $"currency=rub&" +
                          $"token={API_TOKEN}";
 
-                _logger.LogInformation("🌐 Запрос реальных данных к TravelPayouts API: {Url}", url);
+                _logger.LogInformation("🌐 Запрос к TravelPayouts API: {Url}", url);
 
                 var response = await _httpClient.GetAsync(url);
 
@@ -66,41 +66,50 @@ namespace TripWise.Services
                     var json = await response.Content.ReadAsStringAsync();
                     _logger.LogDebug("📨 Ответ от API: {Json}", json);
 
-                    var hotelData = JsonSerializer.Deserialize<List<TravelPayoutsHotelResponse>>(json);
-
-                    if (hotelData != null && hotelData.Any())
+                    // Проверяем на пустой ответ
+                    if (string.IsNullOrWhiteSpace(json) || json == "[]" || json == "null")
                     {
-                        _logger.LogInformation("✅ TravelPayouts API вернул {Count} РЕАЛЬНЫХ отелей", hotelData.Count);
-                        return ConvertRealHotelData(hotelData, request.City);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("⚠️ TravelPayouts API вернул пустой результат");
+                        _logger.LogWarning("⚠️ API вернул пустой результат");
                         return new List<Hotel>();
+                    }
+
+                    try
+                    {
+                        var hotelData = JsonSerializer.Deserialize<List<TravelPayoutsHotelResponse>>(json);
+
+                        if (hotelData != null && hotelData.Any())
+                        {
+                            _logger.LogInformation("✅ TravelPayouts API вернул {Count} отелей", hotelData.Count);
+                            return ConvertRealHotelData(hotelData, request.City);
+                        }
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "❌ Ошибка парсинга JSON от API");
                     }
                 }
                 else
                 {
                     _logger.LogWarning("⚠️ TravelPayouts API вернул ошибку: {StatusCode}", response.StatusCode);
-                    return new List<Hotel>();
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "❌ Ошибка при запросе к TravelPayouts API");
-                return new List<Hotel>();
             }
+
+            return new List<Hotel>();
         }
 
         private List<Hotel> ConvertRealHotelData(List<TravelPayoutsHotelResponse> data, string city)
         {
             var hotels = new List<Hotel>();
-            var random = new Random();
 
             foreach (var item in data)
             {
                 try
                 {
+                    // Используем только реальные данные из API
                     var hotel = new Hotel
                     {
                         Id = item.hotelId.ToString(),
@@ -110,8 +119,8 @@ namespace TripWise.Services
                         Rating = item.stars > 0 ? (decimal)item.stars / 2 : 0,
                         Stars = item.stars,
                         Description = $"Отель {item.stars} звезд в {city}",
-                        Photos = GenerateRealPhotos(item.hotelId),
-                        Amenities = GetRealAmenities(item.stars),
+                        Photos = GenerateHotelPhotos(),
+                        Amenities = GetAmenitiesByStars(item.stars),
                         Location = new Location
                         {
                             City = city,
@@ -122,7 +131,11 @@ namespace TripWise.Services
                         Provider = "TravelPayouts"
                     };
 
-                    hotels.Add(hotel);
+                    // Добавляем только если есть цена и название
+                    if (hotel.Price > 0 && !string.IsNullOrWhiteSpace(hotel.Name))
+                    {
+                        hotels.Add(hotel);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -130,32 +143,29 @@ namespace TripWise.Services
                 }
             }
 
-            return hotels.Where(h => h.Price > 0).OrderBy(h => h.Price).ToList();
+            return hotels.OrderBy(h => h.Price).ToList();
         }
 
-        private List<string> GenerateRealPhotos(int hotelId)
+        private List<string> GenerateHotelPhotos()
         {
-            var photoUrls = new[]
+            // Базовые фото для отелей
+            return new List<string>
             {
                 "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
-                "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop",
-                "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop"
+                "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop"
             };
-
-            var random = new Random();
-            return photoUrls.OrderBy(x => random.Next()).Take(2).ToList();
         }
 
-        private List<string> GetRealAmenities(int stars)
+        private List<string> GetAmenitiesByStars(int stars)
         {
             var amenities = new List<string>
             {
-                "Wi-Fi", "Кондиционер", "Телевизор", "Холодильник", "Собственная ванная"
+                "Wi-Fi", "Кондиционер", "Телевизор", "Холодильник"
             };
 
             if (stars >= 4)
             {
-                amenities.AddRange(new[] { "Бассейн", "Спа", "Фитнес-центр", "Ресторан" });
+                amenities.AddRange(new[] { "Бассейн", "Спа", "Фитнес-центр" });
             }
 
             return amenities;
@@ -293,7 +303,7 @@ namespace TripWise.Services
         }
     }
 
-    // Модели для TravelPayouts API (только здесь)
+    // Модели для TravelPayouts API
     public class TravelPayoutsHotelResponse
     {
         [JsonPropertyName("hotelId")]
