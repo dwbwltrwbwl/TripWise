@@ -13,8 +13,6 @@ namespace TripWise.Services
         Task<AviasalesResultsResponse> GetSearchResultsAsync(string searchId, string resultsUrl, long lastUpdateTimestamp = 0);
         Task<ClickResponseV2> GetBookingLinkAsync(string resultsUrl, string searchId, string proposalId);
 
-        // Добавляем метод конвертации
-        List<Flight> ConvertToFlights(AviasalesResultsResponse response);
     }
 
     public class AviasalesRealService : IAviasalesRealService

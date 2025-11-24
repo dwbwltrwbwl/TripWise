@@ -2,7 +2,72 @@
 
 namespace TripWise.Models
 {
-    // Модель для старта поиска
+    // Модели для фронтенда
+    public class FlightSearchRequest
+    {
+        public string DepartureCity { get; set; }
+        public string ArrivalCity { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public DateTime? ReturnDate { get; set; }
+        public int Passengers { get; set; } = 1;
+        public string Class { get; set; } = "economy";
+        public string TripType { get; set; } = "round";
+    }
+
+    public class FlightSearchResponse
+    {
+        public bool Success { get; set; }
+        public List<Flight> Flights { get; set; } = new List<Flight>();
+        public string Error { get; set; }
+        public string Message { get; set; }
+        public string SearchId { get; set; }
+    }
+
+    public class Flight
+    {
+        public string Id { get; set; }
+        public string Airline { get; set; }
+        public string FlightNumber { get; set; }
+        public string DepartureCity { get; set; }
+        public string ArrivalCity { get; set; }
+        public string DepartureAirport { get; set; }
+        public string ArrivalAirport { get; set; }
+        public DateTime DepartureTime { get; set; }
+        public DateTime ArrivalTime { get; set; }
+        public decimal Price { get; set; }
+        public string Currency { get; set; } = "RUB";
+        public int Transfers { get; set; }
+        public int Duration { get; set; }
+        public string Class { get; set; }
+        public bool IsReturn { get; set; }
+    }
+
+    public class City
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Country { get; set; }
+        public string CountryCode { get; set; }
+        public string Airport { get; set; }
+        public string Type { get; set; }
+    }
+
+    public class CitySearchResponse
+    {
+        public bool Success { get; set; }
+        public List<City> Cities { get; set; } = new List<City>();
+        public string Error { get; set; }
+        public string Message { get; set; }
+    }
+
+    public class ResultsRequest
+    {
+        public string SearchId { get; set; }
+        public string ResultsUrl { get; set; }
+        public long LastUpdateTimestamp { get; set; }
+    }
+
+    // Модели для Aviasales API
     public class AviasalesSearchRequestV2
     {
         [JsonPropertyName("marker")]
@@ -57,7 +122,6 @@ namespace TripWise.Models
         public string Date { get; set; }
     }
 
-    // Ответ на старт поиска
     public class AviasalesSearchResponseV2
     {
         [JsonPropertyName("search_id")]
@@ -67,7 +131,6 @@ namespace TripWise.Models
         public string ResultsUrl { get; set; }
     }
 
-    // Запрос результатов поиска
     public class AviasalesResultsRequest
     {
         [JsonPropertyName("search_id")]
@@ -80,7 +143,6 @@ namespace TripWise.Models
         public long LastUpdateTimestamp { get; set; } = 0;
     }
 
-    // Ответ с результатами поиска
     public class AviasalesResultsResponse
     {
         [JsonPropertyName("tickets")]
@@ -318,7 +380,6 @@ namespace TripWise.Models
         public string TripClass { get; set; }
     }
 
-    // Модель для получения ссылки на покупку
     public class ClickResponseV2
     {
         [JsonPropertyName("gate_id")]
@@ -346,7 +407,7 @@ namespace TripWise.Models
         public long ExpireAtUnixSec { get; set; }
     }
 
-    // Упрощенная модель для фронтенда
+    // Упрощенные модели для фронтенда
     public class SimplifiedFlight
     {
         public string Id { get; set; }
