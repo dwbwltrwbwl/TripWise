@@ -18,20 +18,33 @@ namespace TripWise.Controllers
         }
 
         [HttpPost("search")]
-        public async Task<ActionResult> SearchFlights([FromBody] FlightSearchRequest request)
+        public async Task<ActionResult<FlightSearchResponse>> SearchFlights([FromBody] FlightSearchRequest request)
         {
             try
             {
+                if (string.IsNullOrEmpty(request.DepartureCity) || string.IsNullOrEmpty(request.ArrivalCity))
+                {
+                    return BadRequest(new FlightSearchResponse
+                    {
+                        Success = false,
+                        Error = "Города вылета и прилета обязательны"
+                    });
+                }
+
                 var flights = await _aviasalesService.SearchFlightsAsync(request);
-                return Ok(new { success = true, flights });
+                return Ok(new FlightSearchResponse
+                {
+                    Success = true,
+                    Flights = flights
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при поиске авиабилетов");
-                return StatusCode(500, new
+                return StatusCode(500, new FlightSearchResponse
                 {
-                    success = false,
-                    error = "Не удалось выполнить поиск. Пожалуйста, попробуйте позже."
+                    Success = false,
+                    Error = "Не удалось выполнить поиск. Пожалуйста, попробуйте позже."
                 });
             }
         }
@@ -41,17 +54,20 @@ namespace TripWise.Controllers
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+                {
+                    return Ok(new List<City>());
+                }
+
                 var cities = await _aviasalesService.SearchCitiesAsync(query);
-                return Ok(cities);
+                return Ok(cities.Take(10).ToList()); // Ограничиваем количество результатов
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при поиске городов");
+                _logger.LogError(ex, "Ошибка при поиске городов для запроса: {Query}", query);
                 return Ok(new List<City>());
             }
         }
-
-
 
         [HttpPost("start-search")]
         public async Task<ActionResult> StartSearch([FromBody] FlightSearchRequest request)
@@ -59,12 +75,21 @@ namespace TripWise.Controllers
             try
             {
                 var searchResponse = await _aviasalesService.StartSearchAsync(request);
-                return Ok(new { success = true, searchId = searchResponse.SearchId, resultsUrl = searchResponse.ResultsUrl });
+                return Ok(new
+                {
+                    success = true,
+                    searchId = searchResponse.SearchId,
+                    resultsUrl = searchResponse.ResultsUrl
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при старте поиска");
-                return StatusCode(500, new { success = false, error = "Ошибка при старте поиска" });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Ошибка при старте поиска"
+                });
             }
         }
 
@@ -73,28 +98,51 @@ namespace TripWise.Controllers
         {
             try
             {
-                var results = await _aviasalesService.GetSearchResultsAsync(request.SearchId, request.ResultsUrl, request.LastUpdateTimestamp);
-                return Ok(new { success = true, results });
+                var results = await _aviasalesService.GetSearchResultsAsync(
+                    request.SearchId,
+                    request.ResultsUrl,
+                    request.LastUpdateTimestamp);
+
+                return Ok(new
+                {
+                    success = true,
+                    results = results
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении результатов");
-                return StatusCode(500, new { success = false, error = "Ошибка при получении результатов" });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Ошибка при получении результатов"
+                });
             }
         }
 
         [HttpGet("booking-link")]
-        public async Task<ActionResult> GetBookingLink([FromQuery] string searchId, [FromQuery] string resultsUrl, [FromQuery] string proposalId)
+        public async Task<ActionResult> GetBookingLink(
+            [FromQuery] string searchId,
+            [FromQuery] string resultsUrl,
+            [FromQuery] string proposalId)
         {
             try
             {
                 var bookingLink = await _aviasalesService.GetBookingLinkAsync(resultsUrl, searchId, proposalId);
-                return Ok(new { success = true, bookingLink });
+                return Ok(new
+                {
+                    success = true,
+                    url = bookingLink.Url
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении ссылки на бронирование");
-                return StatusCode(500, new { success = false, error = "Ошибка при получении ссылки на бронирование" });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Ошибка при получении ссылки на бронирование"
+                });
             }
         }
     }
