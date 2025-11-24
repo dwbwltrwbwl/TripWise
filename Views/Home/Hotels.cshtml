@@ -183,3 +183,287 @@
         </div>
     </div>
 <</div>
+
+@section Scripts {
+    <script>
+        // Автодополнение для поиска городов
+        const destinationInput = document.querySelector('input[placeholder="Город, отель или регион"]');
+        const checkinInput = document.querySelector('input[placeholder="Заезд - Выезд"]');
+        const searchButton = document.querySelector('button[type="submit"]');
+
+        let citiesCache = {};
+
+        // Инициализация flatpickr для выбора дат
+        function initializeDatepicker() {
+            flatpickr(checkinInput, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                locale: "ru",
+                showMonths: 2,
+                onReady: function(selectedDates, dateStr, instance) {
+                    checkinInput.value = "Заезд - Выезд";
+                }
+            });
+        }
+
+        // Поиск городов через API
+        async function searchCities(query) {
+            if (query.length < 2) return [];
+
+            // Проверяем кэш
+            if (citiesCache[query]) {
+                return citiesCache[query];
+            }
+
+            try {
+                const response = await fetch(`/api/hotels/cities?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    citiesCache[query] = data.cities;
+                    return data.cities;
+                }
+                return [];
+            } catch (error) {
+                console.error('Ошибка поиска городов:', error);
+                return [];
+            }
+        }
+
+        // Создание выпадающего списка городов
+        function showCitiesDropdown(cities, input) {
+            // Удаляем старый dropdown
+            const existingDropdown = document.getElementById('cities-dropdown');
+            if (existingDropdown) {
+                existingDropdown.remove();
+            }
+
+            if (cities.length === 0) return;
+
+            const dropdown = document.createElement('div');
+            dropdown.id = 'cities-dropdown';
+            dropdown.className = 'dropdown-menu show';
+            dropdown.style.cssText = `
+                position: absolute;
+                width: 100%;
+                max-height: 200px;
+                overflow-y: auto;
+                z-index: 1000;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            `;
+
+            cities.forEach(city => {
+                const item = document.createElement('a');
+                item.className = 'dropdown-item';
+                item.href = '#';
+                item.style.cssText = `
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f8f9fa;
+                    display: block;
+                    text-decoration: none;
+                    color: #333;
+                `;
+
+                item.innerHTML = `
+                    <div>
+                        <strong>${city.name}</strong>
+                        <div style="font-size: 12px; color: #666;">
+                            ${city.country} ${city.type === 'airport' ? ' (аэропорт)' : ''}
+                        </div>
+                    </div>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    input.value = city.name;
+                    dropdown.remove();
+                });
+
+                dropdown.appendChild(item);
+            });
+
+            input.parentNode.appendChild(dropdown);
+        }
+
+        // Обработчик ввода для автодополнения
+        let searchTimeout;
+        destinationInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            clearTimeout(searchTimeout);
+
+            if (query.length >= 2) {
+                searchTimeout = setTimeout(async () => {
+                    const cities = await searchCities(query);
+                    showCitiesDropdown(cities, destinationInput);
+                }, 300);
+            } else {
+                const dropdown = document.getElementById('cities-dropdown');
+                if (dropdown) dropdown.remove();
+            }
+        });
+
+        // Закрытие dropdown при клике вне
+        document.addEventListener('click', function(e) {
+            if (!destinationInput.contains(e.target)) {
+                const dropdown = document.getElementById('cities-dropdown');
+                if (dropdown) dropdown.remove();
+            }
+        });
+
+        // Обработчик отправки формы
+        searchButton.addEventListener('click', async function(e) {
+            e.preventDefault();
+
+            const destination = destinationInput.value.trim();
+            const dates = checkinInput.value;
+
+            if (!destination) {
+                alert('Пожалуйста, введите направление');
+                return;
+            }
+
+            if (!dates || !dates.includes(' to ')) {
+                alert('Пожалуйста, выберите даты заезда и выезда');
+                return;
+            }
+
+            // Парсим даты
+            const [checkInStr, checkOutStr] = dates.split(' to ');
+            const checkIn = new Date(checkInStr);
+            const checkOut = new Date(checkOutStr);
+
+            // Получаем выбранных гостей
+            const guestsSelect = document.querySelector('select');
+            const adults = guestsSelect.value.includes('1 взрослый') ? 1 :
+                          guestsSelect.value.includes('2 взрослых') ? 2 :
+                          guestsSelect.value.includes('3 взрослых') ? 3 : 2;
+
+            // Показываем индикатор загрузки
+            searchButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
+            searchButton.disabled = true;
+
+            try {
+                const searchData = {
+                    city: destination,
+                    checkIn: checkIn.toISOString().split('T')[0],
+                    checkOut: checkOut.toISOString().split('T')[0],
+                    adults: adults,
+                    rooms: 1,
+                    children: 0,
+                    childrenAges: ""
+                };
+
+                const response = await fetch('/api/hotels/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(searchData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayHotels(result.hotels);
+                } else {
+                    alert('Ошибка поиска: ' + (result.error || result.message));
+                }
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при поиске отелей');
+            } finally {
+                // Восстанавливаем кнопку
+                searchButton.innerHTML = '<i class="fas fa-search me-2"></i>Найти';
+                searchButton.disabled = false;
+            }
+        });
+
+        // Отображение результатов поиска
+        function displayHotels(hotels) {
+            const popularHotelsSection = document.querySelector('.mt-5');
+
+            if (hotels.length === 0) {
+                popularHotelsSection.innerHTML = `
+                    <h3 class="mb-4" style="font-family: 'Nunito', sans-serif;">Результаты поиска</h3>
+                    <div class="alert alert-info">
+                        Отели не найдены. Попробуйте изменить параметры поиска.
+                    </div>
+                `;
+                return;
+            }
+
+            const hotelsHTML = hotels.map(hotel => `
+                <div class="col-md-4 mb-4">
+                    <div class="card hotel-card h-100">
+                        ${hotel.photos && hotel.photos.length > 0 ?
+                            `<img src="${hotel.photos[0]}" class="card-img-top" alt="${hotel.name}" style="height: 200px; object-fit: cover;">` :
+                            `<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-hotel fa-3x text-muted"></i>
+                            </div>`
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">${hotel.name}</h5>
+                            <p class="card-text"><strong>${hotel.price} ${hotel.currency}/ночь</strong></p>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-warning text-dark">${'⭐'.repeat(hotel.stars)} ${hotel.stars} звезд</span>
+                                <span class="badge bg-success">Рейтинг: ${hotel.rating}/10</span>
+                            </div>
+                            <p class="text-muted small mb-1">${hotel.address}</p>
+                            ${hotel.amenities && hotel.amenities.length > 0 ?
+                                `<p class="text-muted small">Удобства: ${hotel.amenities.slice(0, 3).join(', ')}</p>` :
+                                ''
+                            }
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-primary btn-sm w-100" onclick="bookHotel('${hotel.id}')">
+                                Забронировать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            popularHotelsSection.innerHTML = `
+                <h3 class="mb-4" style="font-family: 'Nunito', sans-serif;">Найдено отелей: ${hotels.length}</h3>
+                <div class="row g-4">
+                    ${hotelsHTML}
+                </div>
+            `;
+        }
+
+        // Функция бронирования (заглушка)
+        function bookHotel(hotelId) {
+            alert(`Бронирование отеля ID: ${hotelId}\nФункция бронирования будет реализована позже.`);
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем flatpickr если он доступен
+            if (typeof flatpickr !== 'undefined') {
+                initializeDatepicker();
+            } else {
+                // Если flatpickr не загружен, загружаем его
+                loadFlatpickr();
+            }
+        });
+
+        function loadFlatpickr() {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
+            document.head.appendChild(link);
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/flatpickr';
+            script.onload = initializeDatepicker;
+            document.head.appendChild(script);
+        }
+    </script>
+}
