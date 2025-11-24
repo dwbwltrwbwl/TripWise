@@ -2,6 +2,7 @@
 
 namespace TripWise.Models
 {
+    // ОСНОВНЫЕ МОДЕЛИ ДЛЯ ФРОНТЕНДА
     public class HotelSearchRequest
     {
         public string City { get; set; }
@@ -44,25 +45,111 @@ namespace TripWise.Models
         public string Country { get; set; }
     }
 
-    // Модели для HotelLook API
-    public class HotelLookSearchResponse
-    {
-        [JsonPropertyName("success")]
-        public bool Success { get; set; }
-
-        [JsonPropertyName("results")]
-        public HotelLookResults Results { get; set; }
-
-        [JsonPropertyName("error")]
-        public string Error { get; set; }
-    }
-
-    public class HotelLookResults
+    // МОДЕЛИ ДЛЯ РОССИЙСКИХ API
+    public class SletatResponse
     {
         [JsonPropertyName("hotels")]
-        public List<HotelLookHotel> Hotels { get; set; }
+        public List<SletatHotel> Hotels { get; set; }
     }
 
+    public class SletatHotel
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("address")]
+        public string Address { get; set; }
+
+        [JsonPropertyName("price")]
+        public decimal Price { get; set; }
+
+        [JsonPropertyName("stars")]
+        public int Stars { get; set; }
+
+        [JsonPropertyName("rating")]
+        public decimal Rating { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("photos")]
+        public List<string> Photos { get; set; }
+
+        [JsonPropertyName("amenities")]
+        public List<string> Amenities { get; set; }
+    }
+
+    public class SletatCity
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("country")]
+        public string Country { get; set; }
+    }
+
+    // Модели для Tvil API
+    public class TvilResponse
+    {
+        [JsonPropertyName("results")]
+        public List<TvilHotel> Results { get; set; }
+    }
+
+    public class TvilHotel
+    {
+        [JsonPropertyName("hotelId")]
+        public int HotelId { get; set; }
+
+        [JsonPropertyName("hotelName")]
+        public string HotelName { get; set; }
+
+        [JsonPropertyName("address")]
+        public string Address { get; set; }
+
+        [JsonPropertyName("minPrice")]
+        public decimal MinPrice { get; set; }
+
+        [JsonPropertyName("stars")]
+        public int Stars { get; set; }
+
+        [JsonPropertyName("rating")]
+        public decimal Rating { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("images")]
+        public List<string> Images { get; set; }
+
+        [JsonPropertyName("facilities")]
+        public List<string> Facilities { get; set; }
+    }
+
+    public class TvilCityResponse
+    {
+        [JsonPropertyName("cities")]
+        public List<TvilCity> Cities { get; set; }
+    }
+
+    public class TvilCity
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("country")]
+        public string Country { get; set; }
+    }
+
+    // Модели для HotelLook (российская версия)
     public class HotelLookHotel
     {
         [JsonPropertyName("hotelId")]
@@ -77,9 +164,6 @@ namespace TripWise.Models
         [JsonPropertyName("stars")]
         public int Stars { get; set; }
 
-        [JsonPropertyName("locationId")]
-        public int LocationId { get; set; }
-
         [JsonPropertyName("hotelName")]
         public string HotelName { get; set; }
 
@@ -91,81 +175,5 @@ namespace TripWise.Models
 
         [JsonPropertyName("rating")]
         public decimal Rating { get; set; }
-
-        [JsonPropertyName("location")]
-        public HotelLookLocation Location { get; set; }
-    }
-
-    public class HotelLookLocation
-    {
-        [JsonPropertyName("country")]
-        public string Country { get; set; }
-
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("state")]
-        public string State { get; set; }
-
-        [JsonPropertyName("hotelsCount")]
-        public int HotelsCount { get; set; }
-
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
-
-        [JsonPropertyName("geo")]
-        public HotelLookGeo Geo { get; set; }
-    }
-
-    public class HotelLookGeo
-    {
-        [JsonPropertyName("lat")]
-        public decimal Lat { get; set; }
-
-        [JsonPropertyName("lon")]
-        public decimal Lon { get; set; }
-    }
-
-    // Модели для поиска городов
-    public class HotelCityLookupResponse
-    {
-        [JsonPropertyName("results")]
-        public HotelLookupResults Results { get; set; }
-    }
-
-    public class HotelLookupResults
-    {
-        [JsonPropertyName("hotels")]
-        public List<object> Hotels { get; set; }
-
-        [JsonPropertyName("locations")]
-        public List<HotelLookupLocation> Locations { get; set; }
-    }
-
-    public class HotelLookupLocation
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
-
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("fullName")]
-        public string FullName { get; set; }
-
-        [JsonPropertyName("location")]
-        public string LocationName { get; set; }
-
-        [JsonPropertyName("country")]
-        public string Country { get; set; }
-
-        [JsonPropertyName("hotelsCount")]
-        public int HotelsCount { get; set; }
-
-        [JsonPropertyName("iata")]
-        public List<string> Iata { get; set; }
-
-        [JsonPropertyName("type")]
-        public string Type { get; set; }
     }
 }

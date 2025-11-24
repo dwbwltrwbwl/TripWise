@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using TripWise.Models;
 using TripWise.Services;
 
@@ -27,7 +28,9 @@ builder.Services.AddScoped<RzdApiService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>(); // Используем упрощенный сервис для тестирования
 
-builder.Services.AddScoped<IHotelService, HotelService>();
+// Вместо старого сервиса используй российский
+builder.Services.AddHttpClient<IHotelService, RussianHotelService>();
+builder.Services.AddScoped<IHotelService, RussianHotelService>();
 
 // Настройка CORS
 builder.Services.AddCors(options =>

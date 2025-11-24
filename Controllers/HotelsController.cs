@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TripWise.Services;
 using TripWise.Models;
+using Microsoft.Extensions.Hosting;
 
 namespace TripWise.Controllers
 {
@@ -123,6 +124,48 @@ namespace TripWise.Controllers
                     success = false,
                     error = "Ошибка подключения к Hotel API",
                     details = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("test-api")]
+        public async Task<ActionResult> TestHotelApi()
+        {
+            try
+            {
+                _logger.LogInformation("Тестирование Hotel API");
+
+                // Тест поиска городов
+                var cities = await _hotelService.SearchHotelCitiesAsync("Москва");
+
+                // Тест поиска отелей
+                var testRequest = new HotelSearchRequest
+                {
+                    City = "Москва",
+                    CheckIn = DateTime.Now.AddDays(7),
+                    CheckOut = DateTime.Now.AddDays(9),
+                    Adults = 2,
+                    Rooms = 1
+                };
+
+                var hotels = await _hotelService.SearchHotelsAsync(testRequest);
+
+                return Ok(new
+                {
+                    success = true,
+                    citiesCount = cities.Count,
+                    hotelsCount = hotels.Count,
+                    message = "Hotel API работает"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка тестирования Hotel API");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = ex.Message,
+                    details = ex.StackTrace
                 });
             }
         }
