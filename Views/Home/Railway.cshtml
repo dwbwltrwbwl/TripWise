@@ -94,66 +94,12 @@
             <!-- Популярные направления -->
             <div class="mt-5">
                 <h3 class="mb-4">Популярные направления</h3>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://avatars.dzeninfra.ru/get-zen_doc/8302711/pub_6466413b3c24f951449f3665_646643977733f348e0d5d55d/scale_1200" class="card-img-top" alt="Москва - Нижний Новгород">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Нижний Новгород</h5>
-                                <p class="card-text">От 1 500 ₽</p>
-                                <p class="text-muted small">В пути от 4 часов</p>
-                            </div>
+                <div class="row g-4" id="popularRailwayDestinations">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://don-plaza.ru/upload/iblock/61d/lvb77ryhs40dxr00pgdr9d3l559cl01s.jpg" class="card-img-top" alt="Москва - Ростов-на-Дону">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Ростов-на-Дону</h5>
-                                <p class="card-text">От 2 300 ₽</p>
-                                <p class="text-muted small">В пути от 15 часов</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://mf.b37mrtl.ru/rbthmedia/images/2024.01/original/65ae71e1154af9591d0b3b5c.jpg" class="card-img-top" alt="Москва - Самара">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Самара</h5>
-                                <p class="card-text">От 2 100 ₽</p>
-                                <p class="text-muted small">В пути от 14 часов</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://cdn.culture.ru/images/e767157a-5487-52de-9eab-8ec54a97f505" class="card-img-top" alt="Москва - Уфа">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Уфа</h5>
-                                <p class="card-text">От 2 600 ₽</p>
-                                <p class="text-muted small">В пути от 20 часов</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://i.pinimg.com/736x/be/0f/30/be0f308009ab84acc7a35059fc49d4ff.jpg" class="card-img-top" alt="Москва - Красноярск">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Красноярск</h5>
-                                <p class="card-text">От 4 500 ₽</p>
-                                <p class="text-muted small">В пути от 56 часов</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100">
-                            <img src="https://cache3.youla.io/files/images/720_720_out/5c/b7/5cb7a549f094f3374a714302.jpg" class="card-img-top" alt="Москва - Воронеж">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Воронеж</h5>
-                                <p class="card-text">От 1 400 ₽</p>
-                                <p class="text-muted small">В пути от 8 часов</p>
-                            </div>
-                        </div>
+                        <p class="mt-2 text-muted">Загружаем популярные направления...</p>
                     </div>
                 </div>
             </div>
@@ -252,15 +198,24 @@
 
     .destination-card {
         transition: transform 0.2s ease;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
         .destination-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
 
         .destination-card img {
             height: 200px;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .destination-card:hover img {
+            transform: scale(1.05);
         }
 </style>
 
@@ -275,7 +230,208 @@
         initializeAutocomplete();
         initializeDateInputs();
         setupFormHandler();
+        loadPopularRailwayDestinations(); // Загружаем популярные направления
     });
+
+    // Функция для загрузки популярных направлений ЖД
+    function loadPopularRailwayDestinations() {
+        try {
+            console.log('🔄 Загрузка популярных ЖД направлений...');
+
+            // Имитируем загрузку данных (2 секунды)
+            setTimeout(() => {
+                const popularDestinationsHTML = `
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Нижний Новгород')">
+                            <img src="https://avatars.dzeninfra.ru/get-zen_doc/8302711/pub_6466413b3c24f951449f3665_646643977733f348e0d5d55d/scale_1200" class="card-img-top" alt="Москва - Нижний Новгород">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Нижний Новгород</h5>
+                                <p class="card-text">От 1 500 ₽</p>
+                                <p class="text-muted small">В пути от 4 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Ростов-на-Дону')">
+                            <img src="https://don-plaza.ru/upload/iblock/61d/lvb77ryhs40dxr00pgdr9d3l559cl01s.jpg" class="card-img-top" alt="Москва - Ростов-на-Дону">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Ростов-на-Дону</h5>
+                                <p class="card-text">От 2 300 ₽</p>
+                                <p class="text-muted small">В пути от 15 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Самара')">
+                            <img src="https://mf.b37mrtl.ru/rbthmedia/images/2024.01/original/65ae71e1154af9591d0b3b5c.jpg" class="card-img-top" alt="Москва - Самара">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Самара</h5>
+                                <p class="card-text">От 2 100 ₽</p>
+                                <p class="text-muted small">В пути от 14 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Уфа')">
+                            <img src="https://cdn.culture.ru/images/e767157a-5487-52de-9eab-8ec54a97f505" class="card-img-top" alt="Москва - Уфа">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Уфа</h5>
+                                <p class="card-text">От 2 600 ₽</p>
+                                <p class="text-muted small">В пути от 20 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Красноярск')">
+                            <img src="https://i.pinimg.com/736x/be/0f/30/be0f308009ab84acc7a35059fc49d4ff.jpg" class="card-img-top" alt="Москва - Красноярск">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Красноярск</h5>
+                                <p class="card-text">От 4 500 ₽</p>
+                                <p class="text-muted small">В пути от 56 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Воронеж')">
+                            <img src="https://cache3.youla.io/files/images/720_720_out/5c/b7/5cb7a549f094f3374a714302.jpg" class="card-img-top" alt="Москва - Воронеж">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Воронеж</h5>
+                                <p class="card-text">От 1 400 ₽</p>
+                                <p class="text-muted small">В пути от 8 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Санкт-Петербург')">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/%D0%9C%D0%BE%D1%81%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%BE%D0%BA%D0%B7%D0%B0%D0%BB_%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%D0%B0.jpg/1200px-%D0%9C%D0%BE%D1%81%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%BE%D0%BA%D0%B7%D0%B0%D0%BB_%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%D0%B0.jpg" class="card-img-top" alt="Москва - Санкт-Петербург">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Санкт-Петербург</h5>
+                                <p class="card-text">От 1 800 ₽</p>
+                                <p class="text-muted small">В пути от 4 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Казань')">
+                            <img src="https://cdn.culture.ru/images/a95b2c46-77db-5224-a88b-1079b9f3c3b0" class="card-img-top" alt="Москва - Казань">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Казань</h5>
+                                <p class="card-text">От 2 200 ₽</p>
+                                <p class="text-muted small">В пути от 12 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card destination-card h-100" onclick="selectRailwayDestination('Москва', 'Екатеринбург')">
+                            <img src="https://sdelanounas.ru/i/a/w/1/f_aW1nLmdlbGlvcGhvdG8uY29tL2VrYjIwMjAvMjhfZWtiMjAyMC5qcGc_X19pZD0xMzY3NTQ=.jpeg" class="card-img-top" alt="Москва - Екатеринбург">
+                            <div class="card-body">
+                                <h5 class="card-title">Москва → Екатеринбург</h5>
+                                <p class="card-text">От 3 800 ₽</p>
+                                <p class="text-muted small">В пути от 26 часов</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const container = document.getElementById('popularRailwayDestinations');
+                container.innerHTML = popularDestinationsHTML;
+
+                console.log('✅ Популярные ЖД направления загружены');
+
+            }, 2000); // 2 секунды загрузки
+        } catch (error) {
+            console.error('❌ Ошибка загрузки популярных ЖД направлений:', error);
+
+            // Показываем сообщение об ошибке
+            const container = document.getElementById('popularRailwayDestinations');
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="alert alert-warning">
+                        <p>Не удалось загрузить популярные направления</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadPopularRailwayDestinations()">
+                            Попробовать снова
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Функция для выбора популярного ЖД направления
+    function selectRailwayDestination(fromCity, toCity) {
+        console.log(`🎯 Выбрано ЖД направление: ${fromCity} → ${toCity}`);
+
+        // Заполняем поля формы
+        document.getElementById('railwayDeparture').value = fromCity;
+        document.getElementById('railwayArrival').value = toCity;
+
+        // Устанавливаем станции в data-атрибуты (имитация выбора из автодополнения)
+        document.getElementById('railwayDeparture').setAttribute('data-station-id', getRailwayStationId(fromCity));
+        document.getElementById('railwayArrival').setAttribute('data-station-id', getRailwayStationId(toCity));
+
+        // Устанавливаем даты (вылет через 3 дня, возврат через 7 дней)
+        const today = new Date();
+        const departureDate = new Date(today);
+        departureDate.setDate(today.getDate() + 3);
+
+        const returnDate = new Date(today);
+        returnDate.setDate(today.getDate() + 10);
+
+        document.getElementById('railwayDepartureDate').value = departureDate.toISOString().split('T')[0];
+        document.getElementById('railwayReturnDate').value = returnDate.toISOString().split('T')[0];
+
+        // Прокручиваем к форме
+        document.getElementById('railwaySearchForm').scrollIntoView({
+            behavior: 'smooth'
+        });
+
+        // Показываем сообщение
+        showRailwayAlert(`Направление ${fromCity} → ${toCity} добавлено в форму поиска`, 'success');
+    }
+
+    // Вспомогательная функция для получения ID станции
+    function getRailwayStationId(cityName) {
+        const stationIds = {
+            "Москва": "2000000",
+            "Нижний Новгород": "2060001",
+            "Ростов-на-Дону": "2064001",
+            "Самара": "2024000",
+            "Уфа": "2028000",
+            "Красноярск": "2030000",
+            "Воронеж": "2014000",
+            "Санкт-Петербург": "2006000",
+            "Казань": "2060501",
+            "Екатеринбург": "2030000"
+        };
+
+        return stationIds[cityName] || "2000000"; // По умолчанию Москва
+    }
+
+    // Функция показа уведомлений для ЖД
+    function showRailwayAlert(message, type) {
+        // Удаляем старые уведомления
+        const oldAlerts = document.querySelectorAll('.alert.railway-alert');
+        oldAlerts.forEach(alert => alert.remove());
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} railway-alert alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-train me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+
+        // Автоматическое скрытие через 5 секунд
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    // Остальной код остается без изменений...
 
     // Загрузка станций с сервера
     async function loadStations() {
@@ -296,7 +452,7 @@
     }
 
     // Функции для работы с избранными поездами
-        async function toggleTrainFavorite(trainId) {
+    async function toggleTrainFavorite(trainId) {
         // Проверяем авторизацию
         const isAuthenticated = await checkAuthentication();
 
@@ -319,7 +475,7 @@
         showFavoriteNotification(favoriteTrains[trainId]);
     }
 
-        async function checkAuthentication() {
+    async function checkAuthentication() {
         try {
             const response = await fetch('/api/auth/check', {
                 method: 'GET',
@@ -415,7 +571,7 @@
         return favoriteTrains[trainId] || false;
     }
 
-        function updateTrainFavoriteButton(trainId) {
+    function updateTrainFavoriteButton(trainId) {
         const buttons = document.querySelectorAll('.train-favorite-btn');
         buttons.forEach(button => {
             if (button.getAttribute('data-train-id') === trainId) {
@@ -624,7 +780,6 @@
             return;
         }
 
-            // В функции displaySearchResults замените блок с ценой и кнопками:
         resultsContainer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Найдено поездов: ${trains.length}</h3>
@@ -766,4 +921,3 @@
         return `${day}.${month}.${year}`;
     }
 </script>
-

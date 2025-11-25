@@ -190,7 +190,6 @@ namespace TripWise.Controllers
         }
 
         // Вспомогательные методы
-
         private string ValidateFlightSearchRequest(FlightSearchRequest request)
         {
             if (request == null)

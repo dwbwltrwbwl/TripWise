@@ -441,4 +441,5 @@ namespace TripWise.Models
         public Price Price { get; set; }
         public FlightTerms FlightTerms { get; set; }
     }
+    
 }
