@@ -176,5 +176,23 @@ namespace TripWise.Models
 
         [JsonPropertyName("rating")]
         public decimal Rating { get; set; }
+
+        [JsonPropertyName("locationId")]
+        public int LocationId { get; set; }
+
+        [JsonPropertyName("location")]
+        public HotelLookLocation Location { get; set; }
+    }
+
+    public class HotelLookLocation
+    {
+        [JsonPropertyName("country")]
+        public string Country { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("state")]
+        public string State { get; set; }
     }
 }

@@ -29,8 +29,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>(); // Используем упрощенный сервис для тестирования
 
 // Вместо старого сервиса используй российский
+builder.Services.Configure<TravelPayoutsConfig>(builder.Configuration.GetSection("TravelPayouts"));
 builder.Services.AddHttpClient<IHotelService, TravelPayoutsService>();
-builder.Services.AddScoped<IHotelService, TravelPayoutsService>();
 
 // Настройка CORS
 builder.Services.AddCors(options =>
