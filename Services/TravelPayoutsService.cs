@@ -26,11 +26,20 @@ namespace TripWise.Services
         {
             try
             {
-                _logger.LogInformation("🔍 Поиск РЕАЛЬНЫХ отелей через TravelPayouts API: {@Request}", request);
+                _logger.LogInformation("🔍 Поиск отелей через TravelPayouts API: {@Request}", request);
 
-                var hotels = await SearchRealHotelsFromAPI(request);
+                // Получаем ID города/местоположения
+                var locationId = await GetLocationId(request.City);
+                if (string.IsNullOrEmpty(locationId))
+                {
+                    _logger.LogWarning("❌ Не удалось найти ID для города: {City}", request.City);
+                    return new List<Hotel>();
+                }
 
-                _logger.LogInformation("🏨 Найдено реальных отелей: {Count}", hotels.Count);
+                // Используем основной API TravelPayouts для поиска отелей
+                var hotels = await SearchHotelsViaTravelPayouts(request, locationId);
+
+                _logger.LogInformation("🏨 Найдено отелей: {Count}", hotels.Count);
                 return hotels;
             }
             catch (Exception ex)
@@ -40,78 +49,66 @@ namespace TripWise.Services
             }
         }
 
-        private async Task<List<Hotel>> SearchRealHotelsFromAPI(HotelSearchRequest request)
+        private async Task<List<Hotel>> SearchHotelsViaTravelPayouts(HotelSearchRequest request, string locationId)
         {
             try
             {
-                // Получаем IATA код города
-                var location = await GetLocationId(request.City);
-                if (string.IsNullOrEmpty(location))
-                {
-                    _logger.LogWarning("❌ Город {City} не найден в API", request.City);
-                    return new List<Hotel>();
-                }
-
-                // Используем HotelLook API для поиска отелей
-                return await SearchHotelsViaHotelLookAPI(request, location);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Ошибка при запросе к TravelPayouts API");
-                return new List<Hotel>();
-            }
-        }
-
-        // Основной метод через HotelLook API
-        private async Task<List<Hotel>> SearchHotelsViaHotelLookAPI(HotelSearchRequest request, string location)
-        {
-            try
-            {
-                var url = $"http://engine.hotellook.com/api/v2/cache.json?" +
-                         $"location={location}&" +
+                // Используем Search API от TravelPayouts
+                var url = $"{_config.ApiBaseUrl}/v2/hotels/search?" +
                          $"checkIn={request.CheckIn:yyyy-MM-dd}&" +
                          $"checkOut={request.CheckOut:yyyy-MM-dd}&" +
                          $"adults={request.Adults}&" +
                          $"rooms={request.Rooms}&" +
+                         $"location={locationId}&" +
                          $"currency=rub&" +
+                         $"limit=20&" +
                          $"token={_config.Token}";
 
-                _logger.LogInformation("🌐 Запрос к HotelLook API: {Url}", url);
+                _logger.LogInformation("🌐 Запрос к TravelPayouts Search API: {Url}", url);
 
                 var response = await _httpClient.GetAsync(url);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
+                    _logger.LogDebug("📨 Ответ от API: {Json}", json);
 
                     if (string.IsNullOrWhiteSpace(json) || json == "[]" || json == "null")
                     {
-                        _logger.LogWarning("⚠️ HotelLook API вернул пустой результат");
+                        _logger.LogWarning("⚠️ API вернул пустой результат");
                         return new List<Hotel>();
                     }
 
-                    var hotelData = JsonSerializer.Deserialize<List<HotelLookHotel>>(json);
-
-                    if (hotelData != null && hotelData.Any())
+                    try
                     {
-                        _logger.LogInformation("✅ HotelLook API вернул {Count} отелей", hotelData.Count);
-                        return ConvertHotelLookData(hotelData, request.City);
+                        var apiResponse = JsonSerializer.Deserialize<TravelPayoutsSearchResponse>(json);
+
+                        if (apiResponse?.Results?.Hotels != null && apiResponse.Results.Hotels.Any())
+                        {
+                            _logger.LogInformation("✅ TravelPayouts API вернул {Count} отелей", apiResponse.Results.Hotels.Count);
+                            return ConvertTravelPayoutsHotelData(apiResponse.Results.Hotels, request.City);
+                        }
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "❌ Ошибка парсинга JSON от API");
                     }
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️ HotelLook API вернул ошибку: {StatusCode}", response.StatusCode);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("⚠️ TravelPayouts API вернул ошибку: {StatusCode}, Content: {Error}", response.StatusCode, errorContent);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Ошибка при запросе к HotelLook API");
+                _logger.LogError(ex, "❌ Ошибка при запросе к TravelPayouts Search API");
             }
 
             return new List<Hotel>();
         }
 
-        private List<Hotel> ConvertHotelLookData(List<HotelLookHotel> data, string city)
+        private List<Hotel> ConvertTravelPayoutsHotelData(List<TravelPayoutsHotel> data, string city)
         {
             var hotels = new List<Hotel>();
             var random = new Random();
@@ -120,82 +117,51 @@ namespace TripWise.Services
             {
                 try
                 {
-                    var price = item.Price > 0 ? item.Price : item.PriceAvg;
-
-                    // Если цена все еще 0, генерируем реалистичную цену
-                    if (price <= 0)
-                    {
-                        price = random.Next(2000, 8000);
-                    }
-
                     var hotel = new Hotel
                     {
-                        Id = item.HotelId.ToString(),
-                        Name = !string.IsNullOrWhiteSpace(item.HotelName) ? item.HotelName : $"Отель в {city}",
-                        Address = $"{city}, центр",
-                        Price = price,
+                        Id = item.Id?.ToString() ?? Guid.NewGuid().ToString(),
+                        Name = item.Name ?? $"Отель в {city}",
+                        Address = item.Address ?? $"{city}, центр",
+                        Price = item.Price ?? item.MinPrice ?? random.Next(2000, 8000),
                         Currency = "RUB",
-                        Rating = item.Rating > 0 ? item.Rating : (decimal)item.Stars / 2,
-                        Stars = item.Stars > 0 ? item.Stars : random.Next(3, 4),
-                        Description = $"Отель {item.Stars} звезд в {city}",
-                        Photos = GenerateHotelPhotos(),
-                        Amenities = GetAmenitiesByStars(item.Stars > 0 ? item.Stars : random.Next(3, 4)),
+                        Rating = item.Rating ?? (decimal)random.Next(35, 50) / 10,
+                        Stars = item.Stars ?? random.Next(3, 5),
+                        Description = item.Description ?? $"Комфортабельный отель в {city}",
+                        Photos = item.Images?.Any() == true ? item.Images : GenerateHotelPhotos(),
+                        Amenities = item.Amenities?.Any() == true ? item.Amenities : GetAmenitiesByStars(item.Stars ?? 3),
                         Location = new Location
                         {
                             City = city,
                             Country = "Россия",
-                            Lat = 0,
-                            Lng = 0
+                            Lat = item.Location?.Lat ?? 0,
+                            Lng = item.Location?.Lng ?? 0
                         },
                         Provider = "TravelPayouts"
                     };
 
-                    if (hotel.Price > 0 && !string.IsNullOrWhiteSpace(hotel.Name))
+                    // Добавляем только если есть название
+                    if (!string.IsNullOrWhiteSpace(hotel.Name))
                     {
                         hotels.Add(hotel);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Ошибка конвертации отеля ID: {HotelId}", item.HotelId);
+                    _logger.LogWarning(ex, "Ошибка конвертации отеля: {HotelName}", item.Name);
                 }
             }
 
             return hotels.OrderBy(h => h.Price).ToList();
         }
 
-        private List<string> GenerateHotelPhotos()
-        {
-            return new List<string>
-            {
-                "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
-                "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop"
-            };
-        }
-
-        private List<string> GetAmenitiesByStars(int stars)
-        {
-            var amenities = new List<string>
-            {
-                "Wi-Fi", "Кондиционер", "Телевизор", "Холодильник"
-            };
-
-            if (stars >= 4)
-            {
-                amenities.AddRange(new[] { "Бассейн", "Спа", "Фитнес-центр", "Ресторан" });
-            }
-
-            return amenities;
-        }
-
         private async Task<string> GetLocationId(string cityName)
         {
             try
             {
-                var url = $"http://engine.hotellook.com/api/v2/lookup.json?" +
+                // Используем Locations API от TravelPayouts
+                var url = $"{_config.ApiBaseUrl}/v2/locations/search?" +
                          $"query={Uri.EscapeDataString(cityName)}&" +
-                         $"lang=ru&" +
-                         $"lookFor=city&" +
+                         $"locale=ru&" +
                          $"token={_config.Token}";
 
                 var response = await _httpClient.GetAsync(url);
@@ -203,46 +169,52 @@ namespace TripWise.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var lookupResponse = JsonSerializer.Deserialize<TravelPayoutsLookupResponse>(json);
+                    var locationsResponse = JsonSerializer.Deserialize<TravelPayoutsLocationsResponse>(json);
 
-                    var city = lookupResponse?.Results?.Locations
+                    var city = locationsResponse?.Results?.Locations
                         ?.FirstOrDefault(l => l.Type == "city");
 
-                    return city?.Iata ?? GetDefaultIataCode(cityName);
+                    if (city != null)
+                    {
+                        _logger.LogInformation("✅ Найден город: {Name} (ID: {Id})", city.Name, city.Id);
+                        return city.Id.ToString();
+                    }
                 }
+
+                // Если не нашли через API, используем дефолтные коды
+                return GetDefaultLocationId(cityName);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "⚠️ Ошибка при поиске локации");
+                return GetDefaultLocationId(cityName);
             }
-
-            return GetDefaultIataCode(cityName);
         }
 
-        private string GetDefaultIataCode(string cityName)
+        private string GetDefaultLocationId(string cityName)
         {
             var cityMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                {"москва", "MOW"}, {"moscow", "MOW"},
-                {"санкт-петербург", "LED"}, {"saint petersburg", "LED"}, {"spb", "LED"},
-                {"сочи", "AER"}, {"sochi", "AER"},
-                {"казань", "KZN"}, {"kazan", "KZN"},
-                {"екатеринбург", "SVX"}, {"ekaterinburg", "SVX"},
-                {"новосибирск", "OVB"}, {"novosibirsk", "OVB"},
-                {"краснодар", "KRR"}, {"krasnodar", "KRR"},
-                {"калининград", "KGD"}, {"kaliningrad", "KGD"},
-                {"владивосток", "VVO"}, {"vladivostok", "VVO"},
-                {"ростов-на-дону", "ROV"}, {"rostov-on-don", "ROV"},
-                {"нижний новгород", "GOJ"}, {"nizhny novgorod", "GOJ"},
-                {"самара", "KUF"}, {"samara", "KUF"},
-                {"уфа", "UFA"}, {"ufa", "UFA"},
-                {"красноярск", "KJA"}, {"krasnoyarsk", "KJA"},
-                {"пермь", "PEE"}, {"perm", "PEE"},
-                {"воронеж", "VOZ"}, {"voronezh", "VOZ"},
-                {"волгоград", "VOG"}, {"volgograd", "VOG"}
+                {"москва", "c213"}, {"moscow", "c213"},
+                {"санкт-петербург", "c2"}, {"saint petersburg", "c2"}, {"spb", "c2"},
+                {"сочи", "c239"}, {"sochi", "c239"},
+                {"казань", "c43"}, {"kazan", "c43"},
+                {"екатеринбург", "c54"}, {"ekaterinburg", "c54"},
+                {"новосибирск", "c65"}, {"novosibirsk", "c65"},
+                {"краснодар", "c39"}, {"krasnodar", "c39"},
+                {"калининград", "c33"}, {"kaliningrad", "c33"},
+                {"владивосток", "c118"}, {"vladivostok", "c118"},
+                {"ростов-на-дону", "c79"}, {"rostov-on-don", "c79"},
+                {"нижний новгород", "c59"}, {"nizhny novgorod", "c59"},
+                {"самара", "c86"}, {"samara", "c86"},
+                {"уфа", "c111"}, {"ufa", "c111"},
+                {"красноярск", "c38"}, {"krasnoyarsk", "c38"},
+                {"пермь", "c73"}, {"perm", "c73"},
+                {"воронеж", "c119"}, {"voronezh", "c119"},
+                {"волгоград", "c1189"}, {"volgograd", "c1189"}
             };
 
-            return cityMap.GetValueOrDefault(cityName.ToLower(), cityName.ToUpper());
+            return cityMap.GetValueOrDefault(cityName.ToLower(), "c213"); // По умолчанию Москва
         }
 
         public async Task<List<City>> SearchHotelCitiesAsync(string query)
@@ -274,10 +246,9 @@ namespace TripWise.Services
         {
             try
             {
-                var url = $"http://engine.hotellook.com/api/v2/lookup.json?" +
+                var url = $"{_config.ApiBaseUrl}/v2/locations/search?" +
                          $"query={Uri.EscapeDataString(query)}&" +
-                         $"lang=ru&" +
-                         $"lookFor=city&" +
+                         $"locale=ru&" +
                          $"token={_config.Token}";
 
                 var response = await _httpClient.GetAsync(url);
@@ -285,15 +256,15 @@ namespace TripWise.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var lookupResponse = JsonSerializer.Deserialize<TravelPayoutsLookupResponse>(json);
+                    var locationsResponse = JsonSerializer.Deserialize<TravelPayoutsLocationsResponse>(json);
 
-                    var cities = lookupResponse?.Results?.Locations
+                    var cities = locationsResponse?.Results?.Locations
                         ?.Where(l => l.Type == "city")
                         .Select(l => new City
                         {
-                            Code = l.Iata,
+                            Code = l.Id.ToString(),
                             Name = l.Name,
-                            Country = l.CountryName,
+                            Country = l.CountryName ?? "Россия",
                             Type = "city"
                         })
                         .Take(10)
@@ -310,27 +281,44 @@ namespace TripWise.Services
             return null;
         }
 
+        private List<string> GenerateHotelPhotos()
+        {
+            return new List<string>
+            {
+                "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop"
+            };
+        }
+
+        private List<string> GetAmenitiesByStars(int stars)
+        {
+            var amenities = new List<string>
+            {
+                "Wi-Fi", "Кондиционер", "Телевизор", "Холодильник"
+            };
+
+            if (stars >= 4)
+            {
+                amenities.AddRange(new[] { "Бассейн", "Спа", "Фитнес-центр", "Ресторан" });
+            }
+
+            return amenities;
+        }
+
         private List<City> GetRussianCities()
         {
             return new List<City>
             {
-                new City { Code = "MOW", Name = "Москва", Country = "Россия", Type = "city" },
-                new City { Code = "LED", Name = "Санкт-Петербург", Country = "Россия", Type = "city" },
-                new City { Code = "AER", Name = "Сочи", Country = "Россия", Type = "city" },
-                new City { Code = "KZN", Name = "Казань", Country = "Россия", Type = "city" },
-                new City { Code = "SVX", Name = "Екатеринбург", Country = "Россия", Type = "city" },
-                new City { Code = "OVB", Name = "Новосибирск", Country = "Россия", Type = "city" },
-                new City { Code = "KRR", Name = "Краснодар", Country = "Россия", Type = "city" },
-                new City { Code = "KGD", Name = "Калининград", Country = "Россия", Type = "city" },
-                new City { Code = "VVO", Name = "Владивосток", Country = "Россия", Type = "city" },
-                new City { Code = "ROV", Name = "Ростов-на-Дону", Country = "Россия", Type = "city" },
-                new City { Code = "GOJ", Name = "Нижний Новгород", Country = "Россия", Type = "city" },
-                new City { Code = "KUF", Name = "Самара", Country = "Россия", Type = "city" },
-                new City { Code = "UFA", Name = "Уфа", Country = "Россия", Type = "city" },
-                new City { Code = "KJA", Name = "Красноярск", Country = "Россия", Type = "city" },
-                new City { Code = "PEE", Name = "Пермь", Country = "Россия", Type = "city" },
-                new City { Code = "VOZ", Name = "Воронеж", Country = "Россия", Type = "city" },
-                new City { Code = "VOG", Name = "Волгоград", Country = "Россия", Type = "city" }
+                new City { Code = "c213", Name = "Москва", Country = "Россия", Type = "city" },
+                new City { Code = "c2", Name = "Санкт-Петербург", Country = "Россия", Type = "city" },
+                new City { Code = "c239", Name = "Сочи", Country = "Россия", Type = "city" },
+                new City { Code = "c43", Name = "Казань", Country = "Россия", Type = "city" },
+                new City { Code = "c54", Name = "Екатеринбург", Country = "Россия", Type = "city" },
+                new City { Code = "c65", Name = "Новосибирск", Country = "Россия", Type = "city" },
+                new City { Code = "c39", Name = "Краснодар", Country = "Россия", Type = "city" },
+                new City { Code = "c33", Name = "Калининград", Country = "Россия", Type = "city" },
+                new City { Code = "c118", Name = "Владивосток", Country = "Россия", Type = "city" },
+                new City { Code = "c79", Name = "Ростов-на-Дону", Country = "Россия", Type = "city" }
             };
         }
     }
@@ -344,19 +332,76 @@ namespace TripWise.Services
     }
 
     // Модели для TravelPayouts API
-    public class TravelPayoutsLookupResponse
+    public class TravelPayoutsSearchResponse
     {
         [JsonPropertyName("results")]
-        public TravelPayoutsLookupResults Results { get; set; }
+        public TravelPayoutsSearchResults Results { get; set; }
     }
 
-    public class TravelPayoutsLookupResults
+    public class TravelPayoutsSearchResults
+    {
+        [JsonPropertyName("hotels")]
+        public List<TravelPayoutsHotel> Hotels { get; set; }
+    }
+
+    public class TravelPayoutsHotel
+    {
+        [JsonPropertyName("id")]
+        public int? Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("address")]
+        public string Address { get; set; }
+
+        [JsonPropertyName("price")]
+        public decimal? Price { get; set; }
+
+        [JsonPropertyName("min_price")]
+        public decimal? MinPrice { get; set; }
+
+        [JsonPropertyName("rating")]
+        public decimal? Rating { get; set; }
+
+        [JsonPropertyName("stars")]
+        public int? Stars { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("images")]
+        public List<string> Images { get; set; }
+
+        [JsonPropertyName("amenities")]
+        public List<string> Amenities { get; set; }
+
+        [JsonPropertyName("location")]
+        public TravelPayoutsLocation Location { get; set; }
+    }
+
+    public class TravelPayoutsLocation
+    {
+        [JsonPropertyName("lat")]
+        public decimal Lat { get; set; }
+
+        [JsonPropertyName("lng")]
+        public decimal Lng { get; set; }
+    }
+
+    public class TravelPayoutsLocationsResponse
+    {
+        [JsonPropertyName("results")]
+        public TravelPayoutsLocationsResults Results { get; set; }
+    }
+
+    public class TravelPayoutsLocationsResults
     {
         [JsonPropertyName("locations")]
-        public List<TravelPayoutsLookupLocation> Locations { get; set; }
+        public List<TravelPayoutsLocationItem> Locations { get; set; }
     }
 
-    public class TravelPayoutsLookupLocation
+    public class TravelPayoutsLocationItem
     {
         [JsonPropertyName("id")]
         public int Id { get; set; }
@@ -364,13 +409,10 @@ namespace TripWise.Services
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonPropertyName("countryName")]
+        [JsonPropertyName("country_name")]
         public string CountryName { get; set; }
 
         [JsonPropertyName("type")]
         public string Type { get; set; }
-
-        [JsonPropertyName("iata")]
-        public string Iata { get; set; }
     }
 }
