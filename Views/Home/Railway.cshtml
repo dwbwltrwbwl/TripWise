@@ -14,64 +14,68 @@
             <div class="card shadow-sm border-0" style="margin-top: 0;">
                 <div class="card-body p-4">
                     <form id="railwaySearchForm">
+                        <!-- Первая строка -->
                         <div class="row g-3 align-items-end mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Откуда</label>
-                                <div class="input-group station-autocomplete">
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Откуда</label>
+                                <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-train"></i></span>
                                     <input type="text"
-                                           class="form-control"
+                                           class="form-control station-autocomplete"
                                            id="railwayDeparture"
                                            placeholder="Станция отправления"
                                            required
-                                           autocomplete="off">
-                                    <div class="autocomplete-dropdown" id="departureDropdown"></div>
+                                           autocomplete="off"
+                                           style="font-family: 'Nunito', sans-serif;">
+                                    <div class="autocomplete-dropdown" id="railwayDepartureDropdown"></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Куда</label>
-                                <div class="input-group station-autocomplete">
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Куда</label>
+                                <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-train"></i></span>
                                     <input type="text"
-                                           class="form-control"
+                                           class="form-control station-autocomplete"
                                            id="railwayArrival"
                                            placeholder="Станция назначения"
                                            required
-                                           autocomplete="off">
-                                    <div class="autocomplete-dropdown" id="arrivalDropdown"></div>
+                                           autocomplete="off"
+                                           style="font-family: 'Nunito', sans-serif;">
+                                    <div class="autocomplete-dropdown" id="railwayArrivalDropdown"></div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Вторая строка -->
                         <div class="row g-3 align-items-end">
                             <div class="col-md-3">
-                                <label class="form-label fw-medium">Туда</label>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Туда</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                    <input type="date" class="form-control" id="railwayDepartureDate" required>
+                                    <input type="date" class="form-control" id="railwayDepartureDate" required style="font-family: 'Nunito', sans-serif;">
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-medium">Обратно</label>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Обратно</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                    <input type="date" class="form-control" id="railwayReturnDate">
+                                    <input type="date" class="form-control" id="railwayReturnDate" style="font-family: 'Nunito', sans-serif;">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-medium">Пассажиры</label>
+                                <label class="form-label fw-medium" style="font-family: 'Nunito', sans-serif;">Пассажиры</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-users"></i></span>
-                                    <select class="form-select" id="railwayPassengers">
-                                        <option value="1">1 пассажир</option>
-                                        <option value="2" selected>2 пассажира</option>
+                                    <select class="form-select" id="railwayPassengers" style="font-family: 'Nunito', sans-serif;">
+                                        <option value="1" selected>1 пассажир</option>
+                                        <option value="2">2 пассажира</option>
                                         <option value="3">3 пассажира</option>
                                         <option value="4">4 пассажира</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary btn-lg w-100 text-center" style="height: 46px;">
+                                <button type="submit" class="btn btn-primary btn-lg w-100 text-center" style="font-family: 'Nunito', sans-serif; height: 46px;">
                                     <i class="fas fa-search me-2"></i>Найти
                                 </button>
                             </div>
@@ -590,8 +594,8 @@
     function initializeAutocomplete() {
         const departureInput = document.getElementById('railwayDeparture');
         const arrivalInput = document.getElementById('railwayArrival');
-        const departureDropdown = document.getElementById('departureDropdown');
-        const arrivalDropdown = document.getElementById('arrivalDropdown');
+        const departureDropdown = document.getElementById('railwayDepartureDropdown');
+        const arrivalDropdown = document.getElementById('railwayArrivalDropdown');
 
         setupAutocomplete(departureInput, departureDropdown);
         setupAutocomplete(arrivalInput, arrivalDropdown);
@@ -676,12 +680,7 @@
         const returnDateInput = document.getElementById('railwayReturnDate');
 
         departureDateInput.min = today.toISOString().split('T')[0];
-
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        departureDateInput.value = tomorrow.toISOString().split('T')[0];
-
-        returnDateInput.min = tomorrow.toISOString().split('T')[0];
+        returnDateInput.min = today.toISOString().split('T')[0];
     }
 
     // Обработчик формы

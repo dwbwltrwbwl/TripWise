@@ -31,7 +31,7 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">Место</label>
-                                            <input type="text" class="form-control" placeholder="Город или регион" value="Сочи">
+                                            <input type="text" class="form-control" placeholder="Город или регион">
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label">Дата</label>
@@ -106,7 +106,7 @@
                             <h4 class="mb-3">Запланированные активности</h4>
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="activity-plan-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                                    <div class="activity-plan-item d-flex justify-content-between align-items-center py-3">
                                         <div class="d-flex align-items-center">
                                             <div class="activity-icon me-3">
                                                 <i class="fas fa-umbrella-beach text-primary fa-2x"></i>
@@ -121,21 +121,6 @@
                                             <button class="btn btn-outline-danger btn-sm">Отменить</button>
                                         </div>
                                     </div>
-                                    <div class="activity-plan-item d-flex justify-content-between align-items-center py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="activity-icon me-3">
-                                                <i class="fas fa-hiking text-success fa-2x"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-1">Экскурсия в Агурское ущелье</h6>
-                                                <small class="text-muted">18 июля, 09:00 - 14:00</small>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge bg-warning me-2">Ожидание</span>
-                                            <button class="btn btn-outline-danger btn-sm">Отменить</button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -146,10 +131,7 @@
                         <div class="card mb-4">
                             <div class="card-body">
                                 <h5 class="card-title">Календарь</h5>
-                                <div class="calendar-placeholder text-center py-4">
-                                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Здесь будет календарь с запланированными активностями</p>
-                                </div>
+                                <div id="activitiesCalendar"></div>
                             </div>
                         </div>
 
@@ -204,8 +186,346 @@
         flex-wrap: wrap;
     }
 
-    .calendar-placeholder {
-        background: #f8f9fa;
-        border-radius: 8px;
+    /* Стили для календаря */
+    .calendar {
+        width: 100%;
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+    }
+
+    .calendar-day {
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+
+        .calendar-day:hover {
+            background-color: #e9ecef;
+        }
+
+        .calendar-day.header {
+            font-weight: 600;
+            color: #6c757d;
+            cursor: default;
+        }
+
+            .calendar-day.header:hover {
+                background-color: transparent;
+            }
+
+        .calendar-day.other-month {
+            color: #dee2e6;
+        }
+
+        .calendar-day.today {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .calendar-day.has-activity {
+            background-color: #28a745;
+            color: white;
+            position: relative;
+        }
+
+            .calendar-day.has-activity:after {
+                content: '';
+                position: absolute;
+                bottom: 2px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 4px;
+                height: 4px;
+                background-color: white;
+                border-radius: 50%;
+            }
+
+    /* Стили для автодополнения в активностях */
+    #searchActivitiesForm .input-group {
+        position: relative;
+    }
+
+    #activityLocationDropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .autocomplete-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s ease;
+    }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background-color: #f8f9fa;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+    .city-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .city-country {
+        font-size: 0.85em;
+        color: #666;
+        margin-left: 8px;
+    }
+
+    .city-airport {
+        font-size: 0.8em;
+        color: #888;
+        display: block;
     }
 </style>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+        initializeActivitySearch();
+        initializeCalendar(); // если календарь еще не инициализирован
+    });
+
+    function initializeActivitySearch() {
+        const locationInput = document.querySelector('#searchActivitiesForm input[type="text"]');
+        const locationDropdown = document.createElement('div');
+        locationDropdown.className = 'autocomplete-dropdown';
+        locationDropdown.id = 'activityLocationDropdown';
+        locationInput.parentNode.appendChild(locationDropdown);
+
+        let currentActivityTimeout;
+
+        // Обработчики для поля "Место"
+        locationInput.addEventListener('input', () => {
+            clearTimeout(currentActivityTimeout);
+            currentActivityTimeout = setTimeout(() => {
+                searchCitiesForActivities(locationInput.value, locationDropdown);
+            }, 300);
+        });
+
+        locationInput.addEventListener('focus', () => {
+            if (locationInput.value.length >= 2) {
+                searchCitiesForActivities(locationInput.value, locationDropdown);
+            }
+        });
+
+        // Закрытие dropdown при клике вне
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#searchActivitiesForm input[type="text"]')) {
+                locationDropdown.style.display = 'none';
+            }
+        });
+
+        // Навигация с клавиатуры
+        locationInput.addEventListener('keydown', (e) => {
+            if (locationDropdown.style.display === 'none') return;
+
+            const items = locationDropdown.querySelectorAll('.autocomplete-item');
+            let activeItem = locationDropdown.querySelector('.autocomplete-item.active');
+            let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (activeIndex < items.length - 1) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[activeIndex + 1].classList.add('active');
+                    } else if (items.length > 0 && activeIndex === -1) {
+                        items[0].classList.add('active');
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (activeIndex > 0) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[activeIndex - 1].classList.add('active');
+                    }
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (activeItem) {
+                        activeItem.click();
+                    }
+                    break;
+                case 'Escape':
+                    locationDropdown.style.display = 'none';
+                    break;
+            }
+        });
+    }
+
+    // Функция для поиска городов через TravelPayouts API для активностей
+    async function searchCitiesForActivities(query, dropdown) {
+        if (query.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        try {
+            const endpoint = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(query)}&locale=ru&types[]=airport&types[]=city`;
+
+            console.log('Searching cities for activities with query:', query);
+
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Received cities data for activities:', data);
+
+            let cities = [];
+
+            if (Array.isArray(data)) {
+                cities = data.map(item => {
+                    if (item.code && item.name) {
+                        return {
+                            name: item.name,
+                            country: item.country_name || item.country_code || '',
+                            airport: item.type === 'airport' ? item.name : '',
+                            code: item.code,
+                            type: item.type || 'city'
+                        };
+                    }
+                    return null;
+                }).filter(item => item !== null && item.name && item.code);
+            }
+
+            console.log('Processed cities for activities:', cities);
+            showActivityAutocompleteResults(cities, dropdown, query);
+
+        } catch (error) {
+            console.error('Ошибка при поиске городов для активностей:', error);
+            const mockCities = getMockCitiesForActivities(query);
+            showActivityAutocompleteResults(mockCities, dropdown, query);
+        }
+    }
+
+    // Функция для mock данных городов для активностей
+    function getMockCitiesForActivities(query) {
+        const allCities = [
+            { code: "MOW", name: "Москва", country: "Россия", type: "city", airport: "" },
+            { code: "LED", name: "Санкт-Петербург", country: "Россия", type: "city", airport: "" },
+            { code: "AER", name: "Сочи", country: "Россия", type: "city", airport: "" },
+            { code: "KZN", name: "Казань", country: "Россия", type: "city", airport: "" },
+            { code: "SVX", name: "Екатеринбург", country: "Россия", type: "city", airport: "" },
+            { code: "OVB", name: "Новосибирск", country: "Россия", type: "city", airport: "" },
+            { code: "KRR", name: "Краснодар", country: "Россия", type: "city", airport: "" },
+            { code: "SIP", name: "Симферополь", country: "Россия", type: "city", airport: "" },
+            { code: "MRV", name: "Минеральные Воды", country: "Россия", type: "city", airport: "" },
+            { code: "KGD", name: "Калининград", country: "Россия", type: "city", airport: "" },
+            { code: "GOJ", name: "Нижний Новгород", country: "Россия", type: "city", airport: "" },
+            { code: "ROV", name: "Ростов-на-Дону", country: "Россия", type: "city", airport: "" },
+            { code: "VOG", name: "Волгоград", country: "Россия", type: "city", airport: "" },
+            { code: "VOZ", name: "Воронеж", country: "Россия", type: "city", airport: "" },
+            { code: "UFA", name: "Уфа", country: "Россия", type: "city", airport: "" },
+            { code: "KUF", name: "Самара", country: "Россия", type: "city", airport: "" },
+            { code: "OMS", name: "Омск", country: "Россия", type: "city", airport: "" },
+            { code: "CEK", name: "Челябинск", country: "Россия", type: "city", airport: "" },
+            { code: "GRV", name: "Грозный", country: "Россия", type: "city", airport: "" },
+            { code: "MCX", name: "Махачкала", country: "Россия", type: "city", airport: "" }
+        ];
+
+        return allCities.filter(city =>
+            city.name.toLowerCase().includes(query.toLowerCase()) ||
+            city.code.toLowerCase().includes(query.toLowerCase())
+        );
+    }
+
+    // Функция показа результатов автозаполнения для активностей
+    function showActivityAutocompleteResults(cities, dropdown, query) {
+        dropdown.innerHTML = '';
+
+        if (!cities || cities.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'autocomplete-item';
+            noResults.textContent = 'Ничего не найдено';
+            dropdown.appendChild(noResults);
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        const limitedCities = cities.slice(0, 8);
+
+        limitedCities.forEach(city => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+
+            let displayText = '';
+            if (city.type === 'airport') {
+                displayText = `
+                    <div class="city-name">${city.name}
+                        <span class="city-country">${city.country}</span>
+                    </div>
+                    <div class="city-airport">Аэропорт (${city.code})</div>
+                `;
+            } else {
+                displayText = `
+                    <div class="city-name">${city.name}
+                        <span class="city-country">${city.country}</span>
+                    </div>
+                    <div class="city-airport">Город (${city.code})</div>
+                `;
+            }
+
+            item.innerHTML = displayText;
+
+            item.addEventListener('click', () => {
+                let displayValue;
+                if (city.type === 'airport') {
+                    displayValue = `${city.name} (${city.code})`;
+                } else {
+                    displayValue = `${city.name} (${city.code})`;
+                }
+
+                const locationInput = document.querySelector('#searchActivitiesForm input[type="text"]');
+                locationInput.value = displayValue;
+                dropdown.style.display = 'none';
+
+                // Можно добавить логику для автоматического поиска активностей
+                console.log('Выбран город для поиска активностей:', displayValue);
+            });
+
+            dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = 'block';
+    }
+</script>

@@ -1,6 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Отзывы";
     Layout = "~/Views/Shared/_LegalLayout.cshtml";
+    var isAuthenticated = Context.Session.GetInt32("UserId") != null;
 }
 
 <div class="container mt-4">
@@ -34,37 +35,49 @@
 
                     <!-- Форма отзыва -->
                     <div class="mt-5">
-                        <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Оставьте свой отзыв</h3>
-                        <form class="mt-3" id="review-form">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Имя</label>
-                                    <input type="text" class="form-control" id="review-name" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="review-email" required>
-                                </div>
+                        @if (!isAuthenticated)
+                        {
+                            <div class="alert alert-info">
+                                <h5>Войдите в аккаунт</h5>
+                                <p>Чтобы оставлять отзывы, войдите в свой аккаунт.</p>
+                                <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
+                                <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Оценка</label>
-                                <div class="rating-input">
-                                    <i class="far fa-star" data-rating="1"></i>
-                                    <i class="far fa-star" data-rating="2"></i>
-                                    <i class="far fa-star" data-rating="3"></i>
-                                    <i class="far fa-star" data-rating="4"></i>
-                                    <i class="far fa-star" data-rating="5"></i>
+                        }
+                        else
+                        {
+                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Оставьте свой отзыв</h3>
+                            <form class="mt-3" id="review-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" class="form-control" id="review-name" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="review-email" required>
+                                    </div>
                                 </div>
-                                <input type="hidden" id="selected-rating" value="0" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Отзыв</label>
-                                <textarea class="form-control" id="review-text" rows="4" placeholder="Поделитесь вашим опытом..." required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-1"></i>Отправить отзыв
-                            </button>
-                        </form>
+                                <div class="mb-3">
+                                    <label class="form-label">Оценка</label>
+                                    <div class="rating-input">
+                                        <i class="far fa-star" data-rating="1"></i>
+                                        <i class="far fa-star" data-rating="2"></i>
+                                        <i class="far fa-star" data-rating="3"></i>
+                                        <i class="far fa-star" data-rating="4"></i>
+                                        <i class="far fa-star" data-rating="5"></i>
+                                    </div>
+                                    <input type="hidden" id="selected-rating" value="0" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Отзыв</label>
+                                    <textarea class="form-control" id="review-text" rows="4" placeholder="Поделитесь вашим опытом..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-1"></i>Отправить отзыв
+                                </button>
+                            </form>
+                        }
                     </div>
                 </div>
             </div>
@@ -103,71 +116,11 @@
         let reviews = JSON.parse(localStorage.getItem('reviews')) || [];
         let selectedRating = 0;
 
-        // Инициализация рейтинга звёзд
-        const stars = document.querySelectorAll('.rating-input i');
-        stars.forEach(star => {
-            star.addEventListener('click', function() {
-                selectedRating = parseInt(this.getAttribute('data-rating'));
-                document.getElementById('selected-rating').value = selectedRating;
-
-                stars.forEach(s => {
-                    const rating = parseInt(s.getAttribute('data-rating'));
-                    if (rating <= selectedRating) {
-                        s.classList.remove('far');
-                        s.classList.add('fas', 'active');
-                    } else {
-                        s.classList.remove('fas', 'active');
-                        s.classList.add('far');
-                    }
-                });
-            });
-        });
-
         // Загрузка существующих отзывов при загрузке страницы
         loadReviews();
         updateRatingSummary();
 
-        // Обработка отправки формы
-        const form = document.getElementById('review-form');
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const name = document.getElementById('review-name').value;
-            const email = document.getElementById('review-email').value;
-            const reviewText = document.getElementById('review-text').value;
-
-            if (selectedRating === 0) {
-                alert('Пожалуйста, выберите оценку');
-                return;
-            }
-
-            const newReview = {
-                id: Date.now(), // Уникальный ID на основе времени
-                name: name,
-                email: email,
-                rating: selectedRating,
-                text: reviewText,
-                date: new Date().toLocaleDateString('ru-RU')
-            };
-
-            // Добавляем отзыв в массив и сохраняем в localStorage
-            reviews.push(newReview);
-            localStorage.setItem('reviews', JSON.stringify(reviews));
-
-            // Обновляем отображение
-            loadReviews();
-            updateRatingSummary();
-
-            // Сбрасываем форму
-            form.reset();
-            stars.forEach(s => {
-                s.classList.remove('fas', 'active');
-                s.classList.add('far');
-            });
-            selectedRating = 0;
-            document.getElementById('selected-rating').value = 0;
-        });
-
+        // Функции для работы с отзывами
         function loadReviews() {
             const reviewsContainer = document.getElementById('reviews-container');
             reviewsContainer.innerHTML = "";
@@ -230,6 +183,70 @@
                 }
             }
             return starsHTML;
+        }
+
+        // Инициализация формы только если пользователь авторизован
+        const reviewForm = document.getElementById('review-form');
+        if (reviewForm) {
+            // Инициализация рейтинга звёзд
+            const stars = document.querySelectorAll('.rating-input i');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    selectedRating = parseInt(this.getAttribute('data-rating'));
+                    document.getElementById('selected-rating').value = selectedRating;
+
+                    stars.forEach(s => {
+                        const rating = parseInt(s.getAttribute('data-rating'));
+                        if (rating <= selectedRating) {
+                            s.classList.remove('far');
+                            s.classList.add('fas', 'active');
+                        } else {
+                            s.classList.remove('fas', 'active');
+                            s.classList.add('far');
+                        }
+                    });
+                });
+            });
+
+            // Обработка отправки формы
+            reviewForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const name = document.getElementById('review-name').value;
+                const email = document.getElementById('review-email').value;
+                const reviewText = document.getElementById('review-text').value;
+
+                if (selectedRating === 0) {
+                    alert('Пожалуйста, выберите оценку');
+                    return;
+                }
+
+                const newReview = {
+                    id: Date.now(), // Уникальный ID на основе времени
+                    name: name,
+                    email: email,
+                    rating: selectedRating,
+                    text: reviewText,
+                    date: new Date().toLocaleDateString('ru-RU')
+                };
+
+                // Добавляем отзыв в массив и сохраняем в localStorage
+                reviews.push(newReview);
+                localStorage.setItem('reviews', JSON.stringify(reviews));
+
+                // Обновляем отображение
+                loadReviews();
+                updateRatingSummary();
+
+                // Сбрасываем форму
+                reviewForm.reset();
+                stars.forEach(s => {
+                    s.classList.remove('fas', 'active');
+                    s.classList.add('far');
+                });
+                selectedRating = 0;
+                document.getElementById('selected-rating').value = 0;
+            });
         }
     });
 </script>

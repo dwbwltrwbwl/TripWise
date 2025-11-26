@@ -12,7 +12,7 @@
 
             @if (Context.Session.GetInt32("UserId") == null)
             {
-                <div class="alert alert-info">
+                <div class="alert alert-light border shadow-sm">
                     <h5>Войдите в аккаунт</h5>
                     <p>Чтобы сохранять понравившиеся направления, войдите в свой аккаунт.</p>
                     <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
