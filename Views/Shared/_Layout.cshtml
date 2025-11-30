@@ -360,7 +360,7 @@
                 display: flex;
                 align-items: center;
                 text-decoration: none;
-                color: inherit;
+                color: #333;
                 padding: 8px 16px;
                 border-radius: 8px;
                 transition: all 0.3s ease;
@@ -370,14 +370,21 @@
                 white-space: nowrap;
             }
 
+                /* Ховер состояние - только при наведении */
                 .nav-tab a:hover {
                     background-color: #f8f9fa;
+                    color: #333;
                 }
 
+
             .nav-tab.active a {
-                background-color: #047bd6 !important;
                 color: white !important;
             }
+
+                /* Убираем ховер для активной вкладки */
+                .nav-tab.active a:hover {
+                    color: white !important;
+                }
 
         .tab-icon {
             display: flex;
