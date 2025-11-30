@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TripWise.Controllers
 {
@@ -122,6 +123,21 @@ namespace TripWise.Controllers
                 return View();
             }
 
+            // Проверка email на валидность
+            if (!IsValidEmail(email))
+            {
+                ModelState.AddModelError("", "Введите корректный email адрес");
+                return View();
+            }
+
+            // Проверка пароля
+            var passwordValidationResult = ValidatePassword(password);
+            if (!passwordValidationResult.IsValid)
+            {
+                ModelState.AddModelError("", passwordValidationResult.ErrorMessage);
+                return View();
+            }
+
             if (password != confirmPassword)
             {
                 ModelState.AddModelError("", "Пароли не совпадают");
@@ -132,13 +148,6 @@ namespace TripWise.Controllers
             if (string.IsNullOrEmpty(agreeTerms) || agreeTerms != "on")
             {
                 ModelState.AddModelError("", "Необходимо согласие с условиями использования");
-                return View();
-            }
-
-            // Проверка email на валидность
-            if (!IsValidEmail(email))
-            {
-                ModelState.AddModelError("", "Введите корректный email адрес");
                 return View();
             }
 
@@ -207,6 +216,54 @@ namespace TripWise.Controllers
             return View(user);
         }
 
+        // Метод для проверки сложности пароля
+        private PasswordValidationResult ValidatePassword(string password)
+        {
+            var result = new PasswordValidationResult { IsValid = true };
+
+            // Проверка минимальной длины
+            if (password.Length < 6)
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Пароль должен содержать минимум 6 символов";
+                return result;
+            }
+
+            // Проверка на наличие цифр
+            if (!Regex.IsMatch(password, @"\d"))
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Пароль должен содержать хотя бы одну цифру";
+                return result;
+            }
+
+            // Проверка на наличие заглавных букв
+            if (!Regex.IsMatch(password, @"[A-ZА-Я]"))
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Пароль должен содержать хотя бы одну заглавную букву";
+                return result;
+            }
+
+            // Проверка на наличие строчных букв
+            if (!Regex.IsMatch(password, @"[a-zа-я]"))
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Пароль должен содержать хотя бы одну строчную букву";
+                return result;
+            }
+
+            // Проверка на наличие специальных символов
+            if (!Regex.IsMatch(password, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Пароль должен содержать хотя бы один специальный символ (!@#$%^&*()_+-=[]{};':\"|,.<>/? и т.д.)";
+                return result;
+            }
+
+            return result;
+        }
+
         // Метод для хэширования пароля
         private string HashPassword(string password)
         {
@@ -231,5 +288,12 @@ namespace TripWise.Controllers
                 return false;
             }
         }
+    }
+
+    // Вспомогательный класс для результата проверки пароля
+    public class PasswordValidationResult
+    {
+        public bool IsValid { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
     }
 }
