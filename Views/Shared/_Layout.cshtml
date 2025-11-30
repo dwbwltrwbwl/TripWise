@@ -14,7 +14,7 @@
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-2">
-            <div class="container-fluid position-relative">
+            <div class="container-fluid">
                 <div class="d-flex align-items-center w-100">
                     <a class="navbar-brand d-flex align-items-center me-4" href="/">
                         <img src="/favicon-32x32.png" width="35" height="35" class="d-inline-block align-top me-2" alt="Логотип">
@@ -48,7 +48,6 @@
                                         <div class="tab-text">Отели</div>
                                     </a>
                                 </li>
-
                                 <li class="nav-tab" data-tab="favorites">
                                     <a asp-controller="Home" asp-action="Favorites">
                                         <div class="tab-icon">
@@ -58,58 +57,16 @@
                                     </a>
                                 </li>
 
-                                <!-- Дополнительные вкладки в выпадающем меню -->
-                                @if (Context.Session.GetInt32("UserId") != null) {
-                                    <li class="nav-tab dropdown" data-tab="more">
-                                        <a class="dropdown-toggle nav-link p-0" href="#" role="button" id="moreDropdown"
-                                           data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                <!-- Кнопка для модального окна -->
+                                @if (Context.Session.GetInt32("UserId") != null)
+                                {
+                                    <li class="nav-tab" data-tab="more">
+                                        <a href="#" role="button" data-bs-toggle="modal" data-bs-target="#moreModal">
                                             <div class="tab-icon">
-                                                <i class="fas fa-caret-down"></i>
+                                                <i class="fas fa-ellipsis-h"></i>
                                             </div>
                                             <div class="tab-text">Ещё</div>
                                         </a>
-                                        <ul class="dropdown-menu dropdown-menu-custom" aria-labelledby="moreDropdown">
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Home" asp-action="Trips">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="dropdown-icon me-2">
-                                                            <i class="fas fa-route"></i>
-                                                        </div>
-                                                        <span>Мои поездки</span>
-                                                    </div>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Home" asp-action="Groups">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="dropdown-icon me-2">
-                                                            <i class="fas fa-users"></i>
-                                                        </div>
-                                                        <span>Группы</span>
-                                                    </div>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Home" asp-action="Budget">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="dropdown-icon me-2">
-                                                            <i class="fas fa-wallet"></i>
-                                                        </div>
-                                                        <span>Бюджет</span>
-                                                    </div>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Home" asp-action="Activities">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="dropdown-icon me-2">
-                                                            <i class="fas fa-hiking"></i>
-                                                        </div>
-                                                        <span>Активности</span>
-                                                    </div>
-                                                </a>
-                                            </li>
-                                        </ul>
                                     </li>
                                 }
                             </ul>
@@ -157,6 +114,77 @@
         </main>
     </div>
 
+    <!-- Модальное окно "Ещё" -->
+    <div class="modal fade" id="moreModal" tabindex="-1" aria-labelledby="moreModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="moreModalLabel">Дополнительные возможности</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a class="more-card d-block text-decoration-none" asp-controller="Home" asp-action="Trips" data-bs-dismiss="modal">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div class="more-icon mb-2">
+                                            <i class="fas fa-route fa-2x text-primary"></i>
+                                        </div>
+                                        <h6 class="card-title mb-1">Мои поездки</h6>
+                                        <p class="card-text text-muted small">История и планирование</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a class="more-card d-block text-decoration-none" asp-controller="Home" asp-action="Groups" data-bs-dismiss="modal">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div class="more-icon mb-2">
+                                            <i class="fas fa-users fa-2x text-success"></i>
+                                        </div>
+                                        <h6 class="card-title mb-1">Группы</h6>
+                                        <p class="card-text text-muted small">Совместные путешествия</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a class="more-card d-block text-decoration-none" asp-controller="Home" asp-action="Budget" data-bs-dismiss="modal">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div class="more-icon mb-2">
+                                            <i class="fas fa-wallet fa-2x text-warning"></i>
+                                        </div>
+                                        <h6 class="card-title mb-1">Бюджет</h6>
+                                        <p class="card-text text-muted small">Управление расходами</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a class="more-card d-block text-decoration-none" asp-controller="Home" asp-action="Activities" data-bs-dismiss="modal">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div class="more-icon mb-2">
+                                            <i class="fas fa-hiking fa-2x text-info"></i>
+                                        </div>
+                                        <h6 class="card-title mb-1">Активности</h6>
+                                        <p class="card-text text-muted small">Развлечения и события</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-dark text-white py-4">
         <div class="container">
             <div class="row">
@@ -190,24 +218,24 @@
                 <div class="col-md-2 mb-3">
                     <h6 class="fw-bold">Поддержка</h6>
                     <ul class="list-unstyled">
-                        <li><a asp-controller="Home" asp-action="Help" target="_blank" class="text-muted text-decoration-none">Помощь</a></li>
-                        <li><a asp-controller="Home" asp-action="Contact" target="_blank" class="text-muted text-decoration-none">Контакты</a></li>
-                        <li><a asp-controller="Home" asp-action="FAQ" target="_blank" class="text-muted text-decoration-none">FAQ</a></li>
-                        <li><a asp-controller="Home" asp-action="Reviews" target="_blank" class="text-muted text-decoration-none">Отзывы</a></li>
+                        <li><a asp-controller="Home" asp-action="Help" class="text-muted text-decoration-none">Помощь</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" class="text-muted text-decoration-none">Контакты</a></li>
+                        <li><a asp-controller="Home" asp-action="FAQ" class="text-muted text-decoration-none">FAQ</a></li>
+                        <li><a asp-controller="Home" asp-action="Reviews" class="text-muted text-decoration-none">Отзывы</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">
                     <h6 class="fw-bold">Компания</h6>
                     <ul class="list-unstyled">
-                        <li><a asp-controller="Home" asp-action="About" target="_blank" class="text-muted text-decoration-none">О нас</a></li>
-                        <li><a asp-controller="Home" asp-action="Partners" target="_blank" class="text-muted text-decoration-none">Партнеры</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="text-muted text-decoration-none">О нас</a></li>
+                        <li><a asp-controller="Home" asp-action="Partners" class="text-muted text-decoration-none">Партнеры</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">
                     <h6 class="fw-bold">Правовая информация</h6>
                     <ul class="list-unstyled">
-                        <li><a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-muted text-decoration-none">Политика конфиденциальности</a></li>
-                        <li><a asp-controller="Home" asp-action="Terms" target="_blank" class="text-muted text-decoration-none">Условия использования</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy" class="text-muted text-decoration-none">Политика конфиденциальности</a></li>
+                        <li><a asp-controller="Home" asp-action="Terms" class="text-muted text-decoration-none">Условия использования</a></li>
                     </ul>
                 </div>
             </div>
@@ -323,13 +351,6 @@
                 border-color: rgba(255, 255, 255, 0.3);
             }
 
-        .payment-text {
-            font-family: 'Nunito', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
         .list-unstyled li {
             margin-bottom: 0.5rem;
         }
@@ -342,103 +363,42 @@
                 color: #ffffff !important;
             }
 
-        /* Сброс стилей для выпадающего меню */
-        .navbar-integrated-tabs {
-            position: static;
-        }
-
-        .nav-tabs-wrapper {
-            position: static;
-        }
-
+        /* Стили для навигационных вкладок */
         .nav-tabs {
             display: flex;
             align-items: center;
             list-style: none;
             margin: 0;
             padding: 0;
-            position: static;
         }
 
         .nav-tab {
             position: relative;
         }
 
-            .nav-tab.dropdown {
-                position: relative; /* Изменено с static на relative */
+            .nav-tab a {
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+                color: inherit;
+                padding: 8px 16px;
+                border-radius: 8px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                background: none;
+                border: none;
+                white-space: nowrap;
             }
 
-        .dropdown-menu-custom {
-            position: absolute !important;
-            top: 100% !important;
-            left: 0 !important; /* Изменено с auto на 0 */
-            right: auto !important; /* Изменено с 0 на auto */
-            z-index: 1100 !important;
-            margin-top: 0.5rem !important;
-            border-radius: 12px;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            padding: 8px;
-            min-width: 200px;
-            transform: translateX(0) !important; /* Убедимся что нет смещения */
-        }
+                .nav-tab a:hover {
+                    background-color: #f8f9fa;
+                }
 
-        /* Убедимся что контейнер не ограничивает меню */
-        .navbar > .container-fluid {
-            position: relative; /* Добавлено */
-        }
-
-        /* Стили для вкладок */
-        .nav-tab a:not(.dropdown-toggle),
-        .nav-tab .dropdown-toggle {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background: none;
-            border: none;
-            white-space: nowrap;
-        }
-
-            .nav-tab a:not(.dropdown-toggle):hover,
-            .nav-tab .dropdown-toggle:hover {
-                background-color: #f8f9fa;
+            .nav-tab.active a {
+                background-color: #047bd6 !important;
+                color: white !important;
             }
 
-        /* Активная вкладка */
-        .nav-tab.active a:not(.dropdown-toggle),
-        .nav-tab.active .dropdown-toggle {
-            background-color: #047bd6 !important;
-            color: white !important;
-        }
-
-        /* Убираем стандартную стрелку Bootstrap */
-        .nav-tab.dropdown .dropdown-toggle::after {
-            display: none;
-        }
-
-        .nav-tabs {
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .nav-tab {
-            margin-bottom: 5px;
-        }
-
-        }
-
-        /* ИСПРАВЛЕНИЕ: Убираем синее закрашивание для кнопки "Еще" когда меню открыто */
-        .nav-tab.dropdown.show .dropdown-toggle {
-            background-color: #f8f9fa !important;
-            color: inherit !important;
-        }
-
-        /* Стили для иконок и текста вкладок */
         .tab-icon {
             display: flex;
             align-items: center;
@@ -453,28 +413,44 @@
             align-items: center;
         }
 
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 12px;
-            border-radius: 8px;
+        /* Стили для модального окна */
+        .more-card {
             transition: all 0.3s ease;
-            color: #333;
-            text-decoration: none;
         }
 
-            .dropdown-item:hover {
-                background-color: #f8f9fa;
-                color: #047bd6;
+            .more-card:hover {
+                transform: translateY(-5px);
             }
 
-        .dropdown-icon {
+            .more-card .card {
+                transition: all 0.3s ease;
+            }
+
+            .more-card:hover .card {
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+            }
+
+        .more-icon {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
-            margin-right: 8px;
+            height: 60px;
+        }
+
+        /* Адаптивность */
+        @@media (max-width: 768px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-tab {
+                margin-bottom: 5px;
+            }
+
+            .modal-dialog {
+                margin: 1rem;
+            }
         }
     </style>
 
@@ -483,11 +459,10 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // Инициализация выпадающих меню
-            document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // Определяем активную вкладку
             const currentPath = window.location.pathname;
-            const tabs = document.querySelectorAll('.nav-tab:not(.dropdown)'); // Исключаем dropdown из подсветки
+            const tabs = document.querySelectorAll('.nav-tab');
 
             tabs.forEach(tab => tab.classList.remove('active'));
 
@@ -499,18 +474,6 @@
                 document.querySelector('[data-tab="hotels"]').classList.add('active');
             } else if (currentPath.includes('/favorites') || currentPath === '/Home/Favorites') {
                 document.querySelector('[data-tab="favorites"]').classList.add('active');
-            }
-            // Для вкладок из меню "Еще" НЕ добавляем активный класс к самой кнопке "Еще"
-
-            // Обработка выпадающего меню "Еще"
-            const moreDropdown = document.getElementById('moreDropdown');
-            if (moreDropdown) {
-                moreDropdown.addEventListener('show.bs.dropdown', function () {
-                    this.closest('.nav-tab').classList.add('show');
-                });
-                moreDropdown.addEventListener('hide.bs.dropdown', function () {
-                    this.closest('.nav-tab').classList.remove('show');
-                });
             }
         });
     </script>
