@@ -365,14 +365,14 @@
         }
 
             .nav-tab.dropdown {
-                position: static;
+                position: relative; /* Изменено с static на relative */
             }
 
         .dropdown-menu-custom {
             position: absolute !important;
             top: 100% !important;
-            left: auto !important;
-            right: 0 !important;
+            left: 0 !important; /* Изменено с auto на 0 */
+            right: auto !important; /* Изменено с 0 на auto */
             z-index: 1100 !important;
             margin-top: 0.5rem !important;
             border-radius: 12px;
@@ -380,8 +380,16 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.1);
             padding: 8px;
             min-width: 200px;
+            transform: translateX(0) !important; /* Убедимся что нет смещения */
         }
 
+        /* Убедимся что контейнер не ограничивает меню */
+        .navbar > .container-fluid {
+            position: relative; /* Добавлено */
+        }
+
+        /* Стили для вкладок */
+        .nav-tab a:not(.dropdown-toggle),
         .nav-tab .dropdown-toggle {
             display: flex;
             align-items: center;
@@ -393,11 +401,57 @@
             cursor: pointer;
             background: none;
             border: none;
+            white-space: nowrap;
         }
 
+            .nav-tab a:not(.dropdown-toggle):hover,
             .nav-tab .dropdown-toggle:hover {
                 background-color: #f8f9fa;
             }
+
+        /* Активная вкладка */
+        .nav-tab.active a:not(.dropdown-toggle),
+        .nav-tab.active .dropdown-toggle {
+            background-color: #047bd6 !important;
+            color: white !important;
+        }
+
+        /* Убираем стандартную стрелку Bootstrap */
+        .nav-tab.dropdown .dropdown-toggle::after {
+            display: none;
+        }
+
+        .nav-tabs {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav-tab {
+            margin-bottom: 5px;
+        }
+
+        }
+
+        /* ИСПРАВЛЕНИЕ: Убираем синее закрашивание для кнопки "Еще" когда меню открыто */
+        .nav-tab.dropdown.show .dropdown-toggle {
+            background-color: #f8f9fa !important;
+            color: inherit !important;
+        }
+
+        /* Стили для иконок и текста вкладок */
+        .tab-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .tab-text {
+            display: flex;
+            align-items: center;
+        }
 
         .dropdown-item {
             display: flex;
@@ -420,65 +474,7 @@
             justify-content: center;
             width: 20px;
             height: 20px;
-        }
-
-        .tab-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
             margin-right: 8px;
-        }
-
-        .tab-text {
-            display: flex;
-            align-items: center;
-        }
-
-        /* ИСПРАВЛЕНИЕ: Убираем синее закрашивание для кнопки "Еще" */
-        .nav-tab.dropdown.active .dropdown-toggle {
-            background-color: transparent !important;
-            color: inherit !important;
-        }
-
-        .nav-tab.dropdown .dropdown-toggle::after {
-            display: none;
-        }
-
-        .nav-tab.dropdown .tab-text {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* ИСПРАВЛЕНИЕ: Убираем синюю линию под выпадающим меню */
-        .dropdown-menu-custom {
-            border: 1px solid #e9ecef !important;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
-        }
-
-            .dropdown-menu-custom::before,
-            .dropdown-menu-custom::after {
-                display: none !important;
-            }
-
-        /* Убедимся, что контейнер не ограничивает меню */
-        .navbar > .container-fluid {
-            position: static;
-        }
-
-        /* Для мобильных устройств */
-        @@media (max-width: 768px) {
-            .dropdown-menu-custom {
-                position: fixed !important;
-                top: auto !important;
-                left: 50% !important;
-                right: auto !important;
-                transform: translateX(-50%);
-                width: 90%;
-                max-width: 300px;
-            }
         }
     </style>
 
@@ -488,10 +484,10 @@
 
     <script>
         // Инициализация выпадающих меню
-        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function() {
             // Определяем активную вкладку
             const currentPath = window.location.pathname;
-            const tabs = document.querySelectorAll('.nav-tab');
+            const tabs = document.querySelectorAll('.nav-tab:not(.dropdown)'); // Исключаем dropdown из подсветки
 
             tabs.forEach(tab => tab.classList.remove('active'));
 
@@ -505,6 +501,17 @@
                 document.querySelector('[data-tab="favorites"]').classList.add('active');
             }
             // Для вкладок из меню "Еще" НЕ добавляем активный класс к самой кнопке "Еще"
+
+            // Обработка выпадающего меню "Еще"
+            const moreDropdown = document.getElementById('moreDropdown');
+            if (moreDropdown) {
+                moreDropdown.addEventListener('show.bs.dropdown', function () {
+                    this.closest('.nav-tab').classList.add('show');
+                });
+                moreDropdown.addEventListener('hide.bs.dropdown', function () {
+                    this.closest('.nav-tab').classList.remove('show');
+                });
+            }
         });
     </script>
 
