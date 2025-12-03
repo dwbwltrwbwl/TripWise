@@ -552,136 +552,63 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-                // Адаптивные скрипты для мобильных устройств
         document.addEventListener('DOMContentLoaded', function() {
-            // Функция для определения мобильного устройства
-            function isMobile() {
-                return window.innerWidth <= 768;
-            }
+             // Определяем активную вкладку
+             const currentPath = window.location.pathname;
+             const tabs = document.querySelectorAll('.nav-tab');
 
-            // Адаптивное поведение навигационных вкладок
-            function adaptNavTabs() {
-                const navTabsWrapper = document.querySelector('.nav-tabs-wrapper');
-                const navTabs = document.querySelector('.nav-tabs');
+             tabs.forEach(tab => tab.classList.remove('active'));
 
-                if (isMobile() && navTabsWrapper && navTabs) {
-                    // Рассчитываем общую ширину всех вкладок
-                    let totalWidth = 0;
-                    const tabs = navTabs.querySelectorAll('.nav-tab');
+             if (currentPath.includes('/flights') || currentPath === '/Home/Flights') {
+                 document.querySelector('[data-tab="flights"]').classList.add('active');
+             } else if (currentPath.includes('/railway') || currentPath === '/Home/Railway') {
+                 document.querySelector('[data-tab="railway"]').classList.add('active');
+             } else if (currentPath.includes('/hotels') || currentPath === '/Home/Hotels') {
+                 document.querySelector('[data-tab="hotels"]').classList.add('active');
+             } else if (currentPath.includes('/favorites') || currentPath === '/Home/Favorites') {
+                 document.querySelector('[data-tab="favorites"]').classList.add('active');
+             }
 
-                    tabs.forEach(tab => {
-                        totalWidth += tab.offsetWidth;
-                    });
+             // Управление выдвижным меню
+             const sidebar = document.getElementById('sidebar');
+             const sidebarOverlay = document.getElementById('sidebarOverlay');
+             const sidebarToggle = document.getElementById('sidebarToggle');
+             const sidebarClose = document.getElementById('sidebarClose');
 
-                    // Если вкладки не помещаются, добавляем горизонтальный скролл
-                    if (totalWidth > navTabsWrapper.offsetWidth) {
-                        navTabs.style.flexWrap = 'nowrap';
-                        navTabs.style.overflowX = 'auto';
-                    }
-                }
-            }
+             function openSidebar() {
+                 sidebar.classList.add('active');
+                 sidebarOverlay.classList.add('active');
+                 document.body.style.overflow = 'hidden';
+             }
 
-            // Адаптация карточек на мобильных
-            function adaptCards() {
-                if (isMobile()) {
-                    const cards = document.querySelectorAll('.card');
-                    cards.forEach(card => {
-                        card.style.marginBottom = '15px';
-                    });
-                }
-            }
+             function closeSidebar() {
+                 sidebar.classList.remove('active');
+                 sidebarOverlay.classList.remove('active');
+                 document.body.style.overflow = '';
+             }
 
-            // Адаптация форм на мобильных
-            function adaptForms() {
-                if (isMobile()) {
-                    const forms = document.querySelectorAll('form');
-                    forms.forEach(form => {
-                        const inputs = form.querySelectorAll('.form-control, .form-select');
-                        inputs.forEach(input => {
-                            input.style.fontSize = '16px'; // Предотвращает зум на iOS
-                        });
-                    });
-                }
-            }
+             sidebarToggle.addEventListener('click', function(e) {
+                 e.preventDefault();
+                 openSidebar();
+             });
 
-            // Адаптация кнопок на мобильных
-            function adaptButtons() {
-                if (isMobile()) {
-                    const buttons = document.querySelectorAll('.btn');
-                    buttons.forEach(btn => {
-                        btn.style.minHeight = '44px';
-                        btn.style.display = 'flex';
-                        btn.style.alignItems = 'center';
-                        btn.style.justifyContent = 'center';
-                    });
-                }
-            }
+             sidebarClose.addEventListener('click', closeSidebar);
+             sidebarOverlay.addEventListener('click', closeSidebar);
 
-            // Инициализация адаптации
-            function initAdaptation() {
-                adaptNavTabs();
-                adaptCards();
-                adaptForms();
-                adaptButtons();
-            }
+             // Закрытие меню при клике на пункт меню
+             document.querySelectorAll('.sidebar-item').forEach(item => {
+                 item.addEventListener('click', function() {
+                     setTimeout(closeSidebar, 300);
+                 });
+             });
 
-            // Выполняем при загрузке
-            initAdaptation();
-
-            // Выполняем при изменении размера окна
-            let resizeTimeout;
-            window.addEventListener('resize', function() {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(initAdaptation, 250);
-            });
-
-            // Улучшение тач-событий для мобильных
-            if ('ontouchstart' in window) {
-                // Добавляем тач-классы для стилизации
-                document.body.classList.add('touch-device');
-
-                // Улучшаем обработку кликов на мобильных
-                document.addEventListener('touchstart', function() {}, {passive: true});
-
-                // Предотвращаем долгое нажатие для выбора текста
-                document.addEventListener('contextmenu', function(e) {
-                    if (isMobile()) {
-                        e.preventDefault();
-                    }
-                }, false);
-            }
-
-            // Оптимизация для iOS
-            if (navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform)) {
-                document.body.classList.add('ios-device');
-
-                // Фикс для фиксированных элементов на iOS
-                document.addEventListener('touchmove', function(e) {
-                    if (e.target.classList.contains('no-scroll')) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-            }
-
-            // Адаптивное меню для мобильных
-            const navbarToggler = document.querySelector('.navbar-toggler');
-            if (navbarToggler) {
-                navbarToggler.addEventListener('click', function() {
-                    const navbarContent = document.getElementById('navbarContent');
-                    if (navbarContent) {
-                        navbarContent.classList.toggle('show');
-
-                        // Добавляем анимацию
-                        if (navbarContent.classList.contains('show')) {
-                            navbarContent.style.maxHeight = navbarContent.scrollHeight + 'px';
-                            navbarContent.style.transition = 'max-height 0.3s ease';
-                        } else {
-                            navbarContent.style.maxHeight = '0';
-                        }
-                    }
-                });
-            }
-        });
+             // Закрытие меню при нажатии Escape
+             document.addEventListener('keydown', function(e) {
+                 if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                     closeSidebar();
+                 }
+             });
+         });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

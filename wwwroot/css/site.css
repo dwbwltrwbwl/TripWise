@@ -1,4 +1,48 @@
-/* Базовые стили */
+html {
+    position: relative;
+    min-height: 100%;
+    font-size: 14px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: var(--container-max-width);
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
+main {
+    flex: 1 0 auto;
+    width: 100%;
+}
+
+footer {
+    background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+    flex-shrink: 0;
+    width: 100%;
+    margin-top: auto;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #0379D9;
+}
+
 :root {
     --primary-color: #0379D9;
     --primary-hover: #0369c1;
@@ -12,43 +56,12 @@
     --border-color: #e0e0e0;
     --text-color: #333;
     --container-max-width: 1280px;
-    --container-min-width: 320px; /* Минимальная ширина для мобильных */
+    --container-min-width: 1024px;
 }
 
-/* Общие стили для мобильных */
-html {
-    position: relative;
-    min-height: 100%;
-    font-size: 14px;
-    -webkit-text-size-adjust: 100%; /* Предотвращает масштабирование текста на iOS */
-}
-
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden; /* Предотвращает горизонтальный скролл */
-}
-
-.container {
-    flex: 1 0 auto;
-    width: 100%;
-    max-width: var(--container-max-width);
-    padding-left: 15px !important; /* Меньшие отступы на мобильных */
-    padding-right: 15px !important;
-}
-
-main {
-    flex: 1 0 auto;
-    width: 100%;
-}
-
-/* ШАПКА - Мобильная адаптация */
 .navbar {
-    padding-left: 15px !important;
-    padding-right: 15px !important;
+    padding-left: 40px;
+    padding-right: 40px;
 }
 
     .navbar .container-fluid {
@@ -59,42 +72,31 @@ main {
         width: 100%;
         padding-left: 0;
         padding-right: 0;
-        display: flex;
-        flex-wrap: wrap;
     }
 
 .navbar-brand {
     font-family: 'Nunito', sans-serif;
     font-weight: 800;
-    font-size: 1.3rem !important; /* Меньший размер на мобильных */
+    font-size: 1.5rem;
     background: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-right: 1rem !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
+    margin-right: 2rem;
 }
 
-/* Навигационные вкладки - Мобильная адаптация */
 .navbar-integrated-tabs {
     flex: 1;
     display: flex;
     justify-content: center;
-    order: 2;
-    width: 100%;
-    margin-top: 10px;
 }
 
 .nav-tabs-wrapper {
     display: flex;
-    width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 0 5px;
 }
 
     .nav-tabs-wrapper::-webkit-scrollbar {
@@ -108,531 +110,357 @@ main {
     padding: 0;
     min-width: max-content;
     border-bottom: none !important;
-    gap: 5px; /* Меньший отступ между вкладками */
 }
 
 .nav-tab {
     position: relative;
     margin: 0;
-    flex-shrink: 0; /* Предотвращает сжатие вкладок */
 }
 
     .nav-tab a {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 8px 12px !important; /* Меньшие отступы */
+        padding: 12px 16px;
         text-decoration: none;
         color: var(--text-color);
         transition: all 0.3s ease;
         position: relative;
         border-bottom: 2px solid transparent;
         animation: fadeIn 0.3s ease forwards;
-        font-size: 0.8rem;
     }
 
-    .nav-tab .tab-icon {
-        margin-bottom: 2px;
-        transition: transform 0.3s ease;
-        font-size: 1rem !important; /* Меньшие иконки */
+        .nav-tab a:hover {
+            color: var(--primary-color);
+            background-color: var(--light-bg);
+        }
+
+    .nav-tab.active a {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
     }
 
-    .nav-tab .tab-text {
-        font-size: 0.75rem !important; /* Меньший текст */
-        font-weight: 500;
-        white-space: nowrap;
-        font-family: 'Nunito', sans-serif;
-    }
+        .nav-tab.active a::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
 
-/* Кнопки авторизации - Мобильная адаптация */
+.tab-icon {
+    margin-bottom: 4px;
+    transition: transform 0.3s ease;
+}
+
+.nav-tab a:hover .tab-icon {
+    transform: translateY(-2px);
+}
+
+.nav-tab.active .tab-icon {
+    transform: scale(1.1);
+}
+
+.tab-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    font-family: 'Nunito', sans-serif;
+}
+
+.nav-tab:nth-child(1) a {
+    animation-delay: 0.05s;
+}
+
+.nav-tab:nth-child(2) a {
+    animation-delay: 0.1s;
+}
+
+.nav-tab:nth-child(3) a {
+    animation-delay: 0.15s;
+}
+
+.nav-tab:nth-child(4) a {
+    animation-delay: 0.2s;
+}
+
+.nav-tab:nth-child(5) a {
+    animation-delay: 0.25s;
+}
+
+.nav-tab:nth-child(6) a {
+    animation-delay: 0.3s;
+}
+
 #navbarContent {
-    order: 1;
-    width: auto;
     margin-left: auto;
 }
 
-    #navbarContent .d-flex {
-        gap: 8px !important; /* Меньший отступ между кнопками */
-    }
-
     #navbarContent .btn {
-        padding: 6px 12px !important; /* Меньшие кнопки */
-        font-size: 0.8rem !important;
+        padding: 8px 16px;
+        font-weight: 500;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
         white-space: nowrap;
+        font-size: 0.875rem;
     }
 
-/* Гамбургер меню */
-.navbar-toggler {
-    margin-left: 10px;
-    padding: 0.25rem 0.5rem;
-    font-size: 1rem;
-}
-
-/* Скрываем текст кнопок на очень маленьких экранах */
-@media (max-width: 360px) {
-    #navbarContent .btn span {
-        display: none;
+    #navbarContent .btn-outline-secondary {
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        background: white;
     }
 
-    #navbarContent .btn i {
-        margin-right: 0 !important;
+        #navbarContent .btn-outline-secondary:hover {
+            background: #f8f9fa;
+            border-color: #adb5bd;
+        }
+
+    #navbarContent .btn-primary {
+        background: var(--primary-color);
+        border: none;
     }
 
-    .navbar-brand {
-        max-width: 140px;
-        font-size: 1.1rem !important;
-    }
-}
+        #navbarContent .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
 
-/* ГЛАВНАЯ СЕКЦИЯ - Мобильная адаптация */
 .hero-section {
     position: relative;
-    padding: 40px 0 !important; /* Меньшие отступы */
+    padding: 80px 0;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--success-color) 100%);
     overflow: hidden;
-    text-align: center;
 }
 
-    .hero-section .display-4 {
-        font-family: 'Baloo 2', cursive;
-        font-weight: 800;
-        line-height: 1.2;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-        margin-bottom: 1rem;
-        font-size: 2rem !important; /* Меньший заголовок */
+    .hero-section .container {
+        position: relative;
+        z-index: 2;
+        max-width: var(--container-max-width);
     }
 
-    .hero-section .lead {
-        font-size: 1rem !important; /* Меньший текст */
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.9);
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-        margin-bottom: 1.5rem;
-        padding: 0 10px;
+.hero-image-container {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+    .hero-image-container:hover {
+        transform: scale(1.02);
     }
 
-    .hero-section .btn {
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        padding: 10px 20px !important; /* Меньшие кнопки */
-        font-size: 0.9rem;
-        margin: 5px;
-        width: auto;
+.hero-image {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    opacity: 0.9;
+    filter: brightness(1.1) contrast(1.1);
+}
+
+.hero-section .display-4 {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem;
+}
+
+.hero-section .lead {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2rem;
+}
+
+.hero-section .btn {
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    padding: 12px 24px;
+}
+
+.hero-section .btn-light {
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+    .hero-section .btn-light:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
     }
 
-    .hero-section .d-flex {
-        flex-direction: column !important; /* Вертикальное расположение кнопок */
-        gap: 10px;
+.hero-section .btn-outline-light {
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+    .hero-section .btn-outline-light:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
     }
 
-/* Карточка поиска */
 .search-card {
-    margin-top: -30px !important; /* Меньший отступ */
+    margin-top: -60px;
     position: relative;
     z-index: 10;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    padding: 15px !important;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-/* КАРТОЧКИ - Мобильная адаптация */
-.feature-card,
-.destination-card,
-.accommodation-card,
-.country-card,
-.testimonial-card {
+.feature-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: white;
 }
 
-    .feature-card:hover,
-    .destination-card:hover,
-    .accommodation-card:hover,
-    .country-card:hover,
-    .testimonial-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     }
 
 .feature-icon {
-    width: 60px !important;
-    height: 60px !important;
+    width: 80px;
+    height: 80px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-    .feature-icon i {
-        font-size: 1.5rem !important;
+.destination-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+    .destination-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
 
-.destination-card img,
-.country-card img {
-    width: 100%;
-    height: 150px !important; /* Меньшая высота изображений */
-    object-fit: cover;
-    object-position: center;
-}
+    .destination-card img {
+        transition: transform 0.3s ease;
+    }
 
-.destination-card .card-body,
-.country-card .card-body,
-.accommodation-card .card-body {
-    padding: 15px !important;
-    min-height: auto;
-}
+    .destination-card:hover img {
+        transform: scale(1.05);
+    }
 
-.destination-card .card-title,
-.country-card .card-title {
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
     font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    font-size: 1rem !important;
-    margin-bottom: 0.5rem;
 }
 
-.destination-card .card-text,
-.country-card .card-text {
-    font-family: 'Nunito', sans-serif;
+.btn-primary {
+    background: var(--primary-color);
+    border: none;
     font-weight: 600;
-    font-size: 1rem !important;
-    color: #0379D9;
 }
 
-/* Секции */
-.section-title {
-    font-size: 1.5rem !important;
-    margin-bottom: 1.5rem;
-    text-align: center;
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(3, 121, 217, 0.3);
+    }
+
+.btn-outline-primary {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
-/* Формы */
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+
 .form-control {
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid #dee2e6;
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
 }
 
-/* ФУТЕР - Мобильная адаптация */
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+    }
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
 footer {
     background: linear-gradient(135deg, #2c3e50, #34495e) !important;
     flex-shrink: 0;
-    width: 100%;
-    margin-top: auto;
-    padding: 30px 0 !important;
 }
 
-    footer .container {
-        padding-left: 15px !important;
-        padding-right: 15px !important;
-    }
-
-    footer .row {
-        margin-left: -10px;
-        margin-right: -10px;
-    }
-
-    footer [class*="col-"] {
-        padding-left: 10px;
-        padding-right: 10px;
-        margin-bottom: 20px;
-    }
-
-    footer h5,
-    footer h6 {
-        font-size: 1rem !important;
-        margin-bottom: 15px;
-    }
-
-    footer ul li {
-        margin-bottom: 8px;
-    }
-
-        footer ul li a {
-            font-size: 0.85rem;
-        }
-
-.social-links {
-    display: flex;
-    gap: 8px;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-}
-
-.social-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 8px;
-    text-decoration: none;
+.social-links a {
     transition: all 0.3s ease;
-    font-size: 1rem !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.payment-methods {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
+    .social-links a:hover {
+        transform: translateY(-2px);
+        color: var(--success-color) !important;
+    }
+
+.display-4 {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
 }
 
-.payment-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 60px !important;
-    min-height: 30px !important;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    padding: 0 8px;
+.fw-bold {
+    font-family: 'Nunito', sans-serif;
 }
 
-/* Рассылка */
-footer .input-group {
-    max-width: 100% !important;
+.text-gradient {
+    background: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-    footer .input-group input {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.75rem;
-    }
-
-    footer .input-group .btn {
-        padding: 0.4rem 1rem !important;
-        font-size: 0.85rem;
-    }
-
-/* Копирайт */
-footer hr {
-    margin: 20px 0;
+.border-gradient {
+    border: 2px solid;
+    border-image: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green)) 1;
 }
 
-footer .text-muted {
-    font-size: 0.8rem;
+.card {
+    transition: all 0.3s ease;
 }
 
-/* Сайдбар - Мобильная адаптация */
-.sidebar {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 100% !important; /* На всю ширину на мобильных */
-    height: 100%;
-    background: white;
-    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-    z-index: 1050;
-    transition: right 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
-
-    .sidebar.active {
-        right: 0;
+    .card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     }
 
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    border-bottom: 1px solid #e9ecef;
-    background: #f8f9fa;
-}
-
-.sidebar-title {
-    margin: 0;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.sidebar-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
-}
-
-.sidebar-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: #047bd6;
-    color: white;
-    border-radius: 8px;
-    margin-right: 0.75rem;
-    flex-shrink: 0;
-}
-
-.sidebar-item-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    margin-bottom: 0.15rem;
-}
-
-.sidebar-item-desc {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-/* Специальные медиа-запросы */
-@media (min-width: 576px) {
-    .container {
-        padding-left: 20px !important;
-        padding-right: 20px !important;
-    }
-
-    .navbar-brand {
-        font-size: 1.4rem !important;
-        max-width: 200px;
-    }
-
-    .hero-section .display-4 {
-        font-size: 2.2rem !important;
-    }
-
-    .hero-section .d-flex {
-        flex-direction: row !important;
-        justify-content: center;
-    }
-
-    .sidebar {
-        width: 300px !important;
-    }
-}
-
-@media (min-width: 768px) {
-    html {
-        font-size: 16px;
-    }
-
-    .container {
-        padding-left: 30px !important;
-        padding-right: 30px !important;
-    }
-
-    .navbar-brand {
-        font-size: 1.5rem !important;
-    }
-
-    .navbar-integrated-tabs {
-        order: 1;
-        width: auto;
-        margin-top: 0;
-    }
-
-    #navbarContent {
-        order: 2;
-    }
-
-    .hero-section {
-        padding: 60px 0 !important;
-    }
-
-        .hero-section .display-4 {
-            font-size: 2.5rem !important;
-        }
-
-        .hero-section .lead {
-            font-size: 1.1rem !important;
-        }
-
-    .section-title {
-        font-size: 1.75rem !important;
-    }
-
-    .destination-card img,
-    .country-card img {
-        height: 180px !important;
-    }
-
-    footer {
-        padding: 40px 0 !important;
-    }
-
-        footer h5,
-        footer h6 {
-            font-size: 1.1rem !important;
-        }
-}
-
-@media (min-width: 992px) {
-    .container {
-        padding-left: 40px !important;
-        padding-right: 40px !important;
-    }
-
-    .navbar-integrated-tabs {
-        flex: 1;
-    }
-
-    .nav-tab a {
-        padding: 12px 16px !important;
-        font-size: 0.875rem;
-    }
-
-    .nav-tab .tab-icon {
-        font-size: 1.1rem !important;
-    }
-
-    .nav-tab .tab-text {
-        font-size: 0.875rem !important;
-    }
-
-    .hero-section .display-4 {
-        font-size: 3rem !important;
-    }
-
-    .hero-section .lead {
-        font-size: 1.25rem !important;
-    }
-
-    .search-card {
-        margin-top: -60px !important;
-        padding: 25px !important;
-    }
-
-    .destination-card img,
-    .country-card img {
-        height: 200px !important;
-    }
-
-    .feature-icon {
-        width: 80px !important;
-        height: 80px !important;
-    }
-
-        .feature-icon i {
-            font-size: 2rem !important;
-        }
-}
-
-@media (min-width: 1200px) {
-    .hero-section .display-4 {
-        font-size: 3.5rem !important;
-    }
-}
-
-/* Анимации */
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
 
     to {
@@ -654,100 +482,1024 @@ footer .text-muted {
 }
 
 .fade-in-up {
-    animation: fadeInUp 0.5s ease-out;
+    animation: fadeInUp 0.6s ease-out;
 }
 
-/* Оптимизация для тач-устройств */
-@media (hover: none) and (pointer: coarse) {
-    .btn,
-    .nav-tab a,
-    .sidebar-item,
-    .social-icon,
-    .payment-icon {
-        min-height: 44px; /* Минимальная высота для удобного нажатия */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-hover);
     }
 
-    .form-control {
-        min-height: 44px;
+.navbar-toggler {
+    border: none;
+}
+
+    .navbar-toggler:focus {
+        box-shadow: none;
     }
 
-    /* Убираем ховер-эффекты на тач-устройствах */
-    .feature-card:hover,
-    .destination-card:hover,
-    .accommodation-card:hover,
-    .country-card:hover,
-    .testimonial-card:hover {
-        transform: none;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+@media (max-width: 1200px) {
+    .navbar {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    :root {
+        --container-max-width: 1140px;
+        --container-min-width: 992px;
     }
 }
 
-/* Предотвращение масштабирования при фокусе на мобильных */
-@media screen and (max-width: 768px) {
-    input,
-    select,
-    textarea {
-        font-size: 16px !important; /* Предотвращает увеличение масштаба на iOS */
+@media (max-width: 991px) {
+    .navbar-integrated-tabs {
+        order: 3;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .nav-tabs-wrapper {
+        padding: 0 15px;
+    }
+
+    #navbarContent {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        width: 100%;
+    }
+
+        #navbarContent .d-flex {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #navbarContent .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+    .navbar .container-fluid {
+        flex-direction: column;
     }
 }
 
-/* Улучшение читаемости на маленьких экранах */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+        text-align: center;
+    }
+
+    .hero-image-container {
+        margin-top: 2rem;
+    }
+
+    .search-card {
+        margin-top: -40px;
+    }
+
+    .display-4 {
+        font-size: 2.5rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.3rem;
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+        .feature-icon i {
+            font-size: 1.5rem !important;
+        }
+
+    .nav-tab a {
+        padding: 10px 12px;
+    }
+
+    .tab-text {
+        font-size: 0.8rem;
+    }
+}
+
 @media (max-width: 576px) {
-    h1, .h1 {
-        font-size: 1.75rem !important;
+    .navbar {
+        padding-left: 15px;
+        padding-right: 15px;
     }
 
-    h2, .h2 {
-        font-size: 1.5rem !important;
+    .hero-section {
+        padding: 40px 0;
     }
 
-    h3, .h3 {
-        font-size: 1.25rem !important;
+    .display-4 {
+        font-size: 2rem;
     }
 
-    h4, .h4 {
-        font-size: 1.1rem !important;
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
     }
 
-    h5, .h5 {
-        font-size: 1rem !important;
+    .nav-tab a {
+        padding: 8px 10px;
     }
 
-    h6, .h6 {
-        font-size: 0.9rem !important;
+    .tab-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .hero-section .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .hero-section .d-flex {
+        flex-direction: column;
+    }
+}
+
+.accommodation-section {
+    background-color: white;
+}
+
+.accommodation-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: white;
+}
+
+    .accommodation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+.accommodation-icon {
+    width: 70px;
+    height: 70px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+/* Стили для секции стран */
+.countries-section {
+    background-color: white;
+}
+
+.country-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+    .country-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .country-card img {
+        transition: transform 0.3s ease;
+    }
+
+    .country-card:hover img {
+        transform: scale(1.05);
+    }
+
+    /* Стили для карточек вариантов размещения и стран */
+    .accommodation-card .card-body,
+    .country-card .card-body {
+        padding: 1.25rem;
+    }
+
+/* Адаптивность для новых секций */
+@media (max-width: 768px) {
+    .accommodation-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+        .accommodation-icon i {
+            font-size: 1.5rem !important;
+        }
+
+    .country-card img {
+        height: 150px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .accommodation-card .card-body,
+    .country-card .card-body {
+        padding: 1rem;
+    }
+
+    .country-card img {
+        height: 120px !important;
+    }
+}
+
+.testimonial-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+    .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+.user-name {
+    white-space: nowrap; /* Запрещаем перенос текста */
+    overflow: hidden; /* Скрываем переполнение */
+    text-overflow: ellipsis; /* Добавляем многоточие если текст не помещается */
+    max-width: 200px; /* Ограничиваем максимальную ширину */
+    display: inline-block; /* Для корректной работы ограничений */
+    vertical-align: middle; /* Выравнивание по вертикали */
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 991px) {
+    .user-name {
+        max-width: 150px; /* Уменьшаем максимальную ширину на планшетах */
+    }
+}
+
+@media (max-width: 768px) {
+    .user-name {
+        max-width: 120px; /* Уменьшаем максимальную ширину на мобильных */
+        font-size: 0.9rem; /* Немного уменьшаем размер шрифта */
+    }
+}
+
+@media (max-width: 576px) {
+    .user-name {
+        max-width: 100px; /* Еще меньше на очень маленьких экранах */
+        font-size: 0.85rem;
+    }
+}
+
+/* Дополнительно можно улучшить отступы для кнопок в навигации */
+#navbarContent .d-flex.align-items-center {
+    gap: 1rem;
+}
+
+/* Убедимся, что кнопки не переносятся на мобильных */
+@media (max-width: 991px) {
+    #navbarContent .d-flex.align-items-center {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
+
+    .user-name {
+        margin-right: 1rem;
+    }
+}
+
+/* Все элементы в навигационных вкладках синие */
+.nav-tab a,
+.nav-tab .tab-text,
+.nav-tab .tab-icon,
+.navbar-integrated-tabs svg {
+    color: #0379D9 !important;
+    fill: #0379D9 !important;
+}
+
+    /* Темнее при наведении */
+    .nav-tab a:hover,
+    .nav-tab a:hover .tab-text,
+    .nav-tab a:hover .tab-icon,
+    .nav-tab a:hover svg {
+        color: #0369c1 !important;
+        fill: #0369c1 !important;
+    }
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+/* Стили для карточек направлений */
+.destination-card img {
+    transition: transform 0.3s ease;
+    width: 100%;
+    height: 200px; /* Фиксированная высота */
+    object-fit: cover; /* Обрезаем изображение чтобы заполнить контейнер */
+    object-position: center; /* Центрируем изображение */
+}
+
+.destination-card:hover img {
+    transform: scale(1.05);
+}
+
+.destination-card .card-body {
+    padding: 1.25rem;
+    min-height: 120px; /* Минимальная высота для текстового контента */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.destination-card .card-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.destination-card .card-text {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #0379D9;
+    margin-bottom: 0.25rem;
+}
+
+.destination-card .text-muted {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+}
+
+/* Адаптивность для карточек направлений */
+@media (max-width: 768px) {
+    .destination-card img {
+        height: 180px; /* Немного меньше высота на планшетах */
+    }
+
+    .destination-card .card-body {
+        min-height: 110px;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .destination-card img {
+        height: 160px; /* Еще меньше на мобильных */
+    }
+
+    .destination-card .card-body {
+        min-height: 100px;
+        padding: 0.75rem;
+    }
+
+    .destination-card .card-title {
+        font-size: 1rem;
+    }
+
+    .destination-card .card-text {
+        font-size: 1.1rem;
+    }
+}
+
+/* Добавьте эти стили в конец вашего отдельного CSS файла */
+
+/* ===== ОБЩИЕ СТИЛИ АДАПТИВНОСТИ ===== */
+@media (max-width: 991.98px) {
+    /* Контейнер на планшетах */
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    /* Навигационная панель */
+    .navbar {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+        .navbar .container-fluid {
+            min-width: 100%;
+            flex-wrap: wrap;
+        }
+
+    /* Логотип и бренд */
+    .navbar-brand {
+        margin-right: 1rem;
+        font-size: 1.3rem;
+        order: 1;
+        flex: 0 0 auto;
+    }
+
+    /* Вкладки навигации */
+    .navbar-integrated-tabs {
+        order: 3;
+        width: 100%;
+        margin-top: 10px;
+        flex: 0 0 100%;
+    }
+
+    .nav-tabs-wrapper {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-tabs {
+        min-width: max-content;
+        flex-wrap: nowrap;
+    }
+
+    .nav-tab a {
+        padding: 10px 12px;
+        min-width: auto;
+        flex-direction: row;
+        white-space: nowrap;
+    }
+
+    .tab-icon {
+        margin-right: 8px;
+        margin-bottom: 0;
+        width: 18px;
+        height: 18px;
+    }
+
+    .tab-text {
+        font-size: 0.85rem;
+    }
+
+    /* Кнопка бургер-меню */
+    .navbar-toggler {
+        order: 2;
+        margin-left: auto;
+        border: none;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Контент навигации (кнопки входа/регистрации) */
+    #navbarContent {
+        order: 4;
+        width: 100%;
+        margin-top: 10px;
+        margin-left: 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+        #navbarContent .d-flex {
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        #navbarContent .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+            /* Отступы для текста в кнопках */
+            #navbarContent .btn i {
+                margin-right: 8px;
+            }
+
+    /* Основной контент */
+    main {
+        padding-top: 20px;
+    }
+
+    /* Заголовки */
+    .display-4 {
+        font-size: 2.2rem;
+        line-height: 1.2;
     }
 
     .lead {
-        font-size: 1rem !important;
+        font-size: 1.1rem;
     }
 
-    p, li, span, a {
-        font-size: 0.9rem !important;
+    /* Карточки */
+    .feature-card,
+    .destination-card,
+    .country-card,
+    .accommodation-card {
+        margin-bottom: 20px;
+    }
+
+    /* Иконки в карточках */
+    .feature-icon,
+    .accommodation-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+        .feature-icon i,
+        .accommodation-icon i {
+            font-size: 1.5rem !important;
+        }
+
+    /* Изображения в карточках направлений */
+    .destination-card img,
+    .country-card img {
+        height: 180px !important;
+    }
+
+    /* Кнопки в геро-секции */
+    .hero-section .btn {
+        margin-bottom: 10px;
+    }
+
+    .hero-section .d-flex {
+        flex-direction: column;
+    }
+
+    /* Футер на планшетах */
+    footer .row > div {
+        margin-bottom: 25px;
+    }
+
+    footer .social-links {
+        justify-content: flex-start;
+    }
+
+    .payment-methods {
+        justify-content: flex-start;
+    }
+
+    /* Выдвижное меню */
+    .sidebar {
+        width: 85%;
+        max-width: 300px;
+    }
+
+    .sidebar-item {
+        padding: 12px;
+    }
+
+    .sidebar-icon {
+        width: 35px;
+        height: 35px;
+        margin-right: 12px;
     }
 }
 
-/* Адаптивные утилиты */
-.text-center-mobile {
-    text-align: center;
-}
+@media (max-width: 767.98px) {
+    /* Мобильные устройства */
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+        width: 100%;
+    }
 
-@media (min-width: 768px) {
-    .text-center-mobile {
-        text-align: left;
+    /* Навигация */
+    .navbar {
+        padding-left: 10px;
+        padding-right: 10px;
+        position: relative;
+    }
+
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+        .navbar-brand img {
+            width: 30px;
+            height: 30px;
+        }
+
+    /* Вкладки навигации - уменьшаем отступы */
+    .nav-tab a {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    .tab-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 6px;
+    }
+
+        .tab-icon i {
+            font-size: 0.9rem;
+        }
+
+    .tab-text {
+        font-size: 0.8rem;
+    }
+
+    /* Геро-секция */
+    .hero-section {
+        padding: 40px 0;
+    }
+
+        .hero-section .display-4 {
+            font-size: 1.8rem;
+        }
+
+        .hero-section .lead {
+            font-size: 1rem;
+        }
+
+    .hero-image-container {
+        margin-top: 20px;
+    }
+
+    .search-card {
+        margin-top: -30px;
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
+    /* Карточки */
+    .card {
+        margin-bottom: 15px;
+    }
+
+    .feature-card .card-body,
+    .destination-card .card-body,
+    .country-card .card-body,
+    .accommodation-card .card-body {
+        padding: 1rem;
+    }
+
+    /* Изображения в карточках */
+    .destination-card img,
+    .country-card img {
+        height: 160px !important;
+    }
+
+    /* Кнопки */
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    /* Футер на мобильных */
+    footer {
+        padding: 30px 0;
+    }
+
+        footer .row {
+            margin-left: -10px;
+            margin-right: -10px;
+        }
+
+        footer .col-md-4,
+        footer .col-md-2 {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        footer h5,
+        footer h6 {
+            font-size: 1rem;
+        }
+
+    .social-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .payment-icon {
+        min-width: 60px;
+        min-height: 35px;
+        padding: 0 8px;
+    }
+
+    /* Подписка на рассылку */
+    .input-group {
+        flex-direction: column;
+    }
+
+        .input-group input {
+            width: 100%;
+            margin-bottom: 10px;
+            border-radius: 8px !important;
+        }
+
+        .input-group .btn {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+    /* Текст в футере */
+    .text-center.text-md-start,
+    .text-center.text-md-end {
+        text-align: center !important;
+    }
+
+    /* Выравнивание строк в футере */
+    footer .row.align-items-center {
+        text-align: center;
+    }
+
+    /* Выдвижное меню */
+    .sidebar {
+        width: 90%;
+        max-width: 280px;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+    }
+
+    .sidebar-item {
+        padding: 10px;
+    }
+
+    .sidebar-item-title {
+        font-size: 0.95rem;
+    }
+
+    .sidebar-item-desc {
+        font-size: 0.8rem;
     }
 }
 
-/* Скрытие элементов на мобильных */
-.hide-on-mobile {
-    display: none;
-}
-
-@media (min-width: 768px) {
-    .hide-on-mobile {
-        display: block;
+@media (max-width: 575.98px) {
+    /* Очень маленькие устройства */
+    .navbar-brand {
+        font-size: 1.1rem;
     }
 
-    .show-on-mobile {
-        display: none;
+    .nav-tab a {
+        padding: 6px 8px;
+    }
+
+    .tab-text {
+        font-size: 0.75rem;
+    }
+
+    .hero-section .display-4 {
+        font-size: 1.6rem;
+    }
+
+    .destination-card img,
+    .country-card img {
+        height: 140px !important;
+    }
+
+    /* Уменьшаем отступы в карточках */
+    .card-body {
+        padding: 0.75rem !important;
+    }
+
+    /* Футер - уменьшаем отступы */
+    footer .row > div {
+        margin-bottom: 20px;
+    }
+
+    .social-links {
+        gap: 8px;
+    }
+
+    .social-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Элементы навигации - еще компактнее */
+    #navbarContent {
+        padding: 12px;
+    }
+
+        #navbarContent .btn {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+}
+
+/* ===== ИСПРАВЛЕНИЕ ОТОБРАЖЕНИЯ НА МОБИЛЬНЫХ ===== */
+
+/* Предотвращаем горизонтальный скролл на мобильных */
+@media (max-width: 767.98px) {
+    html, body {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+/* Исправление для кнопок навигации на мобильных */
+@media (max-width: 991.98px) {
+    #navbarContent .btn-outline-secondary,
+    #navbarContent .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* Убедимся что иконки и текст выровнены по центру */
+    #navbarContent .btn i {
+        flex-shrink: 0;
+    }
+}
+
+/* Оптимизация для горизонтальной ориентации на мобильных */
+@media (max-width: 991.98px) and (orientation: landscape) {
+    .navbar-integrated-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .hero-section {
+        padding: 30px 0;
+    }
+
+        .hero-section .display-4 {
+            font-size: 1.8rem;
+        }
+}
+
+/* ===== ПЛАНШЕТЫ В ПОРТРЕТНОЙ ОРИЕНТАЦИИ ===== */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .container {
+        max-width: 100%;
+    }
+
+    .nav-tab a {
+        padding: 10px 14px;
+    }
+
+    .tab-text {
+        font-size: 0.9rem;
+    }
+
+    .destination-card img,
+    .country-card img {
+        height: 200px !important;
+    }
+}
+
+/* ===== ДЕСКТОПНАЯ ВЕРСИЯ НЕ МЕНЯЕТСЯ ===== */
+/* Все стили для десктопа остаются как были */
+
+/* Гарантируем что десктопные стили применяются только на больших экранах */
+@media (min-width: 992px) {
+    .container {
+        max-width: var(--container-max-width);
+        min-width: var(--container-min-width);
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .navbar .container-fluid {
+        max-width: var(--container-max-width);
+        min-width: var(--container-min-width);
+    }
+
+    /* Вся остальная десктопная версия остается без изменений */
+}
+
+/* ===== ДОПОЛНИТЕЛЬНЫЕ ИСПРАВЛЕНИЯ ДЛЯ УДОБСТВА ===== */
+
+/* Улучшаем тач-таргеты на мобильных */
+@media (max-width: 767.98px) {
+    .nav-tab a,
+    .btn,
+    .sidebar-item,
+    .social-icon {
+        min-height: 44px; /* Рекомендованный минимальный размер для тач-элементов */
+    }
+
+    /* Увеличиваем кликабельную область для ссылок в футере */
+    .list-unstyled a {
+        display: inline-block;
+        padding: 4px 0;
+        min-height: 30px;
+    }
+}
+
+/* Предотвращаем масштабирование при фокусе на мобильных */
+@media (max-width: 767.98px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px !important; /* Предотвращает масштабирование в iOS Safari */
+    }
+}
+
+/* Улучшаем читаемость на маленьких экранах */
+@media (max-width: 767.98px) {
+    body {
+        font-size: 15px; /* Немного увеличиваем базовый размер шрифта */
+    }
+
+    .card-title {
+        font-size: 1.1rem !important;
+        line-height: 1.3;
+    }
+
+    .card-text {
+        font-size: 0.95rem !important;
+    }
+}
+
+/* Анимации для плавного появления на мобильных */
+@media (max-width: 991.98px) {
+    .fade-in-up {
+        animation-duration: 0.4s;
+    }
+}
+
+/* Оптимизация для быстрой загрузки на мобильных */
+@media (max-width: 767.98px) {
+    .hero-image {
+        max-height: 250px;
+        object-fit: cover;
+    }
+}
+
+/* ===== ИСПРАВЛЕНИЕ БАГОВ С ПЕРЕПОЛНЕНИЕМ ===== */
+
+/* Предотвращаем переполнение контента на мобильных */
+@media (max-width: 767.98px) {
+    .row {
+        margin-left: -5px;
+        margin-right: -5px;
+    }
+
+    .col-md-4, .col-md-6, .col-md-2 {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    /* Ограничиваем ширину текстовых элементов */
+    h1, h2, h3, h4, h5, h6,
+    .display-4, .lead {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
+/* Улучшаем работу навигационных вкладок на мобильных */
+@media (max-width: 991.98px) {
+    .nav-tabs {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+
+        .nav-tabs::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+    /* Индикатор что есть горизонтальный скролл */
+    .nav-tabs-wrapper {
+        position: relative;
+    }
+
+        .nav-tabs-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9));
+            pointer-events: none;
+        }
+}
+
+/* Финальные оптимизации для производительности на мобильных */
+@media (max-width: 767.98px) {
+    /* Уменьшаем сложные тени на мобильных для производительности */
+    .card,
+    .feature-card,
+    .destination-card,
+    .search-card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    }
+
+        .card:hover,
+        .feature-card:hover,
+        .destination-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+
+    /* Упрощаем градиенты на мобильных */
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--success-color) 100%);
+    }
+
+    footer {
+        background: linear-gradient(135deg, #2c3e50, #34495e) !important;
     }
 }
