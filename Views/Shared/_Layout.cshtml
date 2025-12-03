@@ -570,6 +570,14 @@
              }
 
              // Управление выдвижным меню
+                 const mobileMoreButton = document.getElementById('mobileMoreButton');
+        if (mobileMoreButton) {
+            mobileMoreButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openSidebar();
+            });
+        }
              const sidebar = document.getElementById('sidebar');
              const sidebarOverlay = document.getElementById('sidebarOverlay');
              const sidebarToggle = document.getElementById('sidebarToggle');
@@ -612,5 +620,8 @@
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
+    <div class="mobile-more-button d-lg-none" id="mobileMoreButton">
+        <i class="fas fa-bars"></i>
+    </div>
 </body>
 </html>
