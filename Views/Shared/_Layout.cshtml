@@ -553,75 +553,267 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-             // Определяем активную вкладку
-             const currentPath = window.location.pathname;
-             const tabs = document.querySelectorAll('.nav-tab');
+            // Определяем активную вкладку
+            const currentPath = window.location.pathname;
+            const tabs = document.querySelectorAll('.nav-tab');
 
-             tabs.forEach(tab => tab.classList.remove('active'));
+            tabs.forEach(tab => tab.classList.remove('active'));
 
-             if (currentPath.includes('/flights') || currentPath === '/Home/Flights') {
-                 document.querySelector('[data-tab="flights"]').classList.add('active');
-             } else if (currentPath.includes('/railway') || currentPath === '/Home/Railway') {
-                 document.querySelector('[data-tab="railway"]').classList.add('active');
-             } else if (currentPath.includes('/hotels') || currentPath === '/Home/Hotels') {
-                 document.querySelector('[data-tab="hotels"]').classList.add('active');
-             } else if (currentPath.includes('/favorites') || currentPath === '/Home/Favorites') {
-                 document.querySelector('[data-tab="favorites"]').classList.add('active');
-             }
+            if (currentPath.includes('/flights') || currentPath === '/Home/Flights' || currentPath === '/Home/Flights/') {
+                const flightsTab = document.querySelector('[data-tab="flights"]');
+                if (flightsTab) flightsTab.classList.add('active');
+            } else if (currentPath.includes('/railway') || currentPath === '/Home/Railway' || currentPath === '/Home/Railway/') {
+                const railwayTab = document.querySelector('[data-tab="railway"]');
+                if (railwayTab) railwayTab.classList.add('active');
+            } else if (currentPath.includes('/hotels') || currentPath === '/Home/Hotels' || currentPath === '/Home/Hotels/') {
+                const hotelsTab = document.querySelector('[data-tab="hotels"]');
+                if (hotelsTab) hotelsTab.classList.add('active');
+            } else if (currentPath.includes('/favorites') || currentPath === '/Home/Favorites' || currentPath === '/Home/Favorites/') {
+                const favoritesTab = document.querySelector('[data-tab="favorites"]');
+                if (favoritesTab) favoritesTab.classList.add('active');
+            }
 
-             // Управление выдвижным меню
-                 const mobileMoreButton = document.getElementById('mobileMoreButton');
-        if (mobileMoreButton) {
-            mobileMoreButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                openSidebar();
+            // Управление выдвижным меню
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarClose = document.getElementById('sidebarClose');
+            const mobileMoreButton = document.getElementById('mobileMoreButton');
+
+            function openSidebar() {
+                if (sidebar) sidebar.classList.add('active');
+                if (sidebarOverlay) sidebarOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove('active');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // Обработчик для десктопной кнопки "Ещё"
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openSidebar();
+                });
+            }
+
+            // Обработчик для мобильной кнопки "Ещё"
+            if (mobileMoreButton) {
+                mobileMoreButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openSidebar();
+                });
+            }
+
+            // Обработчик для крестика закрытия сайдбара
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSidebar();
+                });
+            }
+
+            // Обработчик для оверлея
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSidebar();
+                });
+            }
+
+            // Закрытие меню при клике на пункт меню
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    setTimeout(closeSidebar, 300);
+                });
             });
-        }
-             const sidebar = document.getElementById('sidebar');
-             const sidebarOverlay = document.getElementById('sidebarOverlay');
-             const sidebarToggle = document.getElementById('sidebarToggle');
-             const sidebarClose = document.getElementById('sidebarClose');
 
-             function openSidebar() {
-                 sidebar.classList.add('active');
-                 sidebarOverlay.classList.add('active');
-                 document.body.style.overflow = 'hidden';
-             }
+            // Закрытие меню при нажатии Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const isSidebarOpen = sidebar && sidebar.classList.contains('active');
+                    const isNavbarOpen = document.getElementById('navbarContent') &&
+                                        document.getElementById('navbarContent').classList.contains('show');
 
-             function closeSidebar() {
-                 sidebar.classList.remove('active');
-                 sidebarOverlay.classList.remove('active');
-                 document.body.style.overflow = '';
-             }
+                    if (isSidebarOpen) {
+                        closeSidebar();
+                    }
 
-             sidebarToggle.addEventListener('click', function(e) {
-                 e.preventDefault();
-                 openSidebar();
-             });
+                    // Также закрываем навигационное меню на мобильных если оно открыто
+                    if (isNavbarOpen && window.innerWidth < 992) {
+                        const navbarContent = document.getElementById('navbarContent');
+                        const navbarToggler = document.querySelector('.navbar-toggler');
 
-             sidebarClose.addEventListener('click', closeSidebar);
-             sidebarOverlay.addEventListener('click', closeSidebar);
+                        if (navbarContent && navbarToggler) {
+                            // Используем Bootstrap метод для закрытия
+                            const bsCollapse = new bootstrap.Collapse(navbarContent, {
+                                toggle: false
+                            });
+                            bsCollapse.hide();
+                        }
+                    }
+                }
+            });
 
-             // Закрытие меню при клике на пункт меню
-             document.querySelectorAll('.sidebar-item').forEach(item => {
-                 item.addEventListener('click', function() {
-                     setTimeout(closeSidebar, 300);
-                 });
-             });
+            // Исправление для мобильной навигации - предотвращаем закрытие при клике внутри
+            const navbarContent = document.getElementById('navbarContent');
+            if (navbarContent) {
+                navbarContent.addEventListener('click', function(e) {
+                    if (window.innerWidth < 992) {
+                        e.stopPropagation();
+                    }
+                });
+            }
 
-             // Закрытие меню при нажатии Escape
-             document.addEventListener('keydown', function(e) {
-                 if (e.key === 'Escape' && sidebar.classList.contains('active')) {
-                     closeSidebar();
-                 }
-             });
-         });
+            // Автоматическое закрытие мобильного меню при переходе по ссылкам
+            document.querySelectorAll('#navbarContent a').forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 992) {
+                        const navbarContent = document.getElementById('navbarContent');
+                        if (navbarContent && navbarContent.classList.contains('show')) {
+                            const bsCollapse = new bootstrap.Collapse(navbarContent, {
+                                toggle: false
+                            });
+                            bsCollapse.hide();
+                        }
+                    }
+                });
+            });
+
+            // Исправление для фиксации шапки при скролле на мобильных
+            if (window.innerWidth < 992) {
+                let lastScrollTop = 0;
+                const navbar = document.querySelector('.navbar');
+
+                if (navbar) {
+                    window.addEventListener('scroll', function() {
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+                        // Показываем/скрываем шапку при скролле
+                        if (scrollTop > lastScrollTop && scrollTop > 100) {
+                            // Скролл вниз - скрываем
+                            navbar.style.transform = 'translateY(-100%)';
+                        } else {
+                            // Скролл вверх - показываем
+                            navbar.style.transform = 'translateY(0)';
+                        }
+
+                        lastScrollTop = scrollTop;
+                    }, { passive: true });
+                }
+            }
+
+            // Предотвращаем закрытие меню при клике на три полоски
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            if (navbarToggler) {
+                navbarToggler.addEventListener('click', function(e) {
+                    e.stopPropagation();
+
+                    // На мобильных устройствах фиксируем меню
+                    if (window.innerWidth < 992) {
+                        const navbarContent = document.getElementById('navbarContent');
+                        if (navbarContent) {
+                            // Добавляем класс для фиксации
+                            navbarContent.style.position = 'fixed';
+                            navbarContent.style.top = '70px';
+                            navbarContent.style.left = '0';
+                            navbarContent.style.right = '0';
+                            navbarContent.style.zIndex = '1020';
+                        }
+                    }
+                });
+            }
+
+            // Исправление для кликов внутри фиксированного меню
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth < 992) {
+                    const navbarContent = document.getElementById('navbarContent');
+                    const navbarToggler = document.querySelector('.navbar-toggler');
+
+                    if (navbarContent && navbarContent.classList.contains('show') &&
+                        navbarToggler && !navbarToggler.contains(e.target) &&
+                        navbarContent && !navbarContent.contains(e.target)) {
+                        // Клик вне меню - закрываем его
+                        const bsCollapse = new bootstrap.Collapse(navbarContent, {
+                            toggle: false
+                        });
+                        bsCollapse.hide();
+                    }
+                }
+            });
+
+            // Анимация для мобильной кнопки "Ещё"
+            if (mobileMoreButton) {
+                // Добавляем плавное появление
+                setTimeout(() => {
+                    mobileMoreButton.style.opacity = '1';
+                    mobileMoreButton.style.transform = 'translateY(0)';
+                }, 300);
+
+                // Изначально скрываем для анимации
+                mobileMoreButton.style.opacity = '0';
+                mobileMoreButton.style.transform = 'translateY(20px)';
+                mobileMoreButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            }
+
+            // Исправление для активных ссылок в сайдбаре
+            const sidebarLinks = document.querySelectorAll('.sidebar-item');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Удаляем активный класс у всех ссылок
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    // Добавляем активный класс к текущей ссылке
+                    this.classList.add('active');
+                });
+            });
+
+            // Логирование для отладки
+            console.log('Script loaded successfully');
+            console.log('Current path:', currentPath);
+            console.log('Window width:', window.innerWidth);
+            console.log('Is mobile:', window.innerWidth < 992);
+        });
+
+        // Также добавляем обработчики для window resize
+        window.addEventListener('resize', function() {
+            const mobileMoreButton = document.getElementById('mobileMoreButton');
+            const navbarContent = document.getElementById('navbarContent');
+
+            if (window.innerWidth >= 992) {
+                // На десктопе сбрасываем стили для мобильного меню
+                if (navbarContent) {
+                    navbarContent.style.position = '';
+                    navbarContent.style.top = '';
+                    navbarContent.style.left = '';
+                    navbarContent.style.right = '';
+                    navbarContent.style.zIndex = '';
+                }
+            } else {
+                // На мобильных применяем стили если меню открыто
+                if (navbarContent && navbarContent.classList.contains('show')) {
+                    navbarContent.style.position = 'fixed';
+                    navbarContent.style.top = '70px';
+                    navbarContent.style.left = '0';
+                    navbarContent.style.right = '0';
+                    navbarContent.style.zIndex = '1020';
+                }
+            }
+        });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
-    <div class="mobile-more-button d-lg-none" id="mobileMoreButton">
-        <i class="fas fa-bars"></i>
-    </div>
+    @if (Context.Session.GetInt32("UserId") != null)
+    {
+        <div class="mobile-more-button logged-in d-lg-none" id="mobileMoreButton">
+            <i class="fas fa-bars"></i>
+        </div>
+    }
 </body>
 </html>
