@@ -26,6 +26,7 @@ namespace TripWise.Services
             try
             {
                 _logger.LogInformation($"Поиск поездов: {request.DepartureStationId} -> {request.ArrivalStationId}");
+                _logger.LogInformation($"Дата: {request.DepartureDate}, IsReturn: {request.IsReturn}");
 
                 var rzdRequest = new RzdApiRequest
                 {
@@ -39,7 +40,6 @@ namespace TripWise.Services
 
                 var firstResponse = await MakeFirstRequest(rzdRequest);
 
-                // Используем GetRid() вместо прямого доступа к Rid
                 if (firstResponse?.Result == "RID" && !string.IsNullOrEmpty(firstResponse.GetRid()))
                 {
                     _logger.LogInformation($"Получен RID: {firstResponse.GetRid()}");
@@ -69,19 +69,19 @@ namespace TripWise.Services
                 var parameters = new Dictionary<string, string>
                 {
                     ["layer_id"] = "5827",
-                    ["dir"] = "0", // как строка
-                    ["tfl"] = "1", // только поезда (без электричек)
-                    ["checkSeats"] = "0", // все поезда (не только с билетами)
+                    ["dir"] = "0",
+                    ["tfl"] = "1",
+                    ["checkSeats"] = "0",
                     ["code0"] = request.Code0,
                     ["code1"] = request.Code1,
                     ["dt0"] = request.Dt0,
-                    ["md"] = "0" // без пересадок
+                    ["md"] = "0"
                 };
 
                 var queryString = string.Join("&", parameters.Select(x => $"{x.Key}={HttpUtility.UrlEncode(x.Value)}"));
                 var url = $"https://pass.rzd.ru/timetable/public/ru?{queryString}";
 
-                _logger.LogInformation($"Запрос к RZD: {url}");
+                _logger.LogDebug($"Запрос к RZD: {url}");
 
                 var response = await _httpClient.GetAsync(url);
 
@@ -92,7 +92,7 @@ namespace TripWise.Services
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ответ RZD: {content}");
+                _logger.LogDebug($"Ответ RZD получен, длина: {content.Length}");
 
                 // Используем JsonElement для гибкого парсинга
                 using var jsonDoc = JsonDocument.Parse(content);
@@ -120,7 +120,7 @@ namespace TripWise.Services
                         timestamp = property.Value.GetString();
                 }
 
-                _logger.LogInformation($"Распарсено: result={result}, rid={rid}");
+                _logger.LogDebug($"Распарсено: result={result}, rid={rid}");
 
                 return new RzdApiResponse
                 {
@@ -142,7 +142,7 @@ namespace TripWise.Services
             try
             {
                 var url = $"https://pass.rzd.ru/timetable/public/ru?layer_id=5827&rid={rid}";
-                _logger.LogInformation($"Второй запрос: {url}");
+                _logger.LogDebug($"Второй запрос: {url}");
 
                 await Task.Delay(2000);
 
@@ -155,9 +155,9 @@ namespace TripWise.Services
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ответ второго запроса получен, длина: {content.Length}");
+                _logger.LogDebug($"Ответ второго запроса получен, длина: {content.Length}");
 
-                // Используем ту же гибкую десериализацию
+                // Используем гибкую десериализацию
                 using var jsonDoc = JsonDocument.Parse(content);
                 var json = jsonDoc.RootElement;
 
@@ -175,7 +175,7 @@ namespace TripWise.Services
                             {
                                 PropertyNameCaseInsensitive = true
                             }) ?? new List<RzdRoute>();
-                            _logger.LogInformation($"Найдено поездов через tp[].list: {trains.Count}");
+                            _logger.LogDebug($"Найдено поездов через tp[].list: {trains.Count}");
                             break;
                         }
                     }
@@ -188,7 +188,7 @@ namespace TripWise.Services
                     {
                         PropertyNameCaseInsensitive = true
                     }) ?? new List<RzdRoute>();
-                    _logger.LogInformation($"Найдено поездов через lst: {trains.Count}");
+                    _logger.LogDebug($"Найдено поездов через lst: {trains.Count}");
                 }
 
                 // Если все еще не нашли, ищем в корне
@@ -203,13 +203,13 @@ namespace TripWise.Services
                             {
                                 PropertyNameCaseInsensitive = true
                             }) ?? new List<RzdRoute>();
-                            _logger.LogInformation($"Найдено поездов через list: {trains.Count}");
+                            _logger.LogDebug($"Найдено поездов через list: {trains.Count}");
                             break;
                         }
                     }
                 }
 
-                _logger.LogInformation($"Итоговое количество маршрутов: {trains.Count}");
+                _logger.LogDebug($"Итоговое количество маршрутов: {trains.Count}");
                 return trains;
             }
             catch (Exception ex)
@@ -221,22 +221,54 @@ namespace TripWise.Services
 
         private List<TrainSearchResponse> MapToTrainResponse(List<RzdRoute> routes, TrainSearchRequest request)
         {
-            return routes.Select(route => new TrainSearchResponse
+            var responses = new List<TrainSearchResponse>();
+
+            foreach (var route in routes)
             {
-                Name = route.Brand ?? "Поезд",
-                DepartureStation = request.DepartureStationId,
-                ArrivalStation = request.ArrivalStationId,
-                DepartureTime = route.Time0,
-                ArrivalTime = route.Time1,
-                TrainNumber = route.Number,
-                TravelTime = route.TimeInWay,
-                Firm = (route.Carrier?.Contains("Фирменный") == true),
-                Categories = route.Cars?.Select(car => new TrainCategory
+                try
                 {
-                    Type = MapCarType(car.TypeLoc, car.IType),
-                    Price = car.Tariff
-                }).ToList() ?? new List<TrainCategory>()
-            }).ToList();
+                    var response = new TrainSearchResponse
+                    {
+                        Name = route.Brand ?? "Поезд",
+                        DepartureStation = request.DepartureStationId,
+                        ArrivalStation = request.ArrivalStationId,
+                        DepartureTime = route.Time0 ?? "00:00",
+                        ArrivalTime = route.Time1 ?? "00:00",
+                        TrainNumber = route.Number ?? "0000",
+                        TravelTime = route.TimeInWay ?? "00:00",
+                        Firm = (route.Carrier?.Contains("Фирменный") == true) || (route.BFirm),
+                        IsReturn = request.IsReturn,
+                        Categories = new List<TrainCategory>()
+                    };
+
+                    // Обрабатываем категории вагонов
+                    if (route.Cars != null && route.Cars.Any())
+                    {
+                        foreach (var car in route.Cars)
+                        {
+                            var category = new TrainCategory
+                            {
+                                Type = MapCarType(car.TypeLoc, car.IType),
+                                Price = car.Tariff > 0 ? car.Tariff : GetDefaultPrice(car.TypeLoc, car.IType)
+                            };
+                            response.Categories.Add(category);
+                        }
+                    }
+                    else
+                    {
+                        // Если нет данных о вагонах, добавляем стандартные категории
+                        response.Categories.AddRange(GetDefaultCategories());
+                    }
+
+                    responses.Add(response);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Ошибка маппинга маршрута");
+                }
+            }
+
+            return responses;
         }
 
         private string MapCarType(string typeLoc, int iType)
@@ -255,28 +287,107 @@ namespace TripWise.Services
                 };
             }
 
-            return typeLoc.ToLower() switch
+            var lowerType = typeLoc.ToLower();
+
+            if (lowerType.Contains("плацкарт") || lowerType.Contains("плац"))
+                return "plazcard";
+            if (lowerType.Contains("купе"))
+                return "coupe";
+            if (lowerType.Contains("сидяч"))
+                return "sedentary";
+            if (lowerType.Contains("св") || lowerType.Contains("люкс"))
+                return "lux";
+            if (lowerType.Contains("мягк"))
+                return "soft";
+            if (lowerType.Contains("эконом"))
+                return "sedentary";
+
+            return "other";
+        }
+
+        private decimal GetDefaultPrice(string typeLoc, int iType)
+        {
+            return MapCarType(typeLoc, iType) switch
             {
-                var t when t.Contains("плацкарт") => "plazcard",
-                var t when t.Contains("плац") => "plazcard",
-                var t when t.Contains("купе") => "coupe",
-                var t when t.Contains("сидяч") => "sedentary",
-                var t when t.Contains("св") => "lux",
-                var t when t.Contains("люкс") => "lux",
-                var t when t.Contains("мягк") => "soft",
-                var t when t.Contains("эконом") => "sedentary",
-                _ => "other"
+                "plazcard" => 1500,
+                "coupe" => 3000,
+                "sedentary" => 1000,
+                "lux" => 5000,
+                "soft" => 4000,
+                _ => 2000
+            };
+        }
+
+        private List<TrainCategory> GetDefaultCategories()
+        {
+            return new List<TrainCategory>
+            {
+                new TrainCategory { Type = "plazcard", Price = 1500 },
+                new TrainCategory { Type = "coupe", Price = 3000 },
+                new TrainCategory { Type = "lux", Price = 5000 }
             };
         }
 
         private string FormatDateForRzd(string date)
         {
-            if (DateTime.TryParse(date, out DateTime dt) && dt > DateTime.Now)
+            if (DateTime.TryParse(date, out DateTime dt))
             {
                 return dt.ToString("dd.MM.yyyy");
             }
+
             // Используем завтрашнюю дату если что-то не так
             return DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
         }
+    }
+
+    // Внутренние модели для работы с RZD API
+    public class RzdApiRequest
+    {
+        public string Code0 { get; set; }
+        public string Code1 { get; set; }
+        public string Dt0 { get; set; }
+        public int Dir { get; set; } = 0;
+        public int Tfl { get; set; } = 3;
+        public int CheckSeats { get; set; } = 1;
+    }
+
+    public class RzdApiResponse
+    {
+        public string Result { get; set; }
+        public string Rid { get; set; }
+        public long? RID { get; set; }
+        public string Timestamp { get; set; }
+        public List<RzdRoute> Lst { get; set; }
+
+        public string GetRid() => Rid ?? RID?.ToString();
+    }
+
+    public class RzdRoute
+    {
+        public string Number { get; set; }
+        public string Number2 { get; set; }
+        public string Brand { get; set; }
+        public string Carrier { get; set; }
+        public string Route0 { get; set; }
+        public string Route1 { get; set; }
+        public string Station0 { get; set; }
+        public string Station1 { get; set; }
+        public string Date0 { get; set; }
+        public string Time0 { get; set; }
+        public string Date1 { get; set; }
+        public string Time1 { get; set; }
+        public string TimeInWay { get; set; }
+        public bool BFirm { get; set; }
+        public List<RzdCar> Cars { get; set; }
+    }
+
+    public class RzdCar
+    {
+        public string Type { get; set; }
+        public string TypeLoc { get; set; }
+        public string ServCls { get; set; }
+        public int FreeSeats { get; set; }
+        public decimal Tariff { get; set; }
+        public int IType { get; set; }
     }
 }

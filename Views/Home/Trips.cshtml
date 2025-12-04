@@ -5,136 +5,259 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
-                Мои поездки
-            </h1>
-            <p class="lead">Управляйте вашими запланированными и завершенными путешествиями</p>
+            <!-- Заголовок страницы с выделением -->
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-suitcase"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Мои поездки
+                    </h1>
+                    <p class="page-subtitle">Управляйте вашими запланированными и завершенными путешествиями</p>
+                </div>
+            </div>
 
             @if (Context.Session.GetInt32("UserId") == null)
             {
-                <div class="alert alert-info">
-                    <h5>Войдите в аккаунт</h5>
-                    <p>Чтобы просматривать и создавать поездки, войдите в свой аккаунт.</p>
-                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
-                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
-                </div>
-            }
-            else
-            {
-                <!-- Кнопка создания новой поездки -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3>Ваши поездки</h3>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTripModal">
-                        <i class="fas fa-plus me-2"></i>Новая поездка
-                    </button>
-                </div>
-
-                <!-- Предстоящие поездки -->
-                <div class="mb-5">
-                    <h4 class="mb-3">Предстоящие поездки</h4>
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <div class="card trip-card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <h5 class="card-title">Отдых в Сочи</h5>
-                                        <span class="badge bg-success">Подтверждено</span>
-                                    </div>
-                                    <p class="card-text">
-                                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                                        Москва → Сочи
-                                    </p>
-                                    <p class="card-text">
-                                        <i class="fas fa-calendar me-2"></i>
-                                        15 - 22 июля 2024
-                                    </p>
-                                    <p class="card-text">
-                                        <i class="fas fa-users me-2"></i>
-                                        2 путешественника
-                                    </p>
-                                    <div class="mt-3">
-                                        <button class="btn btn-outline-primary btn-sm me-2">Подробнее</button>
-                                        <button class="btn btn-outline-secondary btn-sm">Поделиться</button>
-                                    </div>
+                <!-- Секция для неавторизованных пользователей -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-5 text-center">
+                                <div class="mb-4">
+                                    <i class="fas fa-suitcase-rolling text-primary" style="font-size: 4rem;"></i>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card trip-card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <h5 class="card-title">Бизнес в Казани</h5>
-                                        <span class="badge bg-warning">В процессе</span>
-                                    </div>
-                                    <p class="card-text">
-                                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                                        Санкт-Петербург → Казань
-                                    </p>
-                                    <p class="card-text">
-                                        <i class="fas fa-calendar me-2"></i>
-                                        5 - 8 августа 2024
-                                    </p>
-                                    <p class="card-text">
-                                        <i class="fas fa-users me-2"></i>
-                                        1 путешественник
-                                    </p>
-                                    <div class="mt-3">
-                                        <button class="btn btn-outline-primary btn-sm me-2">Подробнее</button>
-                                        <button class="btn btn-outline-secondary btn-sm">Поделиться</button>
-                                    </div>
+                                <h3 class="fw-bold mb-3">Войдите в аккаунт</h3>
+                                <p class="text-muted mb-4">
+                                    Чтобы просматривать и создавать поездки, войдите в свой аккаунт или зарегистрируйтесь.
+                                </p>
+                                <div class="d-flex flex-column flex-md-row justify-content-center gap-3">
+                                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-5">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Войти
+                                    </a>
+                                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary btn-lg px-5">
+                                        <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            }
+            else
+            {
+                <!-- Основной контент для авторизованных пользователей -->
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Заголовок и кнопка создания -->
+                        <div class="d-flex justify-content-between align-items-center mb-5">
+                            <div>
+                                <!-- Оставлено пустое пространство -->
+                            </div>
+                            <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#createTripModal">
+                                <i class="fas fa-plus me-2"></i>Новая поездка
+                            </button>
+                        </div>
 
-                <!-- Завершенные поездки -->
-                <div>
-                    <h4 class="mb-3">Завершенные поездки</h4>
-                    <div class="card">
-                        <div class="card-body">
-                            <p class="text-muted mb-0">Здесь будут отображаться ваши завершенные поездки.</p>
+                        <!-- Предстоящие поездки -->
+                        <div class="mb-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="section-subtitle">
+                                    <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                    Предстоящие поездки
+                                </h3>
+                                <div class="filter-sort-dropdown">
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-filter me-1"></i> Фильтр и сортировка
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end p-4" style="min-width: 350px;">
+                                            <h6 class="dropdown-header fw-bold border-bottom pb-2 mb-3">Фильтр поездок</h6>
+                                            <div class="mb-4">
+                                                <label class="form-label small fw-semibold mb-3 text-dark">Статус поездки</label>
+                                                <div class="d-flex flex-column gap-3 ps-3">
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input me-3" type="checkbox" id="filter-active" style="width: 20px; height: 20px;">
+                                                        <label class="form-check-label flex-grow-1" for="filter-active">
+                                                            Активные поездки
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input me-3" type="checkbox" id="filter-upcoming" style="width: 20px; height: 20px;" checked>
+                                                        <label class="form-check-label flex-grow-1" for="filter-upcoming">
+                                                            Предстоящие поездки
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input me-3" type="checkbox" id="filter-completed" style="width: 20px; height: 20px;">
+                                                        <label class="form-check-label flex-grow-1" for="filter-completed">
+                                                            Завершенные поездки
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="form-label small fw-semibold mb-3 text-dark">Сортировка</label>
+                                                <select class="form-select">
+                                                    <option selected>По дате (сначала новые)</option>
+                                                    <option>По дате (сначала старые)</option>
+                                                    <option>По названию (А-Я)</option>
+                                                    <option>По названию (Я-А)</option>
+                                                    <option>По стоимости</option>
+                                                    <option>По продолжительности</option>
+                                                </select>
+                                            </div>
+                                            <div class="d-flex justify-content-between gap-3 mt-4 pt-4 border-top">
+                                                <button class="btn btn-outline-secondary flex-grow-1 d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-redo me-2"></i> Сбросить
+                                                </button>
+                                                <button class="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-check me-2"></i> Применить
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Сообщение об отсутствии поездок -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body p-5 text-center">
+                                    <div class="py-4">
+                                        <i class="fas fa-plane text-muted mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-muted mb-3">У вас пока нет предстоящих поездок</h5>
+                                        <p class="text-muted mb-4">
+                                            Создайте свою первую поездку, чтобы начать планирование путешествия
+                                        </p>
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTripModal">
+                                            <i class="fas fa-plus me-2"></i>Создать первую поездку
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Завершенные поездки -->
+                        <div class="mb-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="section-subtitle">
+                                    <i class="fas fa-history text-primary me-2"></i>
+                                    Завершенные поездки
+                                </h3>
+                                <div class="filter-sort-dropdown">
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-sort me-1"></i> Сортировка
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 280px;">
+                                            <h6 class="dropdown-header fw-bold border-bottom pb-2 mb-3">Сортировка</h6>
+                                            <div class="mb-3">
+                                                <select class="form-select">
+                                                    <option selected>По дате (сначала новые)</option>
+                                                    <option>По дате (сначала старые)</option>
+                                                    <option>По названию (А-Я)</option>
+                                                    <option>По названию (Я-А)</option>
+                                                    <option>По продолжительности</option>
+                                                    <option>По стоимости</option>
+                                                </select>
+                                            </div>
+                                            <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-check me-2"></i> Применить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body p-4 text-center">
+                                    <div class="py-5">
+                                        <i class="fas fa-suitcase text-muted mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-muted mb-3">Завершенные поездки появятся здесь</h5>
+                                        <p class="text-muted mb-4">
+                                            После завершения ваших путешествий они будут отображаться в этом разделе
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Модальное окно создания поездки -->
                 <div class="modal fade" id="createTripModal" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Создать новую поездку</h5>
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title fw-bold">
+                                    <i class="fas fa-plus-circle text-primary me-2"></i>
+                                    Создать новую поездку
+                                </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <form id="createTripForm">
-                                    <div class="mb-3">
-                                        <label class="form-label">Название поездки</label>
-                                        <input type="text" class="form-control" placeholder="Например: Отдых в Сочи" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Направление</label>
-                                        <input type="text" class="form-control" placeholder="Куда едем?" required>
-                                    </div>
-                                    <div class="row">
+                                    <div class="row mb-4">
                                         <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Дата начала</label>
-                                                <input type="date" class="form-control" required>
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="tripName" placeholder="Название поездки" required>
+                                                <label for="tripName">Название поездки</label>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Дата окончания</label>
-                                                <input type="date" class="form-control" required>
+                                            <div class="form-floating">
+                                                <select class="form-select" id="tripType" required>
+                                                    <option value="" selected disabled>Выберите тип</option>
+                                                    <option value="vacation">Отпуск</option>
+                                                    <option value="business">Бизнес</option>
+                                                    <option value="family">Семейный отдых</option>
+                                                    <option value="romantic">Романтическое путешествие</option>
+                                                    <option value="adventure">Приключение</option>
+                                                </select>
+                                                <label for="tripType">Тип поездки</label>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="destination" placeholder="Куда едем?" required>
+                                        <label for="destination">Направление</label>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="date" class="form-control" id="startDate" required>
+                                                <label for="startDate">Дата начала</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="date" class="form-control" id="endDate" required>
+                                                <label for="endDate">Дата окончания</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-floating mb-3">
+                                        <input type="number" class="form-control" id="travelers" placeholder="Количество путешественников" min="1" value="1">
+                                        <label for="travelers">Количество путешественников</label>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-4">
+                                        <input class="form-check-input" type="checkbox" id="isPublic">
+                                        <label class="form-check-label" for="isPublic">
+                                            Сделать поездку публичной для приглашения друзей
+                                        </label>
                                     </div>
                                 </form>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                <button type="button" class="btn btn-primary">Создать поездку</button>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="button" class="btn btn-primary px-4">
+                                    <i class="fas fa-check me-2"></i>Создать поездку
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -145,13 +268,438 @@
 </div>
 
 <style>
-    .trip-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 1px solid #e9ecef;
+    /* Стили для выделения раздела "Мои поездки" */
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
     }
 
-        .trip-card:hover {
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.5rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Исправления для одинаковой ширины кнопок - расширена ширина */
+    .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+    .filter-sort-dropdown .btn-outline-secondary {
+        min-width: 240px;
+        width: 240px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    /* Стили для кнопки "Новая поездка" */
+    .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary {
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(3, 121, 217, 0.2);
+        transition: all 0.3s ease;
+    }
+
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(3, 121, 217, 0.3);
+        }
+
+    /* Улучшенные кнопки фильтра и сортировки с увеличенным окном */
+    .filter-sort-dropdown .btn-outline-secondary {
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 600;
+        border: 2px solid #dee2e6;
+        background: white;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+        letter-spacing: 0.3px;
+    }
+
+        .filter-sort-dropdown .btn-outline-secondary:hover {
+            background: #f8f9fa;
+            border-color: #adb5bd;
+            color: #495057;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-sort-dropdown .btn-outline-secondary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        }
+
+        /* Увеличенные иконки в кнопках */
+        .filter-sort-dropdown .btn-outline-secondary i,
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary i {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+    .filter-sort-dropdown .dropdown-menu {
+        border-radius: 16px;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+        margin-top: 10px;
+        padding: 25px !important;
+        min-width: 380px !important;
+        max-width: 400px;
+    }
+
+    .filter-sort-dropdown .dropdown-header {
+        font-size: 1.1rem;
+        color: #1e293b;
+        padding: 0;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 25px;
+        padding-bottom: 12px;
+    }
+
+    .filter-sort-dropdown .form-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .filter-sort-dropdown .form-check {
+        margin: 0;
+        padding: 10px 0;
+        display: flex;
+        align-items: center;
+        min-height: 36px;
+    }
+
+    .filter-sort-dropdown .form-check-input {
+        width: 22px !important;
+        height: 22px !important;
+        margin-right: 15px !important;
+        margin-top: 0 !important;
+        border-radius: 5px;
+        border: 2px solid #cbd5e1;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+        .filter-sort-dropdown .form-check-input:checked {
+            background-color: #0379D9;
+            border-color: #0379D9;
+        }
+
+        .filter-sort-dropdown .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(3, 121, 217, 0.25);
+        }
+
+    .filter-sort-dropdown .form-check-label {
+        font-size: 1rem;
+        color: #475569;
+        cursor: pointer;
+        user-select: none;
+        flex: 1;
+        line-height: 1.4;
+    }
+
+    /* Исправлен отступ чекбоксов от левого края */
+    .filter-sort-dropdown .d-flex.flex-column.gap-3.ps-3 {
+        gap: 12px !important;
+        padding-left: 20px !important;
+    }
+
+    .filter-sort-dropdown .form-select {
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        height: 48px;
+        width: 100%;
+    }
+
+        .filter-sort-dropdown .form-select:focus {
+            border-color: #0379D9;
+            box-shadow: 0 0 0 0.25rem rgba(3, 121, 217, 0.25);
+        }
+
+    .filter-sort-dropdown .btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        border-radius: 10px;
+        font-weight: 500;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .filter-sort-dropdown .btn-outline-secondary {
+        border: 1px solid #cbd5e1;
+        color: #64748b;
+    }
+
+        .filter-sort-dropdown .btn-outline-secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #334155;
+        }
+
+    .filter-sort-dropdown .border-top {
+        border-top: 2px solid #e2e8f0 !important;
+        padding-top: 25px !important;
+        margin-top: 25px !important;
+    }
+
+    .filter-sort-dropdown .flex-grow-1 {
+        flex-grow: 1;
+    }
+
+    /* Карточки для пустых состояний */
+    .card {
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: box-shadow 0.3s ease;
+    }
+
+        .card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+
+    /* Модальное окно */
+    .modal-content {
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 0.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem 1.5rem;
+    }
+
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        height: calc(3.5rem + 2px);
+        padding: 1rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-floating > label {
+        padding: 1rem 0.75rem;
+        color: #6c757d;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0379D9;
+        box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+    }
+
+    .form-switch .form-check-input {
+        width: 2.5em;
+        height: 1.25em;
+        margin-right: 0.5rem;
+    }
+
+    /* Адаптивность для одинаковой ширины кнопок */
+    @@media (min-width: 992px) {
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+        .filter-sort-dropdown .btn-outline-secondary {
+            min-width: 250px;
+            width: 250px;
+        }
+    }
+
+    @@media (max-width: 992px) and (min-width: 768px) {
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+        .filter-sort-dropdown .btn-outline-secondary {
+            min-width: 220px;
+            width: 220px;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .d-flex.justify-content-between.align-items-center {
+            flex-direction: row !important;
+            align-items: stretch !important;
+        }
+
+            .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+            .filter-sort-dropdown .btn-outline-secondary {
+                min-width: auto;
+                width: auto;
+                flex: 1;
+                text-align: center;
+                padding: 10px 15px;
+                font-size: 0.92rem;
+                margin: 0 5px;
+            }
+
+        .filter-sort-dropdown {
+            align-self: stretch;
+            width: 100%;
+        }
+
+            .filter-sort-dropdown .btn-outline-secondary {
+                width: 100%;
+                justify-content: center;
+                margin: 0;
+            }
+
+            .filter-sort-dropdown .dropdown-menu {
+                min-width: 100% !important;
+                position: relative !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .page-title {
+            font-size: 1.75rem !important;
+        }
+
+        .card-body {
+            padding: 1.5rem !important;
+        }
+
+        .section-subtitle {
+            font-size: 1.25rem;
+        }
+
+        .d-flex.justify-content-between.align-items-center {
+            flex-direction: column !important;
+            gap: 10px !important;
+        }
+
+            .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+            .filter-sort-dropdown .btn-outline-secondary {
+                width: 100%;
+                justify-content: center;
+                padding: 12px 20px;
+                font-size: 0.95rem;
+                margin: 0;
+            }
+
+        .filter-sort-dropdown .dropdown-menu {
+            padding: 20px !important;
+        }
+
+        .filter-sort-dropdown .d-flex.flex-column.gap-3.ps-3 {
+            padding-left: 15px !important;
+        }
+    }
+
+    /* Дополнительный медиа-запрос для очень больших экранов */
+    @@media (min-width: 1400px) {
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+        .filter-sort-dropdown .btn-outline-secondary {
+            min-width: 260px;
+            width: 260px;
+        }
+    }
+
+    /* Для средних экранов */
+    @@media (min-width: 1200px) and (max-width: 1399px) {
+        .d-flex.justify-content-between.align-items-center.mb-5 .btn-primary,
+        .filter-sort-dropdown .btn-outline-secondary {
+            min-width: 240px;
+            width: 240px;
+        }
+    }
 </style>

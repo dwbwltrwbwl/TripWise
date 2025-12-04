@@ -25,8 +25,21 @@ builder.Services.AddHttpClient<RzdApiService>();
 builder.Services.AddScoped<RzdApiService>();
 
 // === ДОБАВЬТЕ ЭТО ДЛЯ АВИАБИЛЕТОВ ===
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>(); // Используем упрощенный сервис для тестирования
+builder.Services.AddHttpClient(); // Общий HttpClient для других нужд
+
+// КОНКРЕТНАЯ НАСТРОЙКА ДЛЯ AviasalesRealService
+builder.Services.AddHttpClient<AviasalesRealService>(client =>
+{
+    client.DefaultRequestHeaders.Add("User-Agent", "TripWise/1.0");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(60); // Увеличиваем для API запросов
+});
+
+// Регистрируем сервис как реализацию интерфейса
+builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>();
+
+// УПРОЩЕННЫЙ СЕРВИС для тестирования (отключи если используешь реальный)
+// builder.Services.AddHttpClient<IAviasalesRealService, SimpleAviasalesService>();
 
 // Вместо старого сервиса используй российский
 builder.Services.Configure<TravelPayoutsConfig>(builder.Configuration.GetSection("TravelPayouts"));

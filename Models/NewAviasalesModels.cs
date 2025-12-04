@@ -7,11 +7,48 @@ namespace TripWise.Models
     {
         public string DepartureCity { get; set; }
         public string ArrivalCity { get; set; }
+
+        [JsonConverter(typeof(DateTimeJsonConverter))]
         public DateTime DepartureDate { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? ReturnDate { get; set; }
+
         public int Passengers { get; set; } = 1;
         public string Class { get; set; } = "economy";
         public string TripType { get; set; } = "round";
+    }
+
+    public class DateTimeJsonConverter : System.Text.Json.Serialization.JsonConverter<DateTime>
+    {
+        public override DateTime Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            return DateTime.Parse(reader.GetString());
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, DateTime value, System.Text.Json.JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
+        }
+    }
+
+    public class NullableDateTimeJsonConverter : System.Text.Json.Serialization.JsonConverter<DateTime?>
+    {
+        public override DateTime? Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            var str = reader.GetString();
+            if (string.IsNullOrEmpty(str) || str == "null")
+                return null;
+            return DateTime.Parse(str);
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, DateTime? value, System.Text.Json.JsonSerializerOptions options)
+        {
+            if (value.HasValue)
+                writer.WriteStringValue(value.Value.ToString("yyyy-MM-dd"));
+            else
+                writer.WriteNullValue();
+        }
     }
 
     public class FlightSearchResponse

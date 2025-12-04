@@ -21,49 +21,76 @@ namespace TripWise.Services
             try
             {
                 _logger.LogInformation("=== НАЧАЛО ПОИСКА РЕЙСОВ ===");
-                _logger.LogInformation("Запрос: {@Request}", request);
-                _logger.LogInformation("ReturnDate HasValue: {HasValue}, Value: {Value}",
-                    request.ReturnDate.HasValue,
-                    request.ReturnDate.HasValue ? request.ReturnDate.Value : DateTime.MinValue);
+                _logger.LogInformation("Запрос получен:");
+                _logger.LogInformation("- DepartureCity: {DepartureCity}", request.DepartureCity);
+                _logger.LogInformation("- ArrivalCity: {ArrivalCity}", request.ArrivalCity);
+                _logger.LogInformation("- DepartureDate: {DepartureDate}", request.DepartureDate);
+                _logger.LogInformation("- ReturnDate: {ReturnDate}", request.ReturnDate);
+                _logger.LogInformation("- ReturnDate.HasValue: {HasValue}", request.ReturnDate.HasValue);
+                _logger.LogInformation("- ReturnDate.Value: {Value}", request.ReturnDate.HasValue ? request.ReturnDate.Value.ToString() : "null");
+                _logger.LogInformation("- Passengers: {Passengers}", request.Passengers);
+                _logger.LogInformation("- Class: {Class}", request.Class);
+                _logger.LogInformation("- TripType: {TripType}", request.TripType);
 
                 // Имитируем небольшую задержку как у реального API
                 await Task.Delay(500);
 
-                var flights = new List<Flight>();
+                var allFlights = new List<Flight>();
 
-                // Рейсы ТУДА
+                // 1. Генерируем рейсы ТУДА
+                _logger.LogInformation("Генерация рейсов ТУДА...");
                 var oneWayFlights = GenerateOneWayFlights(request);
-                flights.AddRange(oneWayFlights);
                 _logger.LogInformation("Сгенерировано рейсов ТУДА: {Count}", oneWayFlights.Count);
+                allFlights.AddRange(oneWayFlights);
 
-                // Рейсы ОБРАТНО (только если есть обратная дата)
-                if (request.ReturnDate.HasValue)
+                // 2. Генерируем рейсы ОБРАТНО (только если указана обратная дата)
+                if (request.ReturnDate.HasValue && request.ReturnDate.Value > DateTime.MinValue)
                 {
-                    _logger.LogInformation("Генерация рейсов ОБРАТНО...");
+                    _logger.LogInformation("Генерация рейсов ОБРАТНО для даты {ReturnDate}...", request.ReturnDate.Value);
                     var returnFlights = GenerateReturnFlights(request);
                     _logger.LogInformation("Сгенерировано рейсов ОБРАТНО: {Count}", returnFlights.Count);
-                    flights.AddRange(returnFlights);
-
-                    _logger.LogInformation("Всего рейсов: {TotalCount} (туда: {OneWayCount}, обратно: {ReturnCount})",
-                        flights.Count, oneWayFlights.Count, returnFlights.Count);
+                    allFlights.AddRange(returnFlights);
                 }
                 else
                 {
-                    _logger.LogInformation("Обратная дата не указана, рейсы только туда: {Count}", flights.Count);
+                    _logger.LogInformation("Обратная дата не указана или равна MinValue - генерируем только рейсы туда");
                 }
 
-                // Логируем все рейсы для отладки
-                foreach (var flight in flights)
+                // Логируем детали по каждому рейсу
+                _logger.LogInformation("=== ДЕТАЛИ РЕЙСОВ ===");
+                foreach (var flight in allFlights)
                 {
-                    _logger.LogInformation("Рейс: {Id}, Airline: {Airline}, IsReturn: {IsReturn}, From: {From} -> {To}",
-                        flight.Id, flight.Airline, flight.IsReturn, flight.DepartureCity, flight.ArrivalCity);
+                    _logger.LogInformation(
+                        "Рейс {Id}: {Airline} {FlightNumber}, " +
+                        "Направление: {FromCity} ({FromAirport}) -> {ToCity} ({ToAirport}), " +
+                        "Вылет: {DepartureTime}, Прилет: {ArrivalTime}, " +
+                        "Цена: {Price} {Currency}, Тип: {Type}, IsReturn: {IsReturn}",
+                        flight.Id,
+                        flight.Airline,
+                        flight.FlightNumber,
+                        flight.DepartureCity,
+                        flight.DepartureAirport,
+                        flight.ArrivalCity,
+                        flight.ArrivalAirport,
+                        flight.DepartureTime.ToString("yyyy-MM-dd HH:mm"),
+                        flight.ArrivalTime.ToString("yyyy-MM-dd HH:mm"),
+                        flight.Price,
+                        flight.Currency,
+                        flight.IsReturn ? "Обратно" : "Туда",
+                        flight.IsReturn
+                    );
                 }
 
-                return flights;
+                _logger.LogInformation("=== ВСЕГО РЕЙСОВ: {TotalCount} ===", allFlights.Count);
+                _logger.LogInformation("Рейсы туда: {OneWayCount}", oneWayFlights.Count);
+                _logger.LogInformation("Рейсы обратно: {ReturnCount}", allFlights.Count - oneWayFlights.Count);
+
+                return allFlights;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка в упрощенном сервисе поиска");
+                // В случае ошибки возвращаем пустой список
                 return new List<Flight>();
             }
         }
@@ -74,7 +101,7 @@ namespace TripWise.Services
             {
                 new Flight
                 {
-                    Id = "1",
+                    Id = "T1",
                     Airline = "Аэрофлот",
                     FlightNumber = "SU-100",
                     DepartureCity = request.DepartureCity,
@@ -92,7 +119,7 @@ namespace TripWise.Services
                 },
                 new Flight
                 {
-                    Id = "2",
+                    Id = "T2",
                     Airline = "S7 Airlines",
                     FlightNumber = "S7-200",
                     DepartureCity = request.DepartureCity,
@@ -110,7 +137,7 @@ namespace TripWise.Services
                 },
                 new Flight
                 {
-                    Id = "3",
+                    Id = "T3",
                     Airline = "Победа",
                     FlightNumber = "DP-300",
                     DepartureCity = request.DepartureCity,
@@ -125,6 +152,24 @@ namespace TripWise.Services
                     Duration = 120,
                     Class = "economy",
                     IsReturn = false
+                },
+                new Flight
+                {
+                    Id = "T4",
+                    Airline = "Ural Airlines",
+                    FlightNumber = "U6-400",
+                    DepartureCity = request.DepartureCity,
+                    ArrivalCity = request.ArrivalCity,
+                    DepartureAirport = "SVO",
+                    ArrivalAirport = "LED",
+                    DepartureTime = request.DepartureDate.AddHours(18),
+                    ArrivalTime = request.DepartureDate.AddHours(20),
+                    Price = 3800,
+                    Currency = "RUB",
+                    Transfers = 1,
+                    Duration = 150,
+                    Class = "economy",
+                    IsReturn = false
                 }
             };
 
@@ -133,14 +178,17 @@ namespace TripWise.Services
 
         private List<Flight> GenerateReturnFlights(FlightSearchRequest request)
         {
-            if (!request.ReturnDate.HasValue)
+            if (!request.ReturnDate.HasValue || request.ReturnDate.Value <= DateTime.MinValue)
+            {
+                _logger.LogWarning("ReturnDate не имеет значения или равно MinValue");
                 return new List<Flight>();
+            }
 
             var flights = new List<Flight>
             {
                 new Flight
                 {
-                    Id = "10",
+                    Id = "R1",
                     Airline = "Аэрофлот",
                     FlightNumber = "SU-101",
                     DepartureCity = request.ArrivalCity,
@@ -158,7 +206,7 @@ namespace TripWise.Services
                 },
                 new Flight
                 {
-                    Id = "11",
+                    Id = "R2",
                     Airline = "S7 Airlines",
                     FlightNumber = "S7-201",
                     DepartureCity = request.ArrivalCity,
@@ -176,7 +224,7 @@ namespace TripWise.Services
                 },
                 new Flight
                 {
-                    Id = "12",
+                    Id = "R3",
                     Airline = "Победа",
                     FlightNumber = "DP-301",
                     DepartureCity = request.ArrivalCity,
@@ -191,12 +239,31 @@ namespace TripWise.Services
                     Duration = 120,
                     Class = "economy",
                     IsReturn = true
+                },
+                new Flight
+                {
+                    Id = "R4",
+                    Airline = "Ural Airlines",
+                    FlightNumber = "U6-401",
+                    DepartureCity = request.ArrivalCity,
+                    ArrivalCity = request.DepartureCity,
+                    DepartureAirport = "LED",
+                    ArrivalAirport = "SVO",
+                    DepartureTime = request.ReturnDate.Value.AddHours(14),
+                    ArrivalTime = request.ReturnDate.Value.AddHours(16),
+                    Price = 4200,
+                    Currency = "RUB",
+                    Transfers = 1,
+                    Duration = 150,
+                    Class = "economy",
+                    IsReturn = true
                 }
             };
 
             return flights;
         }
 
+        // Остальной код остается без изменений
         public async Task<List<City>> SearchCitiesAsync(string query)
         {
             try
@@ -236,7 +303,9 @@ namespace TripWise.Services
                 new City { Code = "SVO", Name = "Шереметьево", Country = "Россия", CountryCode = "RU", Type = "airport", Airport = "Шереметьево" },
                 new City { Code = "DME", Name = "Домодедово", Country = "Россия", CountryCode = "RU", Type = "airport", Airport = "Домодедово" },
                 new City { Code = "VKO", Name = "Внуково", Country = "Россия", CountryCode = "RU", Type = "airport", Airport = "Внуково" },
-                new City { Code = "TJM", Name = "Тюмень", Country = "Россия", CountryCode = "RU", Type = "city" }
+                new City { Code = "AER", Name = "Сочи", Country = "Россия", CountryCode = "RU", Type = "city" },
+                new City { Code = "KRR", Name = "Краснодар", Country = "Россия", CountryCode = "RU", Type = "city" },
+                new City { Code = "OVB", Name = "Новосибирск", Country = "Россия", CountryCode = "RU", Type = "city" }
             };
         }
 

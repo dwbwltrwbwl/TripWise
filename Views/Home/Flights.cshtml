@@ -161,6 +161,7 @@
     .flight-card {
         transition: all 0.3s ease;
         border-left: 4px solid transparent;
+        outline: none !important;
     }
 
         .flight-card:hover {
@@ -169,22 +170,18 @@
             transform: translateX(5px);
         }
 
+        .flight-card:focus,
+        .flight-card:focus-visible,
+        .flight-card:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border-left-color: #007bff !important;
+        }
+
     .flight-duration {
         position: relative;
         padding: 10px 0;
     }
-
-        .flight-duration:before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #dee2e6 50%, transparent 50%);
-            background-size: 10px 2px;
-            z-index: 1;
-        }
 
         .flight-duration i {
             position: relative;
@@ -199,12 +196,30 @@
         border-radius: 8px;
         background-color: #f8f9fa;
         transition: all 0.3s ease;
+        outline: none !important;
     }
 
         .price-block:hover {
             background-color: #e9ecef;
             transform: scale(1.02);
         }
+
+        .price-block:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+
+    /* Убираем outline для всех элементов в результатах */
+    .flight-results *:focus {
+        outline: none !important;
+    }
+
+    /* Убираем outline для кнопок */
+    .btn:focus,
+    .btn:focus-visible {
+        outline: none !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+    }
 
     @@keyframes fadeIn {
         from {
@@ -233,11 +248,17 @@
         cursor: pointer;
         border: none;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        outline: none !important;
     }
 
         .destination-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .destination-card:focus {
+            outline: none !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
         }
 
         .destination-card img {
@@ -261,9 +282,11 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    .form-control:focus, .form-select:focus {
+    .form-control:focus,
+    .form-select:focus {
         border-color: #0379D9;
         box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+        outline: none !important;
     }
 
     .card {
@@ -275,6 +298,10 @@
     .input-group-text {
         background-color: #f8f9fa;
         border: 1px solid #ced4da;
+    }
+
+    .input-group:focus-within .input-group-text {
+        border-color: #0379D9;
     }
 
     @@media (max-width: 768px) {
@@ -291,10 +318,6 @@
 
         .price-block {
             margin-top: 10px;
-        }
-
-        .flight-duration:before {
-            display: none;
         }
 
         .flight-duration i {
@@ -364,7 +387,12 @@
         padding: 12px 15px;
         margin: 0;
         font-weight: 600;
+        outline: none !important;
     }
+
+        .flight-section-header:focus {
+            outline: none !important;
+        }
 
     .section-tuda {
         border-left-color: #007bff;
@@ -374,6 +402,76 @@
     .section-obratno {
         border-left-color: #28a745;
         background: linear-gradient(135deg, #f8fff8, #e8f5e8);
+    }
+
+    .flight-results {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .flight-section-header {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    .flight-card {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* Убираем все возможные outline для аэрофлота */
+    *:focus {
+        outline: none !important;
+    }
+
+    /* Оставляем только для интерактивных элементов */
+    a:focus,
+    button:focus,
+    input:focus,
+    select:focus,
+    textarea:focus,
+    [tabindex]:focus {
+        outline: 2px solid #0379D9 !important;
+        outline-offset: 2px;
+    }
+
+    /* Но для элементов карточек рейсов убираем */
+    .flight-card:focus,
+    .flight-card a:focus,
+    .flight-card button:focus,
+    .flight-card [tabindex]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Отладочные стили */
+    .debug-visible {
+        background: yellow !important;
+        border: 3px solid red !important;
+        padding: 10px !important;
+        margin: 10px 0 !important;
+    }
+
+    /* Убираем пунктирные линии для всех элементов на странице авиабилетов */
+    .container *:focus {
+        outline: none !important;
+    }
+
+    /* Восстанавливаем для инпутов и кнопок формы поиска */
+    #flightSearchForm input:focus,
+    #flightSearchForm select:focus,
+    #flightSearchForm button:focus {
+        outline: 2px solid #0379D9 !important;
+        outline-offset: 2px;
+    }
+
+    /* Для кнопок "Выбрать" в результатах поиска */
+    .flight-card .btn-select:focus {
+        outline: 2px solid #28a745 !important;
+        outline-offset: 2px;
     }
 </style>
 
@@ -555,56 +653,78 @@
         return fullString.split('(')[0].trim();
     }
 
-    // Функция показа результатов
+        // Функция показа результатов
+        // Функция показа результатов
     function showFlightResults(flights, searchData) {
-        console.log('Все полученные рейсы:', flights);
+        console.log('=== ПОКАЗ РЕЗУЛЬТАТОВ ===');
+        console.log('Получено рейсов:', flights.length);
+        console.log('Данные поиска:', searchData);
+
+        // Разделяем рейсы на туда и обратно
+        const oneWayFlights = flights.filter(flight => !flight.isReturn);
+        const returnFlights = flights.filter(flight => flight.isReturn);
+
+        const hasReturnDate = searchData.returnDate && searchData.returnDate !== null && searchData.returnDate !== '';
+        const hasReturnFlights = returnFlights.length > 0;
+
+        console.log(`Статистика: ${oneWayFlights.length} туда, ${returnFlights.length} обратно`);
+        console.log(`Есть обратная дата: ${hasReturnDate}, Есть рейсы обратно: ${hasReturnFlights}`);
 
         // Удаляем старые результаты
         const oldResults = document.querySelector('.flight-results');
-        if (oldResults) oldResults.remove();
+        if (oldResults) {
+            console.log('Удаляем предыдущие результаты');
+            oldResults.remove();
+        }
 
+        // Создаем новый контейнер
         const resultsContainer = document.createElement('div');
         resultsContainer.className = 'flight-results mt-4';
+        resultsContainer.id = 'flightResultsContainer'; // Добавляем ID для тестирования
 
         if (!flights || flights.length === 0) {
+            console.log('Нет рейсов для отображения');
             resultsContainer.innerHTML = `
                 <div class="alert alert-info">
-                    <h5>Рейсы не найдены</h5>
+                    <h5 class="alert-heading">Рейсы не найдены</h5>
                     <p>Попробуйте изменить параметры поиска или даты</p>
                 </div>
             `;
         } else {
-            // Разделяем рейсы на прямые и обратные
-            const oneWayFlights = flights.filter(flight => !flight.isReturn);
-            const returnFlights = flights.filter(flight => flight.isReturn);
-
-            const hasReturnDate = searchData.returnDate && searchData.returnDate !== null;
-
-            console.log('Рейсы туда:', oneWayFlights);
-            console.log('Рейсы обратно:', returnFlights);
-            console.log('Есть обратная дата:', hasReturnDate);
+            console.log('Создаем HTML с результатами...');
 
             let html = `
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-plane me-2"></i>
-                            Найдено рейсов: ${flights.length}
-                            ${hasReturnDate ? '(Туда и обратно)' : '(В одну сторону)'}
-                        </h5>
+                <div class="card shadow-lg border-0 mb-4">
+                    <div class="card-header bg-primary text-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-plane me-2"></i>
+                                Найдено рейсов: <span class="badge bg-light text-primary">${flights.length}</span>
+                            </h4>
+                            <div class="text-end">
+                                <small class="d-block">${hasReturnDate ? 'Туда и обратно' : 'В одну сторону'}</small>
+                                <small class="d-block">${searchData.passengers} пассажир${searchData.passengers > 1 ? 'а' : ''}</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body p-0">
             `;
 
-            // Показываем рейсы "туда"
+            // === РАЗДЕЛ "РЕЙСЫ ТУДА" ===
             if (oneWayFlights.length > 0) {
+                console.log('Добавляем раздел "Рейсы туда"');
                 html += `
-                    <div class="flight-section-header section-tuda">
-                        <h6 class="mb-0 text-primary">
-                            <i class="fas fa-plane-departure me-2"></i>
-                            <strong>Рейсы туда:</strong> ${searchData.departureCity} → ${searchData.arrivalCity}
-                            <small class="text-muted ms-2">${formatDateForDisplay(searchData.departureDate)}</small>
-                        </h6>
+                    <div class="flight-section-header section-tuda p-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-plane-departure fa-2x text-primary me-3"></i>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Рейсы туда</h5>
+                                <p class="mb-0 text-muted">
+                                    ${searchData.departureCity} → ${searchData.arrivalCity}
+                                    <span class="ms-2 badge bg-primary">${formatDateForDisplay(searchData.departureDate)}</span>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 `;
 
@@ -613,54 +733,261 @@
                 });
             }
 
-            // Показываем рейсы "обратно" только если есть обратная дата
-            if (hasReturnDate) {
-                if (returnFlights.length > 0) {
-                    html += `
-                        <div class="flight-section-header section-obratno">
-                            <h6 class="mb-0 text-success">
-                                <i class="fas fa-plane-arrival me-2"></i>
-                                <strong>Рейсы обратно:</strong> ${searchData.arrivalCity} → ${searchData.departureCity}
-                                <small class="text-muted ms-2">${formatDateForDisplay(searchData.returnDate)}</small>
-                            </h6>
+            // === РАЗДЕЛ "РЕЙСЫ ОБРАТНО" ===
+            if (hasReturnDate && hasReturnFlights) {
+                console.log('Добавляем раздел "Рейсы обратно"');
+                html += `
+                    <div class="flight-section-header section-obratno p-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-plane-arrival fa-2x text-success me-3"></i>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Рейсы обратно</h5>
+                                <p class="mb-0 text-muted">
+                                    ${searchData.arrivalCity} → ${searchData.departureCity}
+                                    <span class="ms-2 badge bg-success">${formatDateForDisplay(searchData.returnDate)}</span>
+                                </p>
+                            </div>
                         </div>
-                    `;
+                    </div>
+                `;
 
-                    returnFlights.forEach((flight, index) => {
-                        html += generateFlightCard(flight, index, true);
-                    });
-                } else {
-                    // Если есть обратная дата, но нет рейсов обратно
-                    html += `
-                        <div class="flight-section-header section-obratno">
-                            <h6 class="mb-0 text-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>Рейсы обратно:</strong> ${searchData.arrivalCity} → ${searchData.departureCity}
-                                <small class="text-muted ms-2">${formatDateForDisplay(searchData.returnDate)}</small>
-                                <span class="badge bg-warning ms-2">Рейсы не найдены</span>
-                            </h6>
+                returnFlights.forEach((flight, index) => {
+                    html += generateFlightCard(flight, index, true);
+                });
+            } else if (hasReturnDate && !hasReturnFlights) {
+                console.log('Есть дата обратно, но нет рейсов');
+                html += `
+                    <div class="flight-section-header section-obratno p-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                            <div>
+                                <h5 class="mb-1 fw-bold text-warning">Рейсы обратно</h5>
+                                <p class="mb-0">
+                                    ${searchData.arrivalCity} → ${searchData.departureCity}
+                                    <span class="ms-2 badge bg-warning">${formatDateForDisplay(searchData.returnDate)}</span>
+                                    <span class="ms-2 badge bg-danger">Рейсы не найдены</span>
+                                </p>
+                            </div>
                         </div>
-                        <div class="p-4 text-center text-muted">
-                            <i class="fas fa-search fa-2x mb-2"></i>
-                            <p>Не удалось найти рейсы на выбранную дату обратно</p>
-                            <p class="small">Попробуйте изменить дату возвращения</p>
-                        </div>
-                    `;
-                }
+                    </div>
+                    <div class="p-4 text-center bg-light">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Не удалось найти рейсы на обратную дату</h5>
+                        <p class="text-muted small">Попробуйте изменить дату возвращения</p>
+                    </div>
+                `;
             }
 
-            html += '</div></div>';
+            html += `
+                    </div>
+                    <div class="card-footer bg-light py-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Все цены указаны в рублях
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    Данные обновлены: ${new Date().toLocaleTimeString('ru-RU')}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             resultsContainer.innerHTML = html;
+            console.log('HTML создан, размер:', html.length, 'символов');
         }
 
-        // Вставляем результаты после формы
-        const formCard = document.querySelector('.card.shadow-sm');
-        formCard.parentNode.insertBefore(resultsContainer, formCard.nextSibling);
+        // Вставляем результаты на страницу
+        const formCard = document.querySelector('.card.shadow-sm.border-0');
+        if (formCard && formCard.parentNode) {
+            console.log('Вставляем результаты после формы поиска...');
+            formCard.parentNode.insertBefore(resultsContainer, formCard.nextSibling);
+
+            // Проверка через 100мс
+            setTimeout(() => {
+                console.log('=== ПРОВЕРКА ВСТАВКИ ===');
+                const inserted = document.getElementById('flightResultsContainer');
+                console.log('Контейнер в DOM:', !!inserted);
+                console.log('Высота контейнера:', inserted ? inserted.offsetHeight : 'не найден');
+
+                // Добавляем визуальный маркер для отладки
+                if (inserted) {
+                    inserted.style.border = '2px dashed #0d6efd';
+                    inserted.style.borderRadius = '10px';
+                    inserted.style.padding = '5px';
+                }
+            }, 100);
+        } else {
+            console.error('Не найден элемент формы для вставки результатов');
+            // Альтернативная вставка
+            const mainContainer = document.querySelector('.container .row .col-12');
+            if (mainContainer) {
+                mainContainer.appendChild(resultsContainer);
+                console.log('Вставлено в основной контейнер');
+            }
+        }
+
+        // Прокрутка к результатам
+        setTimeout(() => {
+            const resultsElement = document.getElementById('flightResultsContainer');
+            if (resultsElement) {
+                resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 200);
+
+        console.log('=== РЕЗУЛЬТАТЫ ПОКАЗАНЫ ===');
     }
+
+        function generateFlightCard(flight, index, isReturnFlight) {
+        console.log(`Генерация карточки реального рейса:`, flight);
+
+        // Форматирование времени
+        const departureTime = formatTime(flight.departureTime);
+        const arrivalTime = formatTime(flight.arrivalTime);
+        const durationHours = Math.floor(flight.duration / 60);
+        const durationMinutes = flight.duration % 60;
+        const durationText = `${durationHours}ч ${durationMinutes}м`;
+
+        // Уникальный ID
+        const uniqueFlightId = `flight-${flight.id}-${isReturnFlight ? 'return' : 'oneway'}-${index}`;
+        const isFav = isFavorite(uniqueFlightId);
+
+        // Определяем тип рейса
+        const typeColor = isReturnFlight ? 'success' : 'primary';
+        const typeIcon = isReturnFlight ? 'fa-plane-arrival' : 'fa-plane-departure';
+        const typeClass = isReturnFlight ? 'return-flight' : 'oneway-flight';
+
+        // Форматируем цену
+        const priceFormatted = flight.price ? flight.price.toLocaleString('ru-RU') : '0';
+        const currency = flight.currency || 'RUB';
+
+        return `
+            <div class="flight-card ${typeClass} border-bottom p-4">
+                <div class="row align-items-center">
+                    <!-- Авиакомпания -->
+                    <div class="col-md-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas ${typeIcon} text-${typeColor} fa-lg me-3"></i>
+                            <div>
+                                <h6 class="mb-1 fw-bold">${flight.airline || 'Авиакомпания'}</h6>
+                                <small class="text-muted">${flight.flightNumber || 'Рейс'}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Время и маршрут -->
+                    <div class="col-md-5">
+                        <div class="row align-items-center">
+                            <div class="col-4 text-end">
+                                <div class="fw-bold fs-5 time-display text-${typeColor}">${departureTime}</div>
+                                <small class="text-muted d-block">${flight.departureAirport || ''}</small>
+                                <small class="text-muted">${flight.departureCity || ''}</small>
+                            </div>
+
+                            <div class="col-4 text-center">
+                                <div class="flight-duration position-relative">
+                                    <div class="position-relative">
+                                        <i class="fas fa-plane text-${typeColor} fa-lg"></i>
+                                    </div>
+                                    <div class="small text-muted mt-2">${durationText}</div>
+                                    ${flight.transfers > 0 ?
+                                        `<div class="transfer-info small mt-1">${flight.transfers} пересад${flight.transfers === 1 ? 'ка' : 'ки'}</div>` :
+                                        '<div class="text-success small mt-1">Прямой рейс</div>'
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="fw-bold fs-5 time-display text-${typeColor}">${arrivalTime}</div>
+                                <small class="text-muted d-block">${flight.arrivalAirport || ''}</small>
+                                <small class="text-muted">${flight.arrivalCity || ''}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Пересадки -->
+                    <div class="col-md-1 text-center">
+                        <span class="badge ${flight.transfers === 0 ? 'bg-success' : 'bg-warning'} fs-6">
+                            ${flight.transfers === 0 ? 'Прямой' : `${flight.transfers}`}
+                        </span>
+                    </div>
+
+                    <!-- Цена и действия -->
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center justify-content-end gap-3">
+                            <!-- Избранное -->
+                            <button class="favorite-btn p-2 border-0 bg-transparent"
+                                    data-flight-id="${uniqueFlightId}"
+                                    onclick="toggleFavorite('${uniqueFlightId}')"
+                                    title="${isFav ? 'Удалить из избранного' : 'Добавить в избранное'}"
+                                    style="transition: transform 0.2s;">
+                                ${isFav ?
+                                    '<i class="fas fa-heart text-danger fa-lg"></i>' :
+                                    '<i class="far fa-heart fa-lg text-muted"></i>'
+                                }
+                            </button>
+
+                            <!-- Цена -->
+                            <div class="text-end">
+                                <div class="d-flex align-items-baseline justify-content-end">
+                                    <h3 class="text-${typeColor} mb-0">${priceFormatted}</h3>
+                                    <span class="text-${typeColor} ms-1">${currency}</span>
+                                </div>
+                                <small class="text-muted d-block">за пассажира</small>
+                                <button class="btn btn-${typeColor} btn-lg px-4 mt-2 fw-bold"
+                                        onclick="selectRealFlight('${flight.id}', ${flight.price || 0}, '${flight.airline || ''}', ${isReturnFlight})">
+                                    <i class="fas fa-shopping-cart me-2"></i>Купить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Дополнительная информация -->
+                ${flight.transfers > 0 ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-warning small mb-0 py-2">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Этот рейс включает ${flight.transfers} пересад${flight.transfers === 1 ? 'ку' : 'ки'}
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function selectRealFlight(flightId, price, airline, isReturn) {
+        const direction = isReturn ? 'обратно' : 'туда';
+        alert(`Выбран рейс ${flightId}\n${airline}\nЦена: ${price.toLocaleString('ru-RU')} RUB\nНаправление: ${direction}`);
+
+        // Здесь можно добавить логику для перехода к бронированию
+        console.log('Выбран рейс для бронирования:', { flightId, price, airline, isReturn });
+    }
+
+    // Вспомогательные функции
+    function selectFlight(flightId, isReturn) {
+        alert(`Выбран рейс ${flightId} (${isReturn ? 'обратно' : 'туда'})`);
+        console.log('Выбран рейс:', flightId, isReturn ? 'обратно' : 'туда');
+    }
+
+    console.log('Функция showFlightResults обновлена и готова к использованию');
 
     // Вспомогательная функция для генерации карточки рейса
     function generateFlightCard(flight, index, isReturnFlight) {
-        console.log('Генерация карточки рейса:', flight);
+        console.log(`Генерация карточки ${isReturnFlight ? 'обратно' : 'туда'}:`, flight);
+
+        if (!flight) {
+            console.error('Пустой объект flight!');
+            return '';
+        }
 
         const departureTime = formatTime(flight.departureTime);
         const arrivalTime = formatTime(flight.arrivalTime);
@@ -896,11 +1223,30 @@
         document.getElementById('flightSearchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            console.log('=== ОТПРАВКА ФОРМЫ ===');
+            console.log('departure:', document.getElementById('departureCity').value);
+            console.log('arrival:', document.getElementById('arrivalCity').value);
+            console.log('departureDate:', document.getElementById('departureDate').value);
+            console.log('returnDate:', document.getElementById('returnDate').value);
+            console.log('returnDate type:', typeof document.getElementById('returnDate').value);
+            console.log('returnDate length:', document.getElementById('returnDate').value ? document.getElementById('returnDate').value.length : 'empty');
+
             const departure = document.getElementById('departureCity').value;
             const arrival = document.getElementById('arrivalCity').value;
             const departureDate = document.getElementById('departureDate').value;
             const returnDate = document.getElementById('returnDate').value;
             const passengers = document.getElementById('passengers').value;
+
+            const searchData = {
+                departureCity: extractCityName(departure),
+                arrivalCity: extractCityName(arrival),
+                departureDate: departureDate,
+                returnDate: returnDate || null,
+                passengers: parseInt(passengers),
+                tripType: returnDate ? "round" : "oneway",
+                class: "economy"
+            };
+            console.log('searchData:', JSON.stringify(searchData, null, 2));
 
             if (!departure || !arrival) {
                 showAlert('Пожалуйста, заполните города вылета и прилета', 'warning');
@@ -919,17 +1265,8 @@
             submitBtn.disabled = true;
 
             try {
-                const searchData = {
-                    departureCity: extractCityName(departure),
-                    arrivalCity: extractCityName(arrival),
-                    departureDate: departureDate,
-                    returnDate: returnDate || null,
-                    passengers: parseInt(passengers),
-                    tripType: returnDate ? "round" : "oneway",
-                    class: "economy"
-                };
-
                 console.log('Отправка запроса к API:', searchData);
+                console.log('ReturnDate в запросе:', searchData.returnDate);
 
                 const response = await fetch('/api/flights/search', {
                     method: 'POST',
@@ -1137,5 +1474,57 @@
         };
 
         return cityCodes[cityName] || "---";
+    }
+
+        async function testDirectApiCall() {
+        console.log('=== ТЕСТИРОВАНИЕ ПРЯМОГО ВЫЗОВА API ===');
+
+        const testData = {
+            departureCity: 'Москва',
+            arrivalCity: 'Санкт-Петербург',
+            departureDate: new Date().toISOString().split('T')[0],
+            returnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            passengers: 2,
+            class: 'economy',
+            tripType: 'round'
+        };
+
+        console.log('Отправляемые данные:', testData);
+        console.log('returnDate:', testData.returnDate);
+
+        try {
+            const response = await fetch('/api/flights/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(testData)
+            });
+
+            const result = await response.json();
+            console.log('Ответ от API:', result);
+
+            if (result.success) {
+                console.log('Всего рейсов:', result.flights.length);
+                console.log('Рейсы туда:', result.flights.filter(f => !f.isReturn).length);
+                console.log('Рейсы обратно:', result.flights.filter(f => f.isReturn).length);
+            }
+        } catch (error) {
+            console.error('Ошибка теста:', error);
+        }
+    }
+
+        function debugFormSubmission() {
+        console.log('=== ДЕБАГ ФОРМЫ ===');
+
+        // Симулируем заполнение формы
+        document.getElementById('departureCity').value = 'Москва (MOW)';
+        document.getElementById('arrivalCity').value = 'Санкт-Петербург (LED)';
+        document.getElementById('departureDate').value = '2025-12-04';
+        document.getElementById('returnDate').value = '2025-12-11';
+        document.getElementById('passengers').value = '2';
+
+        console.log('Форма заполнена. Нажмите кнопку "Найти" или выполните:');
+        console.log('document.getElementById("flightSearchForm").dispatchEvent(new Event("submit"))');
     }
 </script>

@@ -221,6 +221,641 @@
         .destination-card:hover img {
             transform: scale(1.05);
         }
+
+    /* ===== СТИЛИ ДЛЯ КАРТОЧЕК ПОЕЗДОВ ===== */
+
+    .train-group-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid #e9ecef;
+        border-radius: 12px !important;
+        background: white;
+        margin-bottom: 24px;
+        border-left: 4px solid transparent;
+        overflow: hidden;
+    }
+
+        .train-group-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+            border-color: #0379D9;
+        }
+
+        .train-group-card.border-primary {
+            border-left-color: #0379D9 !important;
+            border-color: #0379D9 !important;
+        }
+
+        .train-group-card.border-success {
+            border-left-color: #40B624 !important;
+            border-color: #40B624 !important;
+        }
+
+        .train-group-card .card-header {
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Nunito', sans-serif;
+            color: white;
+        }
+
+        .train-group-card.border-primary .card-header {
+            background: linear-gradient(135deg, #0379D9 0%, #0369c1 100%) !important;
+        }
+
+        .train-group-card.border-success .card-header {
+            background: linear-gradient(135deg, #40B624 0%, #2e8b1f 100%) !important;
+        }
+
+        .train-group-card .card-body {
+            padding: 1.5rem;
+        }
+
+    /* Секции поездов внутри карточки */
+    .train-section {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.4));
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+
+        .train-section:hover {
+            background: linear-gradient(135deg, rgba(248, 249, 250, 1), rgba(233, 236, 239, 0.6));
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .train-section.border-primary {
+            border-left: 4px solid #0379D9 !important;
+        }
+
+        .train-section.border-success {
+            border-left: 4px solid #40B624 !important;
+        }
+
+        /* Заголовки секций */
+        .train-section h6 {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+
+            .train-section h6 .text-primary {
+                color: #0379D9 !important;
+            }
+
+            .train-section h6 .text-success {
+                color: #40B624 !important;
+            }
+
+            .train-section h6 small {
+                font-weight: 400;
+                font-size: 0.875rem;
+                margin-left: auto;
+            }
+
+    /* Информация о времени и станциях */
+    .train-time {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.25rem;
+    }
+
+        .train-time.fw-bold.fs-5 {
+            font-size: 1.5rem !important;
+            color: #0379D9;
+        }
+
+    .train-section.border-success .train-time.fw-bold.fs-5 {
+        color: #40B624 !important;
+    }
+
+    .text-muted.small {
+        font-size: 0.875rem;
+        color: #6c757d !important;
+        line-height: 1.3;
+    }
+
+    /* Продолжительность поездки */
+    .train-duration {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0.5rem 0;
+    }
+
+    .route-line {
+        color: rgba(3, 121, 217, 0.3) !important;
+        font-size: 1.5rem;
+        margin: 0.5rem 0;
+    }
+
+    .train-section.border-success .route-line {
+        color: rgba(64, 182, 36, 0.3) !important;
+    }
+
+    /* Бейджи */
+    .train-section .badge {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+
+    .badge.bg-primary {
+        background: #0379D9 !important;
+    }
+
+    .badge.bg-success {
+        background: #40B624 !important;
+    }
+
+    .badge.bg-light {
+        background: #f8f9fa !important;
+        color: #333 !important;
+        border: 1px solid #dee2e6;
+    }
+
+    /* Категории мест */
+    .d-flex.flex-wrap.gap-2 {
+        gap: 0.5rem !important;
+    }
+
+    .badge.bg-light.text-dark {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        background: white !important;
+        transition: all 0.2s ease;
+    }
+
+        .badge.bg-light.text-dark:hover {
+            background: #f8f9fa !important;
+            border-color: #0379D9;
+            transform: translateY(-1px);
+        }
+
+    /* Кнопки действий */
+    .train-group-card .train-favorite-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .train-group-card .train-favorite-btn:hover {
+            background: rgba(0,0,0,0.05);
+            transform: scale(1.1);
+        }
+
+        .train-group-card .train-favorite-btn i {
+            transition: all 0.2s ease;
+        }
+
+        .train-group-card .train-favorite-btn:hover i {
+            color: #dc3545 !important;
+        }
+
+    /* Основные кнопки выбора */
+    .train-group-card .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-family: 'Nunito', sans-serif;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .train-group-card .btn-primary {
+        background: #0379D9;
+        color: white;
+    }
+
+        .train-group-card .btn-primary:hover {
+            background: #0369c1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(3, 121, 217, 0.3);
+        }
+
+    .train-group-card .btn-success {
+        background: #40B624;
+        color: white;
+    }
+
+        .train-group-card .btn-success:hover {
+            background: #2e8b1f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(64, 182, 36, 0.3);
+        }
+
+    /* Вспомогательные кнопки */
+    .train-group-card .btn-outline-primary {
+        border: 2px solid #0379D9;
+        color: #0379D9;
+        font-weight: 600;
+    }
+
+        .train-group-card .btn-outline-primary:hover {
+            background: #0379D9;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+    .train-group-card .btn-outline-success {
+        border: 2px solid #40B624;
+        color: #40B624;
+        font-weight: 600;
+    }
+
+        .train-group-card .btn-outline-success:hover {
+            background: #40B624;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+    /* Цена */
+    .train-group-card .card-header h4 {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .train-group-card .card-header small {
+        opacity: 0.9;
+        font-size: 0.875rem;
+    }
+
+    /* Иконки */
+    .train-group-card i {
+        transition: all 0.2s ease;
+    }
+
+    .train-group-card .btn:hover i {
+        transform: translateX(2px);
+    }
+
+    /* Мобильная адаптация для карточек поездов */
+    @@media (max-width: 768px) {
+        .train-group-card
+
+    {
+        margin-bottom: 20px;
+    }
+
+    .train-group-card .card-body {
+        padding: 1rem;
+    }
+
+    .train-section {
+        padding: 1rem;
+    }
+
+    .train-time.fw-bold.fs-5 {
+        font-size: 1.25rem !important;
+    }
+
+    .row.align-items-center > .col-4 {
+        padding: 0 5px;
+    }
+
+    .train-duration {
+        font-size: 0.9rem;
+    }
+
+    .route-line {
+        font-size: 1rem;
+    }
+
+    .badge.bg-light.text-dark {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .train-group-card .btn-lg {
+        padding: 0.6rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .train-group-card .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .train-group-card .card-header {
+        padding: 1rem;
+    }
+
+        .train-group-card .card-header h4 {
+            font-size: 1.5rem;
+        }
+
+    }
+
+    @@media (max-width: 576px) {
+        .train-group-card
+
+    {
+        border-radius: 10px !important;
+    }
+
+    .train-group-card .card-body {
+        padding: 0.75rem;
+    }
+
+    .train-section {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .train-time.fw-bold.fs-5 {
+        font-size: 1.1rem !important;
+    }
+
+    .text-muted.small {
+        font-size: 0.75rem;
+    }
+
+    .train-section h6 {
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+
+        .train-section h6 small {
+            margin-left: 0;
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+
+    .train-duration {
+        font-size: 0.8rem;
+        margin: 0.25rem 0;
+    }
+
+    .badge.bg-light.text-dark {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .train-group-card .train-favorite-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .train-group-card .btn-lg {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .train-group-card .btn-sm {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .col-md-8, .col-md-4 {
+        width: 100% !important;
+    }
+
+        .col-md-4.text-end {
+            text-align: left !important;
+            margin-top: 1rem;
+        }
+
+    .d-flex.align-items-center.justify-content-end {
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+    }
+
+    .train-group-card .train-favorite-btn {
+        order: -1;
+        margin-right: auto;
+    }
+
+    }
+
+    /* Темная тема для поездов (если будет добавлена) */
+    @@media (prefers-color-scheme: dark) {
+        .train-group-card
+
+    {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+
+    .train-section {
+        background: rgba(74, 85, 104, 0.3);
+        border-color: #4a5568;
+    }
+
+    .train-time {
+        color: #e2e8f0;
+    }
+
+    .text-muted.small {
+        color: #a0aec0 !important;
+    }
+
+    .badge.bg-light.text-dark {
+        background: #4a5568 !important;
+        color: #e2e8f0 !important;
+        border-color: #718096;
+    }
+
+        .badge.bg-light.text-dark:hover {
+            background: #5a6578 !important;
+            border-color: #0379D9;
+        }
+
+    }
+
+    /* Анимация появления карточек */
+    @@keyframes slideInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .train-group-card {
+        animation: slideInUp 0.4s ease-out;
+    }
+
+        .train-group-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .train-group-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .train-group-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .train-group-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .train-group-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .train-group-card:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+    /* Кастомизация скроллбара для карточек */
+    .train-section::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    .train-section::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+
+    .train-section::-webkit-scrollbar-thumb {
+        background: #0379D9;
+        border-radius: 2px;
+    }
+
+        .train-section::-webkit-scrollbar-thumb:hover {
+            background: #0369c1;
+        }
+
+    /* Эффект градиента для заголовков */
+    .train-section h6.text-primary::before,
+    .train-section h6.text-success::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background: linear-gradient(to bottom, #0379D9, #0369c1);
+        margin-right: 8px;
+        border-radius: 2px;
+        vertical-align: middle;
+    }
+
+    .train-section h6.text-success::before {
+        background: linear-gradient(to bottom, #40B624, #2e8b1f);
+    }
+
+    /* Эффект при нажатии на карточку */
+    .train-group-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+
+    /* Индикатор загрузки для карточек */
+    .train-group-card.loading {
+        position: relative;
+        overflow: hidden;
+    }
+
+        .train-group-card.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: loadingShimmer 1.5s infinite;
+        }
+
+    @@keyframes loadingShimmer {
+        0%
+
+    {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+
+    }
+
+    /* Адаптация для высоких экранов */
+    @@media (min-height: 900px) {
+        .train-group-card
+
+    {
+        margin-bottom: 30px;
+    }
+
+    .train-section {
+        padding: 1.5rem;
+    }
+
+    .train-time.fw-bold.fs-5 {
+        font-size: 1.75rem !important;
+    }
+
+    }
+
+    /* Оптимизация для планшетов */
+    @@media (min-width: 768px) and (max-width: 991px) {
+        .train-group-card .btn-lg
+
+    {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.95rem;
+    }
+
+    .train-group-card .btn-sm {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .train-time.fw-bold.fs-5 {
+        font-size: 1.3rem !important;
+    }
+
+    .text-muted.small {
+        font-size: 0.8rem;
+    }
+
+    }
+
+    /* Поддержка RTL (справа налево) */
+    [dir="rtl"] .train-section h6::before {
+        margin-right: 0;
+        margin-left: 8px;
+    }
+
+    [dir="rtl"] .train-group-card .train-favorite-btn {
+        margin-right: 0;
+        margin-left: auto;
+    }
+
+    [dir="rtl"] .train-section h6 small {
+        margin-left: 0;
+        margin-right: auto;
+    }
 </style>
 
 <script>
@@ -434,8 +1069,6 @@
             }
         }, 5000);
     }
-
-    // Остальной код остается без изменений...
 
     // Загрузка станций с сервера
     async function loadStations() {
@@ -698,6 +1331,13 @@
             const returnDate = document.getElementById('railwayReturnDate');
             const passengers = document.getElementById('railwayPassengers');
 
+            console.log('=== ОБРАБОТКА ФОРМЫ ЖД ===');
+            console.log('departureStation:', departureStation.value);
+            console.log('arrivalStation:', arrivalStation.value);
+            console.log('departureDate:', departureDate.value);
+            console.log('returnDate:', returnDate.value);
+            console.log('returnDate value length:', returnDate.value.length);
+
             if (!departureStation.getAttribute('data-station-id') ||
                 !arrivalStation.getAttribute('data-station-id')) {
                 alert('Пожалуйста, выберите станции из списка');
@@ -717,11 +1357,12 @@
                     departureStationId: departureStation.getAttribute('data-station-id'),
                     arrivalStationId: arrivalStation.getAttribute('data-station-id'),
                     departureDate: departureDate.value,
+                    returnDate: returnDate.value || null, // Явно указываем null если пусто
                     passengers: parseInt(passengers.value)
                 };
 
-                const trains = await searchTrains(searchData);
-                displaySearchResults(trains, searchData);
+                const trainGroups = await searchTrains(searchData);
+                displaySearchResults(trainGroups, searchData);
 
             } catch (error) {
                 console.error('Ошибка поиска:', error);
@@ -739,17 +1380,24 @@
 
     // Поиск поездов через ваше ASP.NET API
     async function searchTrains(searchData) {
+        console.log('=== ПОИСК ЖД БИЛЕТОВ ===');
+
+        const requestBody = {
+            departureStationId: searchData.departureStationId,
+            arrivalStationId: searchData.arrivalStationId,
+            departureDate: searchData.departureDate,
+            returnDate: searchData.returnDate || null,
+            passengers: searchData.passengers
+        };
+
+        console.log('Отправляемые данные:', JSON.stringify(requestBody, null, 2));
+
         const response = await fetch('/api/trains/search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                departureStationId: searchData.departureStationId,
-                arrivalStationId: searchData.arrivalStationId,
-                departureDate: searchData.departureDate,
-                passengers: searchData.passengers
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -757,19 +1405,21 @@
         }
 
         const result = await response.json();
+        console.log('Ответ от API:', result);
+        console.log('Всего групп поездов:', result.trainGroups?.length || 0);
 
         if (result.success) {
-            return result.trains;
+            return result.trainGroups || [];
         } else {
             throw new Error(result.message || 'Ошибка при поиске поездов');
         }
     }
 
-    // Отображение результатов поиска
-    function displaySearchResults(trains, searchData) {
+    // Обновленная функция отображения результатов
+    function displaySearchResults(trainGroups, searchData) {
         const resultsContainer = document.getElementById('railwayResults');
 
-        if (!trains || trains.length === 0) {
+        if (!trainGroups || trainGroups.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="alert alert-info">
                     <h5>Поезда не найдены</h5>
@@ -779,93 +1429,235 @@
             return;
         }
 
-        resultsContainer.innerHTML = `
+        console.log('Отображаем группы поездов:', trainGroups);
+
+        let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3>Найдено поездов: ${trains.length}</h3>
+                <h3>Найдено вариантов: ${trainGroups.length}</h3>
                 <div class="text-muted">
                     ${document.getElementById('railwayDeparture').value} →
                     ${document.getElementById('railwayArrival').value}
+                    ${searchData.returnDate ? ' (туда и обратно)' : ' (в одну сторону)'}
                 </div>
             </div>
-            <div class="row g-4">
-                ${trains.map(train => {
-                    const uniqueTrainId = `train-${train.trainNumber}-${train.departureStation}-${train.arrivalStation}`;
-                    const isFav = isTrainFavorite(uniqueTrainId);
+        `;
 
-                    return `
-                    <div class="col-12">
-                        <div class="card train-card shadow-sm">
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <span class="train-number me-3">№ ${train.trainNumber}</span>
-                                            <span class="train-name">${train.name || ''}</span>
-                                            ${train.firm ? '<span class="badge bg-warning ms-2">Фирменный</span>' : ''}
-                                        </div>
+        // Для каждой группы генерируем карточку
+        trainGroups.forEach((group, index) => {
+            html += generateTrainGroupCard(group, searchData, index);
+        });
 
-                                        <div class="row align-items-center mt-3">
-                                            <div class="col-4 text-center">
-                                                <div class="train-time">${formatTime(train.departureTime)}</div>
-                                                <div class="text-muted small">${getStationName(train.departureStation)}</div>
-                                            </div>
-                                            <div class="col-4 text-center">
-                                                <div class="train-duration">${formatDurationFromString(train.travelTime)}</div>
-                                                <div class="route-line">───────</div>
-                                            </div>
-                                            <div class="col-4 text-center">
-                                                <div class="train-time">${formatTime(train.arrivalTime)}</div>
-                                                <div class="text-muted small">${getStationName(train.arrivalStation)}</div>
-                                            </div>
-                                        </div>
+        resultsContainer.innerHTML = html;
+    }
 
-                                        ${train.categories && train.categories.length > 0 ? `
-                                        <div class="mt-3">
-                                            <h6>Доступные места:</h6>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                ${train.categories.map(category => `
-                                                    <span class="badge bg-light text-dark">
-                                                        ${getCategoryName(category.type)}: ${category.price} ₽
-                                                    </span>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <div class="d-flex align-items-center justify-content-end gap-2">
-                                            <button class="train-favorite-btn p-1 border-0 bg-transparent"
-                                                    data-train-id="${uniqueTrainId}"
-                                                    onclick="toggleTrainFavorite('${uniqueTrainId}')"
-                                                    title="${isFav ? 'Удалить из избранного' : 'Добавить в избранное'}">
-                                                ${isFav ? '<i class="fas fa-heart text-danger fa-lg"></i>' : '<i class="far fa-heart fa-lg text-muted"></i>'}
-                                            </button>
-                                            <div class="text-end">
-                                                <div class="train-price text-primary mb-2">
-                                                    ${getMinPrice(train.categories)}
-                                                </div>
-                                                <button class="btn btn-primary btn-sm mb-1"
-                                                        onclick="viewSchedule('${train.departureStation}', '${train.arrivalStation}', '${searchData.departureDate}')">
-                                                    Расписание
-                                                </button>
-                                                <br>
-                                                <button class="btn btn-success btn-sm"
-                                                        onclick="bookTicket('${train.departureStation}', '${train.arrivalStation}', '${train.trainNumber}', '${searchData.departureDate}')">
-                                                    Забронировать
-                                                </button>
-                                            </div>
-                                        </div>
+    // Новая функция для генерации комбинированной карточки
+    function generateTrainGroupCard(group, searchData, index) {
+        const uniqueGroupId = `train-group-${group.id}-${index}`;
+        const isFav = isTrainFavorite(uniqueGroupId);
+        const isRoundTrip = group.isRoundTrip;
+
+        // Цвет в зависимости от типа
+        const typeColor = isRoundTrip ? 'warning' : 'primary';
+        const typeIcon = isRoundTrip ? 'fa-exchange-alt' : 'fa-train';
+        const typeBadge = isRoundTrip ?
+            '<span class="badge bg-warning ms-2">Туда и обратно</span>' :
+            '<span class="badge bg-primary ms-2">Только туда</span>';
+
+        return `
+            <div class="card train-group-card shadow-sm mb-4 border-${typeColor}">
+                <div class="card-header bg-${typeColor} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas ${typeIcon} me-2"></i>
+                            <strong>Вариант ${index + 1}</strong>
+                            ${typeBadge}
+                        </div>
+                        <div class="text-end">
+                            <h4 class="mb-0 text-white">${group.totalPrice.toLocaleString('ru-RU')} ₽</h4>
+                            <small class="opacity-75">за пассажира</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Секция "Поезд туда" -->
+                    ${generateTrainSection(group.forwardTrain, 'Туда', searchData.departureDate, 'primary')}
+
+                    <!-- Секция "Поезд обратно" (если есть) -->
+                    ${isRoundTrip && group.returnTrain ?
+                        generateTrainSection(group.returnTrain, 'Обратно', searchData.returnDate, 'success') :
+                        ''}
+
+                    <!-- Информация о ценах -->
+                    <div class="row mt-4">
+                        <div class="col-md-8">
+                            <h6>Доступные места:</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                ${generateCategoriesInfo(group)}
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-3">
+                                <!-- Кнопка избранного -->
+                                <button class="train-favorite-btn p-2 border-0 bg-transparent"
+                                        data-train-id="${uniqueGroupId}"
+                                        onclick="toggleTrainFavorite('${uniqueGroupId}')"
+                                        title="${isFav ? 'Удалить из избранного' : 'Добавить в избранное'}">
+                                    ${isFav ?
+                                        '<i class="fas fa-heart text-danger fa-lg"></i>' :
+                                        '<i class="far fa-heart fa-lg text-muted"></i>'
+                                    }
+                                </button>
+
+                                <!-- Кнопка выбора -->
+                                <div>
+                                    ${isRoundTrip ?
+                                        `<button class="btn btn-${typeColor} btn-lg px-4"
+                                                onclick="selectRoundTrip('${group.forwardTrain.trainNumber}', '${group.returnTrain.trainNumber}')">
+                                            <i class="fas fa-check me-2"></i>
+                                            Выбрать оба
+                                        </button>` :
+                                        `<button class="btn btn-${typeColor} btn-lg px-4"
+                                                onclick="selectOneWay('${group.forwardTrain.trainNumber}')">
+                                            <i class="fas fa-check me-2"></i>
+                                            Выбрать
+                                        </button>`
+                                    }
+                                    <div class="mt-2">
+                                        <button class="btn btn-outline-${typeColor} btn-sm me-2"
+                                                onclick="viewDetails('${group.id}')">
+                                            <i class="fas fa-info-circle me-1"></i>Подробнее
+                                        </button>
+                                        <button class="btn btn-outline-success btn-sm"
+                                                onclick="bookTickets(${JSON.stringify(group).replace(/"/g, '&quot;')})">
+                                            <i class="fas fa-shopping-cart me-1"></i>Купить
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                `}).join('')}
+                </div>
             </div>
         `;
     }
 
+    // Функция для генерации секции поезда
+    function generateTrainSection(train, title, date, color) {
+        return `
+            <div class="train-section mb-3 p-3 border-start border-${color} border-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-${color}">
+                        <i class="fas fa-train me-2"></i>
+                        ${title}
+                        <small class="text-muted ms-2">${formatDateForDisplay(date)}</small>
+                    </h6>
+                    <div>
+                        <span class="badge bg-${color}">№ ${train.trainNumber}</span>
+                        ${train.firm ? '<span class="badge bg-warning ms-1">Фирменный</span>' : ''}
+                    </div>
+                </div>
+
+                <div class="row align-items-center">
+                    <div class="col-4 text-center">
+                        <div class="train-time fw-bold fs-5">${formatTime(train.departureTime)}</div>
+                        <div class="text-muted small">${getStationName(train.departureStation)}</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="train-duration text-${color} fw-bold">
+                            <i class="fas fa-clock me-1"></i>
+                            ${formatDurationFromString(train.travelTime)}
+                        </div>
+                        <div class="route-line text-${color} opacity-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="train-time fw-bold fs-5">${formatTime(train.arrivalTime)}</div>
+                        <div class="text-muted small">${getStationName(train.arrivalStation)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Функция для генерации информации о категориях
+    function generateCategoriesInfo(group) {
+        let html = '';
+
+        if (group.forwardTrain?.categories) {
+            html += '<div class="mb-1"><small class="text-muted">Туда:</small></div>';
+            group.forwardTrain.categories.forEach((cat, i) => {
+                if (i < 3) { // Показываем только первые 3 категории
+                    html += `<span class="badge bg-light text-dark">
+                        ${getCategoryName(cat.type)}: ${cat.price} ₽
+                    </span>`;
+                }
+            });
+        }
+
+        if (group.returnTrain?.categories) {
+            html += '<div class="mb-1 mt-2"><small class="text-muted">Обратно:</small></div>';
+            group.returnTrain.categories.forEach((cat, i) => {
+                if (i < 3) {
+                    html += `<span class="badge bg-light text-dark">
+                        ${getCategoryName(cat.type)}: ${cat.price} ₽
+                    </span>`;
+                }
+            });
+        }
+
+        return html;
+    }
+
+    // Функции для действий
+    function selectRoundTrip(forwardTrainNumber, returnTrainNumber) {
+        alert(`Выбраны поезда:\nТуда: №${forwardTrainNumber}\nОбратно: №${returnTrainNumber}`);
+        console.log('Выбран комбинированный вариант:', forwardTrainNumber, returnTrainNumber);
+    }
+
+    function selectOneWay(trainNumber) {
+        alert(`Выбран поезд: №${trainNumber}`);
+        console.log('Выбран односторонний вариант:', trainNumber);
+    }
+
+    function viewDetails(groupId) {
+        console.log('Просмотр подробностей группы:', groupId);
+        // Здесь можно открыть модальное окно с подробной информацией
+    }
+
+    function bookTickets(group) {
+        console.log('Бронирование билетов для группы:', group);
+
+        if (group.isRoundTrip) {
+            alert(`Бронирование билетов:\nТуда: №${group.forwardTrain.trainNumber}\nОбратно: №${group.returnTrain.trainNumber}\nОбщая цена: ${group.totalPrice.toLocaleString('ru-RU')} ₽`);
+        } else {
+            alert(`Бронирование билета:\nПоезд: №${group.forwardTrain.trainNumber}\nЦена: ${group.totalPrice.toLocaleString('ru-RU')} ₽`);
+        }
+    }
+
     // Вспомогательные функции
+    function formatDateForDisplay(dateString) {
+        if (!dateString) return '';
+
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString;
+            }
+
+            return date.toLocaleDateString('ru-RU', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, dateString);
+            return dateString;
+        }
+    }
+
     function formatTime(timeString) {
         if (!timeString) return '--:--';
         return timeString.substring(0, 5);
@@ -919,4 +1711,7 @@
         const year = date.getFullYear();
         return `${day}.${month}.${year}`;
     }
+
+    // Добавьте эти стили
+    
 </script>

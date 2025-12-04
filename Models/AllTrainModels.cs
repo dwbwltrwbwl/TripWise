@@ -5,7 +5,9 @@
         public string DepartureStationId { get; set; }
         public string ArrivalStationId { get; set; }
         public string DepartureDate { get; set; }
+        public string? ReturnDate { get; set; } // Добавляем обратную дату
         public int Passengers { get; set; } = 1;
+        public bool IsReturn { get; set; } = false; // Флаг для рейсов обратно
     }
 
     public class TrainSearchResponse
@@ -19,6 +21,16 @@
         public string TravelTime { get; set; }
         public List<TrainCategory> Categories { get; set; }
         public bool Firm { get; set; }
+        public bool IsReturn { get; set; } = false; // Добавляем флаг
+    }
+
+    public class TrainGroupResponse
+    {
+        public string Id { get; set; }
+        public TrainSearchResponse ForwardTrain { get; set; }
+        public TrainSearchResponse ReturnTrain { get; set; }
+        public decimal TotalPrice { get; set; }
+        public bool IsRoundTrip { get; set; }
     }
 
     public class TrainCategory
