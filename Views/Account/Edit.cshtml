@@ -1,0 +1,482 @@
+﻿@{
+    ViewData["Title"] = "Редактирование профиля";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок страницы -->
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Редактирование профиля
+                    </h1>
+                    <p class="page-subtitle">Обновите информацию о себе</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Левая колонка - аватар -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="avatar-editor mb-4">
+                                <div class="avatar-preview mb-3">
+                                    <div class="avatar-circle-lg">
+                                        <div class="avatar-initials-lg">
+                                            @Model.Name[0].ToString().ToUpper()
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="avatar-actions">
+                                    <input type="file" id="avatarUpload" accept="image/*" class="d-none">
+                                    <button class="btn btn-primary mb-2" onclick="document.getElementById('avatarUpload').click()">
+                                        <i class="fas fa-camera me-2"></i>Загрузить фото
+                                    </button>
+                                    <button class="btn btn-outline-danger">
+                                        <i class="fas fa-trash-alt me-2"></i>Удалить фото
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h6 class="fw-semibold mb-2">Информация об аватаре</h6>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Поддерживаются форматы: JPG, PNG, GIF
+                                </p>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Максимальный размер: 5 MB
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка - форма -->
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="section-subtitle mb-0">
+                                <i class="fas fa-info-circle text-primary me-2"></i>
+                                Основная информация
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="name" 
+                                                   placeholder="Имя" value="@Model.Name">
+                                            <label for="name">Имя и фамилия</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="email" class="form-control" id="email" 
+                                                   placeholder="Email" value="@Model.Email">
+                                            <label for="email">Email адрес</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="tel" class="form-control" id="phone" 
+                                                   placeholder="Телефон" value="@Model.Phone">
+                                            <label for="phone">Телефон</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="date" class="form-control" id="birthDate" 
+                                                   value="@Model.BirthDate?.ToString("yyyy-MM-dd")">
+                                            <label for="birthDate">Дата рождения</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-floating mb-3">
+                                            <textarea class="form-control" id="bio" 
+                                                      placeholder="О себе" style="height: 100px">@Model.Bio</textarea>
+                                            <label for="bio">О себе</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="city" 
+                                                   placeholder="Город" value="@Model.City">
+                                            <label for="city">Город проживания</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="gender">
+                                                <option value="">Не указан</option>
+                                                <option value="male">Мужской</option>
+                                                <option value="female">Женский</option>
+                                            </select>
+                                            <label for="gender">Пол</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Настройки уведомлений -->
+                                    <div class="col-12">
+                                        <hr class="my-4">
+                                        <h6 class="fw-semibold mb-3">
+                                            <i class="fas fa-bell text-warning me-2"></i>
+                                            Настройки уведомлений
+                                        </h6>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="emailNotifications" 
+                                                           @(Model.EmailNotifications ? "checked" : "")>
+                                                    <label class="form-check-label" for="emailNotifications">
+                                                        Email уведомления
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="newsletter" 
+                                                           @(Model.Newsletter ? "checked" : "")>
+                                                    <label class="form-check-label" for="newsletter">
+                                                        Рассылка новостей
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="tripReminders" 
+                                                           @(Model.TripReminders ? "checked" : "")>
+                                                    <label class="form-check-label" for="tripReminders">
+                                                        Напоминания о поездках
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="specialOffers" 
+                                                           @(Model.SpecialOffers ? "checked" : "")>
+                                                    <label class="form-check-label" for="specialOffers">
+                                                        Специальные предложения
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer bg-white border-0 py-3 px-4">
+                            <div class="d-flex justify-content-between">
+                                <a asp-controller="Account" asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Назад
+                                </a>
+                                <div>
+                                    <button type="button" class="btn btn-secondary me-2">
+                                        <i class="fas fa-redo me-2"></i>Сбросить
+                                    </button>
+                                    <button type="button" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Сохранить изменения
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для заголовка страницы */
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, #0379D9, #40B624);
+    }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Аватар для редактирования */
+    .avatar-circle-lg {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        position: relative;
+        overflow: hidden;
+        border: 4px solid white;
+    }
+
+    .avatar-initials-lg {
+        color: white;
+        font-size: 4rem;
+        font-weight: 700;
+        font-family: 'Nunito', sans-serif;
+        text-transform: uppercase;
+    }
+
+    .avatar-actions {
+        max-width: 200px;
+        margin: 0 auto;
+    }
+
+    /* Форма */
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        height: calc(3.5rem + 2px);
+        padding: 1rem 0.75rem;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    .form-floating > label {
+        padding: 1rem 0.75rem;
+        color: #64748b;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0379D9;
+        box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+    }
+
+    .form-check-input {
+        width: 2.5em;
+        height: 1.25em;
+        margin-right: 0.5rem;
+        cursor: pointer;
+    }
+
+    .form-check-input:checked {
+        background-color: #0379D9;
+        border-color: #0379D9;
+    }
+
+    .form-check-label {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    /* Кнопки */
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-family: 'Nunito', sans-serif;
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border: none;
+        box-shadow: 0 4px 12px rgba(3, 121, 217, 0.2);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(3, 121, 217, 0.3);
+            background: linear-gradient(135deg, #0379D9, #40B624);
+        }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+    }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(108, 117, 125, 0.3);
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+    .btn-outline-secondary {
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        background: white;
+    }
+
+        .btn-outline-secondary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #334155;
+        }
+
+    .btn-outline-danger {
+        border: 2px solid #fee2e2;
+        color: #dc2626;
+        background: white;
+    }
+
+        .btn-outline-danger:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #dc2626;
+        }
+
+    /* Карточка */
+    .card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    hr {
+        opacity: 0.1;
+        margin: 2rem 0;
+    }
+
+    /* Адаптивность */
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .avatar-circle-lg {
+            width: 120px;
+            height: 120px;
+        }
+
+        .avatar-initials-lg {
+            font-size: 3rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+        }
+
+        .card-footer .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .card-footer .d-flex div {
+                width: 100%;
+            }
+
+            .card-footer .d-flex .btn {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+    }
+
+    @@media (max-width: 576px) {
+        .page-title {
+            font-size: 1.75rem;
+        }
+
+        .form-floating > .form-control,
+        .form-floating > .form-select {
+            height: calc(3rem + 2px);
+            padding: 0.75rem;
+        }
+
+        .form-floating > label {
+            padding: 0.75rem;
+        }
+    }
+</style>

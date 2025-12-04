@@ -5,14 +5,20 @@ using TripWise.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddControllers(); // для Web API
+builder.Services.AddControllers();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 builder.Services.AddDbContext<TripWiseContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
 
-// Добавьте эту строку для сессий
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -20,32 +26,23 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Добавьте эти строки для API и HttpClient
 builder.Services.AddHttpClient<RzdApiService>();
 builder.Services.AddScoped<RzdApiService>();
 
-// === ДОБАВЬТЕ ЭТО ДЛЯ АВИАБИЛЕТОВ ===
-builder.Services.AddHttpClient(); // Общий HttpClient для других нужд
+builder.Services.AddHttpClient(); 
 
-// КОНКРЕТНАЯ НАСТРОЙКА ДЛЯ AviasalesRealService
 builder.Services.AddHttpClient<AviasalesRealService>(client =>
 {
     client.DefaultRequestHeaders.Add("User-Agent", "TripWise/1.0");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(60); // Увеличиваем для API запросов
+    client.Timeout = TimeSpan.FromSeconds(60);
 });
 
-// Регистрируем сервис как реализацию интерфейса
 builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>();
 
-// УПРОЩЕННЫЙ СЕРВИС для тестирования (отключи если используешь реальный)
-// builder.Services.AddHttpClient<IAviasalesRealService, SimpleAviasalesService>();
-
-// Вместо старого сервиса используй российский
 builder.Services.Configure<TravelPayoutsConfig>(builder.Configuration.GetSection("TravelPayouts"));
 builder.Services.AddHttpClient<IHotelService, TravelPayoutsService>();
 
-// Настройка CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -56,35 +53,44 @@ builder.Services.AddCors(options =>
     });
 });
 
-// === КОНЕЦ ДОБАВЛЕНИЯ ДЛЯ АВИАБИЛЕТОВ ===
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
-
-// Добавьте CORS (используйте ту политику, которую определили выше)
 app.UseCors("AllowAll");
-
-// Добавьте эту строку для использования сессий
 app.UseSession();
 
-// Map both MVC controllers and API controllers
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<TripWiseContext>();
+        db.Database.Migrate();
+        Console.WriteLine("Database migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error applying migrations: {ex.Message}");
+        Console.WriteLine($"Full error: {ex}");
+    }
+}
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapControllers(); // Это для API контроллеров
+app.MapControllers();
 
 app.Run();
