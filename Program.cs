@@ -35,7 +35,7 @@ builder.Services.AddHttpClient<AviasalesRealService>(client =>
 {
     client.DefaultRequestHeaders.Add("User-Agent", "TripWise/1.0");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(60);
+    client.Timeout = TimeSpan.FromSeconds(60);  
 });
 
 builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>();
