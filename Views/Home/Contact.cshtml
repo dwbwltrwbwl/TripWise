@@ -1,83 +1,124 @@
 ﻿@{
     ViewData["Title"] = "Контакты";
-    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white">
-                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
-                        <i class="fas fa-envelope me-2"></i>Контакты
-                    </h1>
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок страницы в стиле сайта -->
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-envelope text-white"></i>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row">
-                        <!-- Контактная информация -->
-                        <div class="col-md-6">
-                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Свяжитесь с нами</h3>
+                <div>
+                    <h1 class="page-title">
+                        Контакты
+                    </h1>
+                    <p class="page-subtitle">Свяжитесь с нами любым удобным способом</p>
+                </div>
+            </div>
 
-                            <div class="contact-item mb-4">
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-phone-alt text-primary me-3 mt-1"></i>
-                                    <div>
-                                        <h5>Телефон</h5>
-                                        <p class="mb-1">+7 (800) 123-45-67</p>
-                                        <small class="text-muted">Бесплатно по России</small>
+            <!-- Контактная информация -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h3 class="section-subtitle mb-0">
+                                <i class="fas fa-headset text-primary me-2"></i>
+                                Свяжитесь с нами
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="contact-card d-flex align-items-start p-3 border rounded">
+                                        <div class="contact-icon me-3">
+                                            <i class="fas fa-phone-alt fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-semibold mb-1">Телефон</h6>
+                                            <p class="mb-1">+7 (800) 123-45-67</p>
+                                            <small class="text-muted">Бесплатно по России</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="contact-card d-flex align-items-start p-3 border rounded">
+                                        <div class="contact-icon me-3">
+                                            <i class="fas fa-envelope fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-semibold mb-1">Email</h6>
+                                            <p class="mb-1">support@vmestevput.ru</p>
+                                            <small class="text-muted">Основная поддержка</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="contact-card d-flex align-items-start p-3 border rounded">
+                                        <div class="contact-icon me-3">
+                                            <i class="fas fa-clock fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-semibold mb-1">Время работы</h6>
+                                            <p class="mb-1">Пн-Вс: 8:00 - 22:00</p>
+                                            <small class="text-muted">По московскому времени</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="contact-card d-flex align-items-start p-3 border rounded">
+                                        <div class="contact-icon me-3">
+                                            <i class="fas fa-map-marker-alt fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-semibold mb-1">Адрес</h6>
+                                            <p class="mb-1">Москва, ул. Примерная, д. 123</p>
+                                            <small class="text-muted">БЦ "Путешественник"</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="contact-item mb-4">
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-envelope text-primary me-3 mt-1"></i>
+                            <!-- Экстренные контакты -->
+                            <div class="alert alert-warning mt-4 border-0 rounded-lg">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
                                     <div>
-                                        <h5>Email</h5>
-                                        <p class="mb-1">support@vmestevput.ru</p>
-                                        <small class="text-muted">Основная поддержка</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="contact-item mb-4">
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-clock text-primary me-3 mt-1"></i>
-                                    <div>
-                                        <h5>Время работы</h5>
-                                        <p class="mb-1">Пн-Вс: 8:00 - 22:00</p>
-                                        <small class="text-muted">По московскому времени</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="contact-item">
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-map-marker-alt text-primary me-3 mt-1"></i>
-                                    <div>
-                                        <h5>Адрес</h5>
-                                        <p class="mb-1">Москва, ул. Примерная, д. 123</p>
-                                        <small class="text-muted">БЦ "Путешественник"</small>
+                                        <h5 class="alert-heading mb-2">Экстренная связь</h5>
+                                        <p class="mb-1">Для срочных вопросов (отмена рейса, проблемы в поездке):</p>
+                                        <p class="mb-0 fw-bold fs-5">+7 (495) 123-45-67</p>
+                                        <small class="text-muted">(круглосуточно)</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Форма обратной связи -->
-                        <div class="col-md-6">
-                            <h3 style="font-family: 'Nunito', sans-serif; color: #0379D9;">Обратная связь</h3>
+                <!-- Форма обратной связи -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h3 class="section-subtitle mb-0">
+                                <i class="fas fa-comment-dots text-primary me-2"></i>
+                                Обратная связь
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
                             <form>
                                 <div class="mb-3">
-                                    <label class="form-label">Имя *</label>
-                                    <input type="text" class="form-control" required>
+                                    <label class="form-label fw-semibold">Имя *</label>
+                                    <input type="text" class="form-control form-control-lg" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Email *</label>
-                                    <input type="email" class="form-control" required>
+                                    <label class="form-label fw-semibold">Email *</label>
+                                    <input type="email" class="form-control form-control-lg" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Тема</label>
-                                    <select class="form-select">
+                                    <label class="form-label fw-semibold">Тема</label>
+                                    <select class="form-select form-select-lg">
                                         <option>Общий вопрос</option>
                                         <option>Проблема с бронированием</option>
                                         <option>Возврат средств</option>
@@ -85,22 +126,65 @@
                                         <option>Сотрудничество</option>
                                     </select>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Сообщение *</label>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Сообщение *</label>
                                     <textarea class="form-control" rows="4" required></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-paper-plane me-1"></i>Отправить сообщение
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    Отправить сообщение
                                 </button>
                             </form>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Экстренные контакты -->
-                    <div class="alert alert-danger mt-4">
-                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Экстренная связь</h5>
-                        <p class="mb-1">Для срочных вопросов (отмена рейса, проблемы в поездке):</p>
-                        <p class="mb-0"><strong>+7 (495) 123-45-67</strong> (круглосуточно)</p>
+            <!-- FAQ по контактам -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-question-circle text-primary me-2"></i>
+                        Частые вопросы
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="accordion" id="contactFaqAccordion">
+                        <div class="accordion-item border-0 mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#contactFaq1">
+                                    Как быстро вы отвечаете на письма?
+                                </button>
+                            </h2>
+                            <div id="contactFaq1" class="accordion-collapse collapse" data-bs-parent="#contactFaqAccordion">
+                                <div class="accordion-body">
+                                    Мы стараемся отвечать на все письма в течение 1-2 рабочих дней. На экстренные вопросы отвечаем в течение 2-4 часов.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0 mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#contactFaq2">
+                                    Можно ли приехать в офис лично?
+                                </button>
+                            </h2>
+                            <div id="contactFaq2" class="accordion-collapse collapse" data-bs-parent="#contactFaqAccordion">
+                                <div class="accordion-body">
+                                    Да, наш офис открыт для посещения по предварительной записи. Пожалуйста, позвоните нам заранее, чтобы согласовать время визита.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0 mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#contactFaq3">
+                                    Работаете ли вы в выходные дни?
+                                </button>
+                            </h2>
+                            <div id="contactFaq3" class="accordion-collapse collapse" data-bs-parent="#contactFaqAccordion">
+                                <div class="accordion-body">
+                                    Наша служба поддержки работает 7 дней в неделю. Телефонная поддержка доступна с 8:00 до 22:00, экстренная линия - круглосуточно.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -109,13 +193,314 @@
 </div>
 
 <style>
-    .contact-item {
-        padding: 1rem;
-        border-radius: 8px;
-        transition: background-color 0.3s ease;
+    /* Стили для заголовка страницы */
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
     }
 
-        .contact-item:hover {
-            background-color: #f8f9fa;
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
         }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+        .page-header-icon i {
+            color: white !important;
+        }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Стили для карточек контактов */
+    .contact-card {
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        height: 100%;
+    }
+
+        .contact-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-color: #0379D9;
+        }
+
+    .contact-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .contact-icon i {
+            color: #0379D9 !important;
+        }
+
+    /* Стили для карточек */
+    .card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+    /* Стили для аккордеона */
+    .accordion-button {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0;
+        background-color: white;
+        color: #334155;
+        padding: 16px 20px;
+    }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #f0f7ff;
+            color: #0379D9;
+            border-color: #0379D9;
+            box-shadow: none;
+        }
+
+        .accordion-button:focus {
+            box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+            border-color: #0379D9;
+        }
+
+        .accordion-button::after {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%230379D9'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+        }
+
+    .accordion-body {
+        padding: 20px;
+        background-color: white;
+        border-radius: 0 0 12px 12px;
+    }
+
+    /* Стили для формы */
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        padding: 12px 16px;
+        font-family: 'Nunito', sans-serif;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #0379D9;
+            box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+        }
+
+    .form-control-lg {
+        padding: 14px 18px;
+        font-size: 1rem;
+    }
+
+    /* Кнопки */
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    .btn-primary {
+        background: #0379D9;
+        border: none;
+        box-shadow: 0 4px 12px rgba(3, 121, 217, 0.2);
+        padding: 14px 20px;
+        font-size: 1.1rem;
+    }
+
+        .btn-primary:hover {
+            background: #0356a8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(3, 121, 217, 0.3);
+        }
+
+        .btn-primary i {
+            color: white !important;
+        }
+
+    .btn-lg {
+        padding: 16px 24px;
+        font-size: 1.2rem;
+    }
+
+    /* Стили для алерта */
+    .alert-warning {
+        background-color: #fff9db;
+        border: 1px solid #ffec99;
+        border-radius: 12px;
+        color: #5c4400;
+    }
+
+    /* Все иконки в одном цвете */
+    .fa-headset,
+    .fa-phone-alt,
+    .fa-envelope,
+    .fa-clock,
+    .fa-map-marker-alt,
+    .fa-comment-dots,
+    .fa-question-circle,
+    .fa-exclamation-triangle {
+        color: #0379D9 !important;
+    }
+
+    /* Адаптивность */
+    @@media (max-width: 992px) {
+        .contact-card {
+            margin-bottom: 1rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+        }
+
+        .contact-icon {
+            width: 45px;
+            height: 45px;
+        }
+
+        .accordion-button {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .page-title {
+            font-size: 1.75rem;
+        }
+
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+            .contact-icon i {
+                font-size: 1.5rem;
+            }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+            .btn:last-child {
+                margin-bottom: 0;
+            }
+    }
 </style>
+
+<script>
+    // Плавная прокрутка к FAQ
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId !== '#') {
+                e.preventDefault();
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 100,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    });
+
+    // Обработка формы
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Здесь можно добавить отправку формы
+        alert('Сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
+        this.reset();
+    });
+</script>

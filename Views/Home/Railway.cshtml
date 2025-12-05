@@ -119,98 +119,55 @@
         left: 0;
         right: 0;
         background: white;
-        border: 1px solid #ddd;
+        border: 1px solid #e2e8f0;
         border-top: none;
         border-radius: 0 0 8px 8px;
         max-height: 200px;
         overflow-y: auto;
         z-index: 1000;
         display: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .autocomplete-item {
         padding: 10px 15px;
         cursor: pointer;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f1f5f9;
         transition: background-color 0.2s ease;
     }
 
         .autocomplete-item:hover {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
         }
 
     .station-name {
         font-weight: 600;
-        color: #333;
+        color: #334155;
+        font-family: 'Nunito', sans-serif;
     }
 
     .station-region {
         font-size: 0.85em;
-        color: #666;
-    }
-
-    .train-card {
-        transition: transform 0.2s ease;
-        border: 1px solid #e9ecef;
-    }
-
-        .train-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-    .train-number {
-        font-size: 0.9em;
-        color: #666;
-    }
-
-    .train-name {
-        font-weight: 600;
-        color: #333;
-    }
-
-    .train-time {
-        font-size: 1.2em;
-        font-weight: 700;
-        color: #333;
-    }
-
-    .train-duration {
-        font-size: 0.9em;
-        color: #666;
-    }
-
-    .train-price {
-        font-size: 1.3em;
-        font-weight: 700;
-    }
-
-    .route-line {
-        color: #ddd;
-        font-size: 0.8em;
-    }
-
-    .carrier {
-        font-size: 0.9em;
-        color: #666;
-        margin-bottom: 5px;
+        color: #64748b;
+        font-family: 'Nunito', sans-serif;
     }
 
     .destination-card {
         transition: transform 0.2s ease;
         cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        background: white;
     }
 
         .destination-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .destination-card img {
-            height: 200px;
+            height: 180px;
             object-fit: cover;
             transition: transform 0.3s ease;
         }
@@ -219,121 +176,141 @@
             transform: scale(1.05);
         }
 
-    /* ===== СТИЛИ ДЛЯ КАРТОЧЕК ПОЕЗДОВ ===== */
+        .destination-card .card-body {
+            padding: 1rem;
+        }
+
+        .destination-card .card-title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+        }
+
+        .destination-card .card-text {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            color: #0379D9;
+            margin-bottom: 0.25rem;
+        }
+
+        .destination-card .text-muted.small {
+            font-family: 'Nunito', sans-serif;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+    /* ===== МИНИМАЛИСТИЧНЫЙ ДИЗАЙН КАРТОЧЕК ===== */
 
     .train-group-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e2e8f0;
         border-radius: 12px !important;
         background: white;
-        margin-bottom: 24px;
-        border-left: 4px solid transparent;
+        margin-bottom: 16px;
         overflow: hidden;
     }
 
         .train-group-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
-            border-color: #0379D9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
+        /* Убираем боковые цветные границы */
         .train-group-card.border-primary {
-            border-left-color: #0379D9 !important;
-            border-color: #0379D9 !important;
+            border-color: #e2e8f0 !important;
         }
 
-        .train-group-card.border-success {
-            border-left-color: #40B624 !important;
-            border-color: #40B624 !important;
+        .train-group-card.border-secondary {
+            border-color: #e2e8f0 !important;
         }
 
+        /* Простой хедер */
         .train-group-card .card-header {
             border-radius: 12px 12px 0 0 !important;
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
             font-family: 'Nunito', sans-serif;
-            color: white;
+            background: #f8fafc !important;
+            color: #334155 !important;
         }
 
-        .train-group-card.border-primary .card-header {
-            background: linear-gradient(135deg, #0379D9 0%, #0369c1 100%) !important;
-        }
+            .train-group-card .card-header h4 {
+                font-family: 'Nunito', sans-serif;
+                font-weight: 700;
+                margin-bottom: 0.125rem;
+                color: #0379D9;
+            }
 
-        .train-group-card.border-success .card-header {
-            background: linear-gradient(135deg, #40B624 0%, #2e8b1f 100%) !important;
-        }
+            .train-group-card .card-header small {
+                opacity: 0.7;
+                font-size: 0.75rem;
+                color: #64748b;
+            }
 
         .train-group-card .card-body {
-            padding: 1.5rem;
+            padding: 1.25rem;
         }
 
-    /* Секции поездов внутри карточки */
+    /* Упрощаем секции поездов */
     .train-section {
-        background: linear-gradient(135deg, rgba(248, 249, 250, 0.8), rgba(233, 236, 239, 0.4));
-        border-radius: 10px;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        border: 1px solid rgba(0,0,0,0.05);
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid #e2e8f0;
         transition: all 0.2s ease;
     }
 
         .train-section:hover {
-            background: linear-gradient(135deg, rgba(248, 249, 250, 1), rgba(233, 236, 239, 0.6));
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            background: #f8fafc;
         }
 
+        /* Убираем цветные боковые границы */
         .train-section.border-primary {
-            border-left: 4px solid #0379D9 !important;
+            border-left: 1px solid #e2e8f0 !important;
         }
 
-        .train-section.border-success {
-            border-left: 4px solid #40B624 !important;
+        .train-section.border-secondary {
+            border-left: 1px solid #e2e8f0 !important;
         }
 
-        /* Заголовки секций */
+        /* Заголовки секций - более минималистичные */
         .train-section h6 {
             font-family: 'Nunito', sans-serif;
-            font-weight: 700;
+            font-weight: 600;
             margin-bottom: 0.75rem;
             display: flex;
             align-items: center;
+            color: #334155 !important;
+            font-size: 1rem;
         }
-
-            .train-section h6 .text-primary {
-                color: #0379D9 !important;
-            }
-
-            .train-section h6 .text-success {
-                color: #40B624 !important;
-            }
 
             .train-section h6 small {
                 font-weight: 400;
                 font-size: 0.875rem;
                 margin-left: auto;
+                color: #64748b !important;
             }
 
     /* Информация о времени и станциях */
     .train-time {
-        font-family: 'Courier New', monospace;
-        font-weight: 700;
-        color: #333;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        color: #0379D9;
         margin-bottom: 0.25rem;
     }
 
         .train-time.fw-bold.fs-5 {
-            font-size: 1.5rem !important;
-            color: #0379D9;
+            font-size: 1.25rem !important;
+            color: #0379D9 !important;
         }
-
-    .train-section.border-success .train-time.fw-bold.fs-5 {
-        color: #40B624 !important;
-    }
 
     .text-muted.small {
         font-size: 0.875rem;
-        color: #6c757d !important;
+        color: #64748b !important;
         line-height: 1.3;
+        font-family: 'Nunito', sans-serif;
     }
 
     /* Продолжительность поездки */
@@ -344,63 +321,47 @@
         align-items: center;
         justify-content: center;
         margin: 0.5rem 0;
+        color: #64748b;
+        font-size: 0.9rem;
     }
 
     .route-line {
-        color: rgba(3, 121, 217, 0.3) !important;
-        font-size: 1.5rem;
+        color: #e2e8f0 !important;
+        font-size: 1.25rem;
         margin: 0.5rem 0;
     }
 
-    .train-section.border-success .route-line {
-        color: rgba(64, 182, 36, 0.3) !important;
-    }
-
-    /* Бейджи */
+    /* Бейджи - более минималистичные */
     .train-section .badge {
         font-family: 'Nunito', sans-serif;
-        font-weight: 600;
-        padding: 0.35rem 0.65rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-    }
-
-    .badge.bg-primary {
-        background: #0379D9 !important;
-    }
-
-    .badge.bg-success {
-        background: #40B624 !important;
-    }
-
-    .badge.bg-light {
-        background: #f8f9fa !important;
-        color: #333 !important;
-        border: 1px solid #dee2e6;
+        font-weight: 500;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0;
     }
 
     /* Категории мест */
-    .d-flex.flex-wrap.gap-2 {
-        gap: 0.5rem !important;
-    }
-
     .badge.bg-light.text-dark {
         font-family: 'Nunito', sans-serif;
         font-weight: 500;
-        padding: 0.5rem 0.75rem;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
+        padding: 0.4rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
         background: white !important;
-        transition: all 0.2s ease;
+        color: #334155 !important;
+        font-size: 0.85rem;
     }
 
         .badge.bg-light.text-dark:hover {
-            background: #f8f9fa !important;
-            border-color: #0379D9;
+            background: #f8fafc !important;
+            border-color: #cbd5e1;
             transform: translateY(-1px);
         }
 
-    /* Кнопки действий */
+    /* Кнопка избранного */
     .train-group-card .train-favorite-btn {
         background: none;
         border: none;
@@ -408,16 +369,16 @@
         transition: all 0.2s ease;
         padding: 0.5rem;
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
         .train-group-card .train-favorite-btn:hover {
-            background: rgba(0,0,0,0.05);
-            transform: scale(1.1);
+            background: #f1f5f9;
+            transform: none;
         }
 
         .train-group-card .train-favorite-btn i {
@@ -430,428 +391,365 @@
 
     /* Основные кнопки выбора */
     .train-group-card .btn-lg {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         font-weight: 600;
         font-family: 'Nunito', sans-serif;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        border: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #0379D9;
     }
 
-    .train-group-card .btn-primary {
-        background: #0379D9;
-        color: white;
-    }
-
-        .train-group-card .btn-primary:hover {
-            background: #0369c1;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(3, 121, 217, 0.3);
+        .train-group-card .btn-lg:hover {
+            background: #0379D9;
+            color: white;
+            border-color: #0379D9;
+            transform: none;
+            box-shadow: none;
         }
 
-    .train-group-card .btn-success {
-        background: #40B624;
-        color: white;
-    }
-
-        .train-group-card .btn-success:hover {
-            background: #2e8b1f;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(64, 182, 36, 0.3);
+        .train-group-card .btn-lg.btn-primary,
+        .train-group-card .btn-lg.btn-secondary {
+            background: white;
+            color: #0379D9;
+            border: 1px solid #e2e8f0;
         }
+
+            .train-group-card .btn-lg.btn-primary:hover,
+            .train-group-card .btn-lg.btn-secondary:hover {
+                background: #0379D9;
+                color: white;
+                border-color: #0379D9;
+            }
 
     /* Вспомогательные кнопки */
     .train-group-card .btn-outline-primary {
-        border: 2px solid #0379D9;
-        color: #0379D9;
-        font-weight: 600;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-weight: 500;
+        background: white;
     }
 
         .train-group-card .btn-outline-primary:hover {
-            background: #0379D9;
-            color: white;
-            transform: translateY(-2px);
+            background: #f8fafc;
+            color: #334155;
+            border-color: #cbd5e1;
+            transform: none;
         }
 
-    .train-group-card .btn-outline-success {
-        border: 2px solid #40B624;
-        color: #40B624;
-        font-weight: 600;
+    .train-group-card .btn-outline-secondary {
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-weight: 500;
+        background: white;
     }
 
-        .train-group-card .btn-outline-success:hover {
-            background: #40B624;
-            color: white;
-            transform: translateY(-2px);
+        .train-group-card .btn-outline-secondary:hover {
+            background: #f8fafc;
+            color: #334155;
+            border-color: #cbd5e1;
+            transform: none;
         }
 
-    /* Цена */
-    .train-group-card .card-header h4 {
-        font-family: 'Nunito', sans-serif;
-        font-weight: 800;
-        margin-bottom: 0.25rem;
-    }
-
-    .train-group-card .card-header small {
-        opacity: 0.9;
+    /* Упрощаем маленькие кнопки */
+    .train-group-card .btn-sm {
+        padding: 0.35rem 0.75rem;
         font-size: 0.875rem;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #64748b;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 500;
     }
 
-    /* Иконки */
-    .train-group-card i {
-        transition: all 0.2s ease;
+        .train-group-card .btn-sm:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #334155;
+            transform: none;
+        }
+
+    /* Убираем цветные акценты */
+    .train-group-card .border-primary,
+    .train-group-card .border-secondary,
+    .train-section.border-primary,
+    .train-section.border-secondary {
+        border-color: #e2e8f0 !important;
     }
 
-    .train-group-card .btn:hover i {
-        transform: translateX(2px);
+    /* Упрощаем бейджи поездов */
+    .badge.bg-primary,
+    .badge.bg-secondary {
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Меньше анимаций */
+    .train-group-card {
+        animation: none;
+    }
+
+        /* Убираем градиенты */
+        .train-group-card .card-header {
+            background: #f8fafc !important;
+        }
+
+    /* Категории - упрощаем */
+    .d-flex.flex-wrap.gap-2 {
+        gap: 0.375rem !important;
+    }
+
+    /* Кнопки выбора - одинаковой ширины */
+    .btn-group-wide {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .btn-sm-pair {
+        width: 49%;
+    }
+
+    /* Убираем тени при ховере */
+    .train-group-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Упрощаем заголовок карточки */
+    .train-group-card .card-header > div:first-child {
+        font-weight: 600;
+        color: #334155;
+    }
+
+    /* Убираем разделение "Только туда"/"Туда и обратно" */
+    .badge.bg-warning,
+    .badge.bg-secondary {
+        background: #f1f5f9 !important;
+        color: #64748b !important;
+        border: 1px solid #e2e8f0;
     }
 
     /* Мобильная адаптация для карточек поездов */
     @@media (max-width: 768px) {
-        .train-group-card
-
-    {
-        margin-bottom: 20px;
-    }
-
-    .train-group-card .card-body {
-        padding: 1rem;
-    }
-
-    .train-section {
-        padding: 1rem;
-    }
-
-    .train-time.fw-bold.fs-5 {
-        font-size: 1.25rem !important;
-    }
-
-    .row.align-items-center > .col-4 {
-        padding: 0 5px;
-    }
-
-    .train-duration {
-        font-size: 0.9rem;
-    }
-
-    .route-line {
-        font-size: 1rem;
-    }
-
-    .badge.bg-light.text-dark {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.8rem;
-    }
-
-    .train-group-card .btn-lg {
-        padding: 0.6rem 1rem;
-        font-size: 0.95rem;
-    }
-
-    .train-group-card .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .train-group-card .card-header {
-        padding: 1rem;
-    }
-
-        .train-group-card .card-header h4 {
-            font-size: 1.5rem;
+        .train-group-card {
+            margin-bottom: 12px;
         }
 
+            .train-group-card .card-body {
+                padding: 1rem;
+            }
+
+        .train-section {
+            padding: 0.875rem;
+        }
+
+        .train-time.fw-bold.fs-5 {
+            font-size: 1.125rem !important;
+        }
+
+        .train-duration {
+            font-size: 0.8rem;
+        }
+
+        .route-line {
+            font-size: 1rem;
+        }
+
+        .badge.bg-light.text-dark {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .train-group-card .btn-lg {
+            padding: 0.45rem 0.9rem;
+            font-size: 0.95rem;
+        }
+
+        .train-group-card .btn-sm {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        .train-group-card .card-header {
+            padding: 0.875rem 1rem;
+        }
+
+            .train-group-card .card-header h4 {
+                font-size: 1.25rem;
+            }
+
+        .btn-group-wide {
+            max-width: 100%;
+        }
     }
 
     @@media (max-width: 576px) {
-        .train-group-card
-
-    {
-        border-radius: 10px !important;
-    }
-
-    .train-group-card .card-body {
-        padding: 0.75rem;
-    }
-
-    .train-section {
-        padding: 0.75rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .train-time.fw-bold.fs-5 {
-        font-size: 1.1rem !important;
-    }
-
-    .text-muted.small {
-        font-size: 0.75rem;
-    }
-
-    .train-section h6 {
-        font-size: 0.9rem;
-        flex-wrap: wrap;
-    }
-
-        .train-section h6 small {
-            margin-left: 0;
-            width: 100%;
-            margin-top: 0.25rem;
+        .train-group-card {
+            border-radius: 10px !important;
         }
 
-    .train-duration {
-        font-size: 0.8rem;
-        margin: 0.25rem 0;
-    }
+            .train-group-card .card-body {
+                padding: 0.875rem;
+            }
 
-    .badge.bg-light.text-dark {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.75rem;
-    }
-
-    .train-group-card .train-favorite-btn {
-        width: 36px;
-        height: 36px;
-    }
-
-    .train-group-card .btn-lg {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-
-    .train-group-card .btn-sm {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-
-    .col-md-8, .col-md-4 {
-        width: 100% !important;
-    }
-
-        .col-md-4.text-end {
-            text-align: left !important;
-            margin-top: 1rem;
+        .train-section {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
-    .d-flex.align-items-center.justify-content-end {
-        justify-content: flex-start !important;
-        flex-wrap: wrap;
+        .train-time.fw-bold.fs-5 {
+            font-size: 1rem !important;
+        }
+
+        .text-muted.small {
+            font-size: 0.75rem;
+        }
+
+        .train-section h6 {
+            font-size: 0.9rem;
+        }
+
+            .train-section h6 small {
+                font-size: 0.75rem;
+            }
+
+        .train-duration {
+            font-size: 0.75rem;
+        }
+
+        .badge.bg-light.text-dark {
+            padding: 0.3rem 0.45rem;
+            font-size: 0.75rem;
+        }
+
+        .train-group-card .train-favorite-btn {
+            width: 32px;
+            height: 32px;
+        }
+
+        .btn-sm-pair {
+            width: 48%;
+        }
     }
 
-    .train-group-card .train-favorite-btn {
-        order: -1;
-        margin-right: auto;
-    }
-
-    }
-
-    /* Темная тема для поездов (если будет добавлена) */
+    /* Темная тема для поездов */
     @@media (prefers-color-scheme: dark) {
-        .train-group-card
-
-    {
-        background: #2d3748;
-        border-color: #4a5568;
-    }
-
-    .train-section {
-        background: rgba(74, 85, 104, 0.3);
-        border-color: #4a5568;
-    }
-
-    .train-time {
-        color: #e2e8f0;
-    }
-
-    .text-muted.small {
-        color: #a0aec0 !important;
-    }
-
-    .badge.bg-light.text-dark {
-        background: #4a5568 !important;
-        color: #e2e8f0 !important;
-        border-color: #718096;
-    }
-
-        .badge.bg-light.text-dark:hover {
-            background: #5a6578 !important;
-            border-color: #0379D9;
+        .train-group-card {
+            background: #1e293b;
+            border-color: #334155;
         }
 
-    }
-
-    /* Анимация появления карточек */
-    @@keyframes slideInUp {
-        from
-
-    {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    }
-
-    .train-group-card {
-        animation: slideInUp 0.4s ease-out;
-    }
-
-        .train-group-card:nth-child(1) {
-            animation-delay: 0.05s;
+        .train-section {
+            background: #1e293b;
+            border-color: #334155;
         }
 
-        .train-group-card:nth-child(2) {
-            animation-delay: 0.1s;
+        .train-group-card .card-header {
+            background: #0f172a !important;
+            border-color: #334155;
+            color: #e2e8f0 !important;
         }
 
-        .train-group-card:nth-child(3) {
-            animation-delay: 0.15s;
+        .train-time {
+            color: #60a5fa;
         }
 
-        .train-group-card:nth-child(4) {
-            animation-delay: 0.2s;
+        .text-muted.small {
+            color: #94a3b8 !important;
         }
 
-        .train-group-card:nth-child(5) {
-            animation-delay: 0.25s;
+        .badge.bg-light.text-dark {
+            background: #334155 !important;
+            color: #e2e8f0 !important;
+            border-color: #475569;
         }
 
-        .train-group-card:nth-child(6) {
-            animation-delay: 0.3s;
+        .train-group-card .btn-lg,
+        .train-group-card .btn-sm {
+            background: #334155;
+            color: #e2e8f0;
+            border-color: #475569;
         }
 
-    /* Кастомизация скроллбара для карточек */
-    .train-section::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
+            .train-group-card .btn-lg:hover,
+            .train-group-card .btn-sm:hover {
+                background: #475569;
+                color: #ffffff;
+                border-color: #64748b;
+            }
+
+        .train-section:hover {
+            background: #334155;
+        }
     }
 
-    .train-section::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 2px;
+    /* Убираем ненужные анимации */
+    .train-group-card .btn:hover i {
+        transform: none;
     }
 
-    .train-section::-webkit-scrollbar-thumb {
-        background: #0379D9;
-        border-radius: 2px;
-    }
-
-        .train-section::-webkit-scrollbar-thumb:hover {
-            background: #0369c1;
-        }
-
-    /* Эффект градиента для заголовков */
-    .train-section h6.text-primary::before,
-    .train-section h6.text-success::before {
-        content: '';
-        display: inline-block;
-        width: 4px;
-        height: 16px;
-        background: linear-gradient(to bottom, #0379D9, #0369c1);
-        margin-right: 8px;
-        border-radius: 2px;
-        vertical-align: middle;
-    }
-
-    .train-section h6.text-success::before {
-        background: linear-gradient(to bottom, #40B624, #2e8b1f);
-    }
-
-    /* Эффект при нажатии на карточку */
+    /* Убираем эффекты при нажатии */
     .train-group-card:active {
-        transform: scale(0.98);
-        transition: transform 0.1s ease;
+        transform: none;
     }
 
-    /* Индикатор загрузки для карточек */
-    .train-group-card.loading {
-        position: relative;
-        overflow: hidden;
+    /* Простая подводка для карточек направлений */
+    .destination-card {
+        border: 1px solid #e2e8f0;
+        background: white;
     }
 
-        .train-group-card.loading::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            animation: loadingShimmer 1.5s infinite;
+        .destination-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
-    @@keyframes loadingShimmer {
-        0%
-
-    {
-        left: -100%;
+    /* Минималистичная форма поиска */
+    .card.shadow-sm.border-0 {
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     }
 
-    100% {
-        left: 100%;
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-family: 'Nunito', sans-serif;
     }
 
+        .form-control:focus, .form-select:focus {
+            border-color: #0379D9;
+            box-shadow: 0 0 0 2px rgba(3, 121, 217, 0.1);
+        }
+
+    .input-group-text {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
     }
 
-    /* Адаптация для высоких экранов */
-    @@media (min-height: 900px) {
-        .train-group-card
-
-    {
-        margin-bottom: 30px;
+    .btn-primary {
+        background: #0379D9;
+        border: none;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
     }
 
-    .train-section {
-        padding: 1.5rem;
+        .btn-primary:hover {
+            background: #0369c1;
+            transform: none;
+        }
+
+    /* Убираем лишние тени и градиенты */
+    .page-header-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
     }
 
-    .train-time.fw-bold.fs-5 {
-        font-size: 1.75rem !important;
-    }
-
-    }
-
-    /* Оптимизация для планшетов */
-    @@media (min-width: 768px) and (max-width: 991px) {
-        .train-group-card .btn-lg
-
-    {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.95rem;
-    }
-
-    .train-group-card .btn-sm {
-        padding: 0.3rem 0.6rem;
-        font-size: 0.85rem;
-    }
-
-    .train-time.fw-bold.fs-5 {
-        font-size: 1.3rem !important;
-    }
-
-    .text-muted.small {
-        font-size: 0.8rem;
-    }
-
-    }
-
-    /* Поддержка RTL (справа налево) */
-    [dir="rtl"] .train-section h6::before {
-        margin-right: 0;
-        margin-left: 8px;
-    }
-
-    [dir="rtl"] .train-group-card .train-favorite-btn {
-        margin-right: 0;
-        margin-left: auto;
-    }
-
-    [dir="rtl"] .train-section h6 small {
-        margin-left: 0;
-        margin-right: auto;
+    .page-header-icon {
+        background: #0379D9;
+        box-shadow: none;
     }
 </style>
 
@@ -1453,11 +1351,11 @@
         const isFav = isTrainFavorite(uniqueGroupId);
         const isRoundTrip = group.isRoundTrip;
 
-        // Цвет в зависимости от типа
-        const typeColor = isRoundTrip ? 'warning' : 'primary';
+        // Цвет в зависимости от типа (изменили warning на secondary)
+        const typeColor = isRoundTrip ? 'secondary' : 'primary';
         const typeIcon = isRoundTrip ? 'fa-exchange-alt' : 'fa-train';
         const typeBadge = isRoundTrip ?
-            '<span class="badge bg-warning ms-2">Туда и обратно</span>' :
+            '<span class="badge bg-secondary ms-2">Туда и обратно</span>' :
             '<span class="badge bg-primary ms-2">Только туда</span>';
 
         return `
@@ -1482,16 +1380,14 @@
 
                     <!-- Секция "Поезд обратно" (если есть) -->
                     ${isRoundTrip && group.returnTrain ?
-                        generateTrainSection(group.returnTrain, 'Обратно', searchData.returnDate, 'success') :
+                        generateTrainSection(group.returnTrain, 'Обратно', searchData.returnDate, 'secondary') :
                         ''}
 
                     <!-- Информация о ценах -->
                     <div class="row mt-4">
                         <div class="col-md-8">
                             <h6>Доступные места:</h6>
-                            <div class="d-flex flex-wrap gap-2">
-                                ${generateCategoriesInfo(group)}
-                            </div>
+                            ${generateCategoriesInfo(group)}
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="d-flex align-items-center justify-content-end gap-3">
@@ -1509,27 +1405,37 @@
                                 <!-- Кнопка выбора -->
                                 <div>
                                     ${isRoundTrip ?
-                                        `<button class="btn btn-${typeColor} btn-lg px-4"
+                                        `<button class="btn btn-${typeColor} btn-lg btn-group-wide"
                                                 onclick="selectRoundTrip('${group.forwardTrain.trainNumber}', '${group.returnTrain.trainNumber}')">
                                             <i class="fas fa-check me-2"></i>
                                             Выбрать оба
-                                        </button>` :
-                                        `<button class="btn btn-${typeColor} btn-lg px-4"
+                                        </button>
+                                        <div class="d-flex justify-content-between gap-2 mt-2">
+                                            <button class="btn btn-outline-${typeColor} btn-sm btn-sm-pair"
+                                                    onclick="viewDetails('${group.id}')">
+                                                <i class="fas fa-info-circle me-1"></i>Подробнее
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm btn-sm-pair"
+                                                    onclick="bookTickets(${JSON.stringify(group).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-shopping-cart me-1"></i>Купить
+                                            </button>
+                                        </div>` :
+                                        `<button class="btn btn-${typeColor} btn-lg btn-group-wide"
                                                 onclick="selectOneWay('${group.forwardTrain.trainNumber}')">
                                             <i class="fas fa-check me-2"></i>
                                             Выбрать
-                                        </button>`
+                                        </button>
+                                        <div class="d-flex justify-content-between gap-2 mt-2">
+                                            <button class="btn btn-outline-${typeColor} btn-sm btn-sm-pair"
+                                                    onclick="viewDetails('${group.id}')">
+                                                <i class="fas fa-info-circle me-1"></i>Подробнее
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm btn-sm-pair"
+                                                    onclick="bookTickets(${JSON.stringify(group).replace(/"/g, '&quot;')})">
+                                                <i class="fas fa-shopping-cart me-1"></i>Купить
+                                            </button>
+                                        </div>`
                                     }
-                                    <div class="mt-2">
-                                        <button class="btn btn-outline-${typeColor} btn-sm me-2"
-                                                onclick="viewDetails('${group.id}')">
-                                            <i class="fas fa-info-circle me-1"></i>Подробнее
-                                        </button>
-                                        <button class="btn btn-outline-success btn-sm"
-                                                onclick="bookTickets(${JSON.stringify(group).replace(/"/g, '&quot;')})">
-                                            <i class="fas fa-shopping-cart me-1"></i>Купить
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1578,30 +1484,39 @@
         `;
     }
 
-    // Функция для генерации информации о категориях
+    // Функция для генерации информации о категориях (исправленная)
     function generateCategoriesInfo(group) {
         let html = '';
+        const maxCategories = 3; // Максимальное количество категорий для показа
 
-        if (group.forwardTrain?.categories) {
-            html += '<div class="mb-1"><small class="text-muted">Туда:</small></div>';
-            group.forwardTrain.categories.forEach((cat, i) => {
-                if (i < 3) { // Показываем только первые 3 категории
-                    html += `<span class="badge bg-light text-dark">
-                        ${getCategoryName(cat.type)}: ${cat.price} ₽
-                    </span>`;
-                }
+        // Категории для "Туда" на одной строке
+        if (group.forwardTrain?.categories && group.forwardTrain.categories.length > 0) {
+            const forwardCategories = group.forwardTrain.categories.slice(0, maxCategories);
+            html += '<div class="mb-2">';
+            html += '<small class="text-muted d-block mb-1">Туда:</small>';
+            html += '<div class="d-flex flex-wrap gap-2">';
+            forwardCategories.forEach(cat => {
+                html += `<span class="badge bg-light text-dark">
+                    ${getCategoryName(cat.type)}: ${cat.price.toLocaleString('ru-RU')} ₽
+                </span>`;
             });
+            html += '</div>';
+            html += '</div>';
         }
 
-        if (group.returnTrain?.categories) {
-            html += '<div class="mb-1 mt-2"><small class="text-muted">Обратно:</small></div>';
-            group.returnTrain.categories.forEach((cat, i) => {
-                if (i < 3) {
-                    html += `<span class="badge bg-light text-dark">
-                        ${getCategoryName(cat.type)}: ${cat.price} ₽
-                    </span>`;
-                }
+        // Категории для "Обратно" на второй строке (если есть)
+        if (group.returnTrain?.categories && group.returnTrain.categories.length > 0) {
+            const returnCategories = group.returnTrain.categories.slice(0, maxCategories);
+            html += '<div>';
+            html += '<small class="text-muted d-block mb-1">Обратно:</small>';
+            html += '<div class="d-flex flex-wrap gap-2">';
+            returnCategories.forEach(cat => {
+                html += `<span class="badge bg-light text-dark">
+                    ${getCategoryName(cat.type)}: ${cat.price.toLocaleString('ru-RU')} ₽
+                </span>`;
             });
+            html += '</div>';
+            html += '</div>';
         }
 
         return html;
@@ -1708,7 +1623,4 @@
         const year = date.getFullYear();
         return `${day}.${month}.${year}`;
     }
-
-    // Добавьте эти стили
-    
 </script>

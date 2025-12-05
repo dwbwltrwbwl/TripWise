@@ -22,6 +22,20 @@ namespace TripWise.Controllers
         {
             return View();
         }
+        // GET: /Account/Edit
+        [HttpGet]
+        public IActionResult Edit()
+        {
+            // Просто показываем страницу без модели
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            // Просто показываем страницу без модели
+            return View();
+        }
 
         // POST: /Account/Login
         [HttpPost]

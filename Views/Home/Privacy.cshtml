@@ -1,151 +1,438 @@
 ﻿@{
     ViewData["Title"] = "Политика конфиденциальности";
-    Layout = "~/Views/Shared/_LegalLayout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white">
-                    <h1 class="h3 mb-0" style="font-family: 'Nunito', sans-serif;">
-                        <i class="fas fa-shield-alt me-2"></i>Политика конфиденциальности
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок страницы в стиле сайта -->
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-shield-alt text-white"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Политика конфиденциальности
                     </h1>
+                    <p class="page-subtitle">Последнее обновление: @DateTime.Now.ToString("dd.MM.yyyy")</p>
+                </div>
+            </div>
+
+            <!-- Навигация по разделам -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-list text-primary me-2"></i>
+                        Быстрая навигация
+                    </h3>
                 </div>
                 <div class="card-body p-4">
-                    <div class="mb-4">
-                        <p class="text-muted">Последнее обновление: @DateTime.Now.ToString("dd.MM.yyyy")</p>
+                    <div class="row g-2">
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#section1" class="policy-nav d-flex flex-column align-items-center text-decoration-none p-2 border rounded">
+                                <div class="policy-nav-icon mb-1">
+                                    <i class="fas fa-file-contract fa-lg"></i>
+                                </div>
+                                <span class="text-center small fw-semibold">Общие положения</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#section2" class="policy-nav d-flex flex-column align-items-center text-decoration-none p-2 border rounded">
+                                <div class="policy-nav-icon mb-1">
+                                    <i class="fas fa-database fa-lg"></i>
+                                </div>
+                                <span class="text-center small fw-semibold">Собираемая информация</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#section3" class="policy-nav d-flex flex-column align-items-center text-decoration-none p-2 border rounded">
+                                <div class="policy-nav-icon mb-1">
+                                    <i class="fas fa-bullseye fa-lg"></i>
+                                </div>
+                                <span class="text-center small fw-semibold">Цели сбора</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#section4" class="policy-nav d-flex flex-column align-items-center text-decoration-none p-2 border rounded">
+                                <div class="policy-nav-icon mb-1">
+                                    <i class="fas fa-lock fa-lg"></i>
+                                </div>
+                                <span class="text-center small fw-semibold">Защита информации</span>
+                            </a>
+                        </div>
                     </div>
-
-                    <!-- 1. Общие положения -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-file-contract me-2"></i>1. Общие положения
-                        </h2>
-                        <p>Настоящая политика конфиденциальности определяет порядок обработки и защиты информации о пользователях, которую может получить сервис "Вместе В Путь" (далее — "Сервис") при использовании ими веб-сайта и сопутствующих услуг.</p>
-                        <p>Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.</p>
-                    </section>
-
-                    <!-- 2. Собираемая информация -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-database me-2"></i>2. Собираемая информация
-                        </h2>
-                        <p>Мы можем собирать следующую информацию:</p>
-                        <ul>
-                            <li><strong>Персональные данные:</strong> имя, адрес электронной почты, номер телефона, дата рождения</li>
-                            <li><strong>Данные о поездках:</strong> направления, даты путешествий, предпочтения</li>
-                            <li><strong>Техническая информация:</strong> IP-адрес, тип браузера, данные об устройстве</li>
-                            <li><strong>Платежная информация:</strong> данные для обработки платежей (обрабатываются платежными системами)</li>
-                        </ul>
-                    </section>
-
-                    <!-- 3. Цели сбора информации -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-bullseye me-2"></i>3. Цели сбора информации
-                        </h2>
-                        <p>Собранная информация используется для:</p>
-                        <ul>
-                            <li>Предоставления и улучшения наших услуг</li>
-                            <li>Обработки бронирований и платежей</li>
-                            <li>Персонализации пользовательского опыта</li>
-                            <li>Отправки уведомлений и обновлений</li>
-                            <li>Обеспечения безопасности и предотвращения мошенничества</li>
-                            <li>Соблюдения юридических обязательств</li>
-                        </ul>
-                    </section>
-
-                    <!-- 4. Защита информации -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-lock me-2"></i>4. Защита информации
-                        </h2>
-                        <p>Мы принимаем необходимые организационные и технические меры для защиты вашей персональной информации от неправомерного или случайного доступа, уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.</p>
-                        <p>Все данные передаются по защищенному соединению (HTTPS), а конфиденциальная информация хранится в зашифрованном виде.</p>
-                    </section>
-
-                    <!-- 5. Передача информации третьим лицам -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-share-alt me-2"></i>5. Передача информации третьим лицам
-                        </h2>
-                        <p>Мы не передаем вашу персональную информацию третьим лицам, за исключением:</p>
-                        <ul>
-                            <li>Партнеров, необходимых для предоставления услуг (авиакомпании, железные дороги, отели)</li>
-                            <li>Платежных систем для обработки транзакций</li>
-                            <li>Случаев, предусмотренных законодательством РФ</li>
-                            <li>С вашего явного согласия</li>
-                        </ul>
-                    </section>
-
-                    <!-- 6. Файлы cookie -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-cookie me-2"></i>6. Файлы cookie
-                        </h2>
-                        <p>Мы используем файлы cookie для:</p>
-                        <ul>
-                            <li>Аутентификации пользователей</li>
-                            <li>Сохранения пользовательских настроек</li>
-                            <li>Сбора аналитической информации</li>
-                            <li>Улучшения работы сервиса</li>
-                        </ul>
-                        <p>Вы можете отключить cookies в настройках браузера, однако это может повлиять на функциональность Сервиса.</p>
-                    </section>
-
-                    <!-- 7. Права пользователей -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-user-check me-2"></i>7. Права пользователей
-                        </h2>
-                        <p>Вы имеете право:</p>
-                        <ul>
-                            <li>На доступ к вашим персональным данным</li>
-                            <li>На исправление неточных данных</li>
-                            <li>На удаление ваших данных</li>
-                            <li>На отзыв согласия на обработку данных</li>
-                            <li>На перенос данных</li>
-                            <li>На ограничение обработки данных</li>
-                        </ul>
-                        <p>Для реализации ваших прав обратитесь в службу поддержки.</p>
-                    </section>
-
-                    <!-- 8. Хранение данных -->
-                    <section class="mb-5">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-archive me-2"></i>8. Хранение данных
-                        </h2>
-                        <p>Мы храним ваши персональные данные только в течение срока, необходимого для достижения целей, для которых они были собраны, или в течение срока, установленного законодательством.</p>
-                        <p>Данные о совершенных транзакциях хранятся в соответствии с требованиями налогового законодательства.</p>
-                    </section>
-
-                    <!-- 9. Контакты -->
-                    <section class="mb-4">
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-envelope me-2"></i>9. Контакты
-                        </h2>
-                        <p>По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться:</p>
-                        <div class="contact-info bg-light p-3 rounded">
-                            <p class="mb-1"><strong>Электронная почта:</strong> privacy@vmestevput.ru</p>
-                            <p class="mb-1"><strong>Телефон:</strong> +7 (800) 123-45-67</p>
-                            <p class="mb-0"><strong>Время работы:</strong> Пн-Пт с 9:00 до 18:00 по московскому времени</p>
-                        </div>
-                    </section>
-
-                    <!-- 10. Изменения в политике -->
-                    <section>
-                        <h2 class="h4 mb-3" style="font-family: 'Nunito', sans-serif; color: #0379D9;">
-                            <i class="fas fa-sync-alt me-2"></i>10. Изменения в политике
-                        </h2>
-                        <p>Мы оставляем за собой право вносить изменения в настоящую Политику конфиденциальности. При внесении изменений в актуальной редакции указывается дата последнего обновления. Новая редакция Политики вступает в силу с момента ее размещения на Сайте.</p>
-                        <div class="alert alert-info mt-3">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Рекомендуем</strong> периодически просматривать эту страницу для получения информации о любых изменениях.
-                        </div>
-                    </section>
                 </div>
-                <div class="card-footer bg-light">
+            </div>
+
+            <!-- Основное содержание -->
+            <!-- 1. Общие положения -->
+            <div class="card border-0 shadow-sm mb-4" id="section1">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-file-contract text-primary me-2"></i>
+                        1. Общие положения
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Настоящая политика конфиденциальности определяет порядок обработки и защиты информации о пользователях, которую может получить сервис "Вместе В Путь" (далее — "Сервис") при использовании ими веб-сайта и сопутствующих услуг.</p>
+                    <p class="mb-0">Используя Сервис, вы соглашаетесь с условиями настоящей Политики конфиденциальности.</p>
+                </div>
+            </div>
+
+            <!-- 2. Собираемая информация -->
+            <div class="card border-0 shadow-sm mb-4" id="section2">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-database text-primary me-2"></i>
+                        2. Собираемая информация
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы можем собирать следующую информацию:</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-user-circle text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Персональные данные</h6>
+                                        <p class="small mb-0">Имя, email, телефон, дата рождения, паспортные данные</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-route text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Данные о поездках</h6>
+                                        <p class="small mb-0">Направления, даты, предпочтения, история бронирований</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-desktop text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Техническая информация</h6>
+                                        <p class="small mb-0">IP-адрес, тип браузера, данные об устройстве, cookies</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-credit-card text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Платежная информация</h6>
+                                        <p class="small mb-0">Обрабатывается платежными системами, мы не храним данные карт</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Цели сбора информации -->
+            <div class="card border-0 shadow-sm mb-4" id="section3">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-bullseye text-primary me-2"></i>
+                        3. Цели сбора информации
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Собранная информация используется для:</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Предоставления и улучшения услуг</li>
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Обработки бронирований и платежей</li>
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Персонализации пользовательского опыта</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Отправки уведомлений и обновлений</li>
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Обеспечения безопасности</li>
+                                <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Соблюдения юридических обязательств</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Защита информации -->
+            <div class="card border-0 shadow-sm mb-4" id="section4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-lock text-primary me-2"></i>
+                        4. Защита информации
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы принимаем необходимые организационные и технические меры для защиты вашей персональной информации от неправомерного или случайного доступа, уничтожения, изменения, блокирования, копирования, распространения, а также от иных неправомерных действий.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="security-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-lock text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">HTTPS шифрование</h6>
+                                        <p class="small mb-0">Все данные передаются по защищенному соединению</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="security-card p-3 border rounded mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-shield-alt text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Хранение в зашифрованном виде</h6>
+                                        <p class="small mb-0">Конфиденциальная информация хранится зашифрованной</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Передача информации третьим лицам -->
+            <div class="card border-0 shadow-sm mb-4" id="section5">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-share-alt text-primary me-2"></i>
+                        5. Передача информации третьим лицам
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы не передаем вашу персональную информацию третьим лицам, за исключением:</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="third-party-card p-3 border rounded h-100">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-plane text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Партнеры для услуг</h6>
+                                        <p class="small mb-0">Авиакомпании, железные дороги, отели (только необходимые данные для бронирования)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="third-party-card p-3 border rounded h-100">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-credit-card text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Платежные системы</h6>
+                                        <p class="small mb-0">Для обработки транзакций в соответствии с их политиками безопасности</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Файлы cookie -->
+            <div class="card border-0 shadow-sm mb-4" id="section6">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-cookie text-primary me-2"></i>
+                        6. Файлы cookie
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы используем файлы cookie для:</p>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="cookie-card p-3 border rounded text-center h-100">
+                                <div class="cookie-icon mb-2">
+                                    <i class="fas fa-user-check fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Аутентификации</h6>
+                                <p class="small text-muted mb-0">Вход в аккаунт и сохранение сессии</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="cookie-card p-3 border rounded text-center h-100">
+                                <div class="cookie-icon mb-2">
+                                    <i class="fas fa-cog fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Настройки</h6>
+                                <p class="small text-muted mb-0">Сохранение пользовательских предпочтений</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="cookie-card p-3 border rounded text-center h-100">
+                                <div class="cookie-icon mb-2">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Аналитика</h6>
+                                <p class="small text-muted mb-0">Улучшение работы сервиса</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-4 border-0 rounded-lg">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Вы можете отключить cookies в настройках браузера, однако это может повлиять на функциональность Сервиса.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Права пользователей -->
+            <div class="card border-0 shadow-sm mb-4" id="section7">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-user-check text-primary me-2"></i>
+                        7. Права пользователей
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Вы имеете право:</p>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="rights-card p-3 border rounded text-center h-100">
+                                <div class="rights-icon mb-2">
+                                    <i class="fas fa-eye fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Доступ к данным</h6>
+                                <p class="small text-muted mb-0">Просмотр своих персональных данных</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="rights-card p-3 border rounded text-center h-100">
+                                <div class="rights-icon mb-2">
+                                    <i class="fas fa-edit fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Исправление</h6>
+                                <p class="small text-muted mb-0">Корректировка неточных данных</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="rights-card p-3 border rounded text-center h-100">
+                                <div class="rights-icon mb-2">
+                                    <i class="fas fa-trash-alt fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Удаление</h6>
+                                <p class="small text-muted mb-0">Полное удаление ваших данных</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Хранение данных -->
+            <div class="card border-0 shadow-sm mb-4" id="section8">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-archive text-primary me-2"></i>
+                        8. Хранение данных
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы храним ваши персональные данные только в течение срока, необходимого для достижения целей, для которых они были собраны, или в течение срока, установленного законодательством.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="storage-card p-3 border rounded h-100">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-calendar-alt text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Период хранения</h6>
+                                        <p class="small mb-0">Данные хранятся пока вы активный пользователь или согласно требованиям законодательства</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="storage-card p-3 border rounded h-100">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-file-invoice text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">Транзакционные данные</h6>
+                                        <p class="small mb-0">Данные о бронированиях хранятся в соответствии с налоговым законодательством</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Контакты -->
+            <div class="card border-0 shadow-sm mb-4" id="section9">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-envelope text-primary me-2"></i>
+                        9. Контакты
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться:</p>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="contact-card d-flex flex-column align-items-center text-center p-3 border rounded">
+                                <div class="contact-icon mb-2">
+                                    <i class="fas fa-envelope fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Email</h6>
+                                <p class="mb-1">privacy@vmestevput.ru</p>
+                                <small class="text-muted">Для вопросов конфиденциальности</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="contact-card d-flex flex-column align-items-center text-center p-3 border rounded">
+                                <div class="contact-icon mb-2">
+                                    <i class="fas fa-phone-alt fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Телефон</h6>
+                                <p class="mb-1">+7 (800) 123-45-67</p>
+                                <small class="text-muted">Бесплатно по России</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="contact-card d-flex flex-column align-items-center text-center p-3 border rounded">
+                                <div class="contact-icon mb-2">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                                <h6 class="fw-semibold mb-1">Время работы</h6>
+                                <p class="mb-1">Пн-Пт: 9:00-18:00</p>
+                                <small class="text-muted">По московскому времени</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. Изменения в политике -->
+            <div class="card border-0 shadow-sm" id="section10">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-sync-alt text-primary me-2"></i>
+                        10. Изменения в политике
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">Мы оставляем за собой право вносить изменения в настоящую Политику конфиденциальности. При внесении изменений в актуальной редакции указывается дата последнего обновления. Новая редакция Политики вступает в силу с момента ее размещения на Сайте.</p>
+                    <div class="alert alert-warning border-0 rounded-lg">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Важная информация</h5>
+                                <p class="mb-0"><strong>Рекомендуем периодически просматривать эту страницу</strong> для получения информации о любых изменениях в нашей политике конфиденциальности.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">Версия 1.0</small>
                     </div>
@@ -156,33 +443,361 @@
 </div>
 
 <style>
+    /* Стили для заголовка страницы */
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+        .page-header-icon i {
+            color: white !important;
+        }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Стили для карточек */
     .card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+    /* Навигация по политике */
+    .policy-nav {
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+    }
+
+        .policy-nav:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-color: #0379D9;
+            text-decoration: none;
+        }
+
+    .policy-nav-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .policy-nav-icon i {
+            color: #0379D9 !important;
+        }
+
+    /* Карточки информации */
+    .info-card,
+    .security-card,
+    .third-party-card,
+    .storage-card {
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
     }
 
-    .card-header {
-        border-radius: 12px 12px 0 0 !important;
+        .info-card:hover,
+        .security-card:hover,
+        .third-party-card:hover,
+        .storage-card:hover {
+            border-color: #0379D9;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+    /* Карточки cookie */
+    .cookie-card,
+    .rights-card {
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
     }
 
-    .card-footer {
-        border-radius: 0 0 12px 12px !important;
+        .cookie-card:hover,
+        .rights-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-color: #0379D9;
+        }
+
+    .cookie-icon,
+    .rights-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
     }
 
-    section h2 {
-        border-bottom: 2px solid #e9ecef;
-        padding-bottom: 0.5rem;
+        .cookie-icon i,
+        .rights-icon i {
+            color: #0379D9 !important;
+        }
+
+    /* Контактные карточки */
+    .contact-card {
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        height: 100%;
     }
 
-    .contact-info {
-        border-left: 4px solid #0379D9;
+        .contact-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-color: #0379D9;
+        }
+
+    .contact-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    ul {
-        padding-left: 1.5rem;
+        .contact-icon i {
+            color: #0379D9 !important;
+        }
+
+    /* Алерты */
+    .alert-info {
+        background-color: #e8f4fe;
+        border: 1px solid #b6d4fe;
+        border-radius: 12px;
+        color: #084298;
     }
 
-    li {
-        margin-bottom: 0.5rem;
-        line-height: 1.6;
+    .alert-warning {
+        background-color: #fff9db;
+        border: 1px solid #ffec99;
+        border-radius: 12px;
+        color: #5c4400;
+    }
+
+    /* Кнопки */
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    .btn-outline-primary {
+        border: 2px solid #0379D9;
+        color: #0379D9;
+        background: white;
+    }
+
+        .btn-outline-primary:hover {
+            background: #f0f7ff;
+            border-color: #0356a8;
+            color: #0356a8;
+        }
+
+    /* Иконки */
+    .fa-shield-alt,
+    .fa-list,
+    .fa-file-contract,
+    .fa-database,
+    .fa-bullseye,
+    .fa-lock,
+    .fa-share-alt,
+    .fa-cookie,
+    .fa-user-check,
+    .fa-archive,
+    .fa-envelope,
+    .fa-sync-alt,
+    .fa-user-circle,
+    .fa-route,
+    .fa-desktop,
+    .fa-credit-card,
+    .fa-check-circle,
+    .fa-plane,
+    .fa-calendar-alt,
+    .fa-file-invoice,
+    .fa-phone-alt,
+    .fa-clock,
+    .fa-exclamation-triangle,
+    .fa-print {
+        color: #0379D9 !important;
+    }
+
+        .fa-check-circle.text-success {
+            color: #198754 !important;
+        }
+
+    /* Адаптивность */
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+        }
+
+        .policy-nav {
+            margin-bottom: 10px;
+        }
+
+        .cookie-icon,
+        .rights-icon,
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+            .cookie-icon i,
+            .rights-icon i,
+            .contact-icon i {
+                font-size: 1.5rem !important;
+            }
+    }
+
+    @@media (max-width: 576px) {
+        .page-title {
+            font-size: 1.75rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .policy-nav-icon {
+            width: 35px;
+            height: 35px;
+        }
+
+            .policy-nav-icon i {
+                font-size: 1rem !important;
+            }
+
+        .cookie-card,
+        .rights-card,
+        .contact-card {
+            margin-bottom: 1rem;
+        }
     }
 </style>
+
+<script>
+    // Плавная прокрутка к разделам
+    document.querySelectorAll('.policy-nav').forEach(nav => {
+        nav.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId && targetId.startsWith('#')) {
+                e.preventDefault();
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    });
+
+    // Открытие в новой вкладке - удаляем этот код, так как сейчас страница открывается нормально
+    // document.addEventListener('DOMContentLoaded', function() {
+    //     // Если страница открыта в iframe, открываем в новой вкладке
+    //     if (window.self !== window.top) {
+    //         window.open(window.location.href, '_blank');
+    //     }
+    // });
+</script>

@@ -27,7 +27,7 @@
                                 <div class="avatar-preview mb-3">
                                     <div class="avatar-circle-lg">
                                         <div class="avatar-initials-lg">
-                                            @Model.Name[0].ToString().ToUpper()
+                                            И
                                         </div>
                                     </div>
                                 </div>
@@ -42,7 +42,7 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="mt-4">
                                 <h6 class="fw-semibold mb-2">Информация об аватаре</h6>
                                 <p class="text-muted small mb-0">
@@ -72,48 +72,48 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="name" 
-                                                   placeholder="Имя" value="@Model.Name">
+                                            <input type="text" class="form-control" id="name"
+                                                   placeholder="Имя" value="Иван Иванов">
                                             <label for="name">Имя и фамилия</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="form-floating mb-3">
-                                            <input type="email" class="form-control" id="email" 
-                                                   placeholder="Email" value="@Model.Email">
+                                            <input type="email" class="form-control" id="email"
+                                                   placeholder="Email" value="ivan@example.com">
                                             <label for="email">Email адрес</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="form-floating mb-3">
-                                            <input type="tel" class="form-control" id="phone" 
-                                                   placeholder="Телефон" value="@Model.Phone">
+                                            <input type="tel" class="form-control" id="phone"
+                                                   placeholder="Телефон" value="+7 (999) 123-45-67">
                                             <label for="phone">Телефон</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="form-floating mb-3">
-                                            <input type="date" class="form-control" id="birthDate" 
-                                                   value="@Model.BirthDate?.ToString("yyyy-MM-dd")">
+                                            <input type="date" class="form-control" id="birthDate"
+                                                   value="1990-05-15">
                                             <label for="birthDate">Дата рождения</label>
                                         </div>
                                     </div>
 
                                     <div class="col-12">
                                         <div class="form-floating mb-3">
-                                            <textarea class="form-control" id="bio" 
-                                                      placeholder="О себе" style="height: 100px">@Model.Bio</textarea>
+                                            <textarea class="form-control" id="bio"
+                                                      placeholder="О себе" style="height: 100px">Люблю путешествовать и открывать новые места</textarea>
                                             <label for="bio">О себе</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="city" 
-                                                   placeholder="Город" value="@Model.City">
+                                            <input type="text" class="form-control" id="city"
+                                                   placeholder="Город" value="Москва">
                                             <label for="city">Город проживания</label>
                                         </div>
                                     </div>
@@ -122,7 +122,7 @@
                                         <div class="form-floating mb-3">
                                             <select class="form-select" id="gender">
                                                 <option value="">Не указан</option>
-                                                <option value="male">Мужской</option>
+                                                <option value="male" selected>Мужской</option>
                                                 <option value="female">Женский</option>
                                             </select>
                                             <label for="gender">Пол</label>
@@ -140,9 +140,8 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           id="emailNotifications" 
-                                                           @(Model.EmailNotifications ? "checked" : "")>
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="emailNotifications" checked>
                                                     <label class="form-check-label" for="emailNotifications">
                                                         Email уведомления
                                                     </label>
@@ -150,9 +149,8 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           id="newsletter" 
-                                                           @(Model.Newsletter ? "checked" : "")>
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="newsletter" checked>
                                                     <label class="form-check-label" for="newsletter">
                                                         Рассылка новостей
                                                     </label>
@@ -160,9 +158,8 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           id="tripReminders" 
-                                                           @(Model.TripReminders ? "checked" : "")>
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="tripReminders" checked>
                                                     <label class="form-check-label" for="tripReminders">
                                                         Напоминания о поездках
                                                     </label>
@@ -170,9 +167,8 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           id="specialOffers" 
-                                                           @(Model.SpecialOffers ? "checked" : "")>
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="specialOffers">
                                                     <label class="form-check-label" for="specialOffers">
                                                         Специальные предложения
                                                     </label>
@@ -185,7 +181,7 @@
                         </div>
                         <div class="card-footer bg-white border-0 py-3 px-4">
                             <div class="d-flex justify-content-between">
-                                <a asp-controller="Account" asp-action="Index" class="btn btn-outline-secondary">
+                                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-2"></i>Назад
                                 </a>
                                 <div>
@@ -220,15 +216,15 @@
         overflow: hidden;
     }
 
-    .page-header-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 6px;
-        height: 100%;
-        background: linear-gradient(to bottom, #0379D9, #40B624);
-    }
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
 
     .page-header-icon {
         width: 70px;
@@ -328,10 +324,10 @@
         cursor: pointer;
     }
 
-    .form-check-input:checked {
-        background-color: #0379D9;
-        border-color: #0379D9;
-    }
+        .form-check-input:checked {
+            background-color: #0379D9;
+            border-color: #0379D9;
+        }
 
     .form-check-label {
         font-family: 'Nunito', sans-serif;
