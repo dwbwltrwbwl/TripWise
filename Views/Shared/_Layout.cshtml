@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="~/TripWise.styles.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <!-- Выдвижное меню -->
@@ -57,6 +59,15 @@
                     <div class="sidebar-text">
                         <div class="sidebar-item-title">Активности</div>
                         <div class="sidebar-item-desc">Развлечения и события</div>
+                    </div>
+                </a>
+                <a class="sidebar-item" asp-controller="Home" asp-action="Chats">
+                    <div class="sidebar-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <div class="sidebar-item-title">Чаты</div>
+                        <div class="sidebar-item-desc">Поиск друзей и общение</div>
                     </div>
                 </a>
             </div>
@@ -222,10 +233,23 @@
             <div class="row mt-3">
                 <div class="col-md-6 mb-3">
                     <h6 class="fw-bold">Подпишитесь на рассылку</h6>
-                    <div class="input-group" style="max-width: 400px;">
-                        <input type="email" class="form-control" placeholder="Ваш email">
-                        <button class="btn btn-primary">Подписаться</button>
-                    </div>
+                    <form id="newsletterForm" style="max-width: 400px;">
+                        @Html.AntiForgeryToken()
+                        <div class="input-group">
+                            <input type="email"
+                                   class="form-control"
+                                   id="newsletterEmail"
+                                   placeholder="Ваш email"
+                                   required>
+                            <button type="submit" class="btn btn-primary" id="subscribeBtn">
+                                Подписаться
+                            </button>
+                        </div>
+                        <div class="form-text small mt-2">
+                            Только полезные советы и лучшие предложения. Без спама.
+                        </div>
+                        <div id="newsletterMessage" class="mt-2"></div>
+                    </form>
                 </div>
                 <div class="col-md-6 mb-3">
                     <h6 class="fw-bold">Способы оплаты</h6>
@@ -545,11 +569,38 @@
                 width: 280px;
             }
         }
+
+        /* Стили для формы подписки */
+        #newsletterForm .form-control {
+            border-radius: 8px 0 0 8px;
+            border: 1px solid #0379D9;
+            border-right: none;
+        }
+
+        #newsletterForm .btn-primary {
+            border-radius: 0 8px 8px 0;
+            background: #0379D9;
+            border-color: #0379D9;
+        }
+
+            #newsletterForm .btn-primary:hover {
+                background: #0268c0;
+                border-color: #0268c0;
+            }
+
+        #newsletterMessage .alert {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+        }
     </style>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/newsletter.js" asp-append-version="true"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

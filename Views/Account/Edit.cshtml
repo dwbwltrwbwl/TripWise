@@ -1,202 +1,96 @@
-﻿@{
+﻿@model TripWise.Models.ViewModels.EditProfileViewModel
+@{
     ViewData["Title"] = "Редактирование профиля";
 }
 
 <div class="container mt-4">
+
+    <!-- Заголовок страницы (НЕ МЕНЯЕМ) -->
+    <div class="page-header-section mb-5">
+        <div class="page-header-icon">
+            <i class="fas fa-user-edit"></i>
+        </div>
+        <div>
+            <h1 class="page-title">
+                Редактирование профиля
+            </h1>
+            <p class="page-subtitle">Обновите информацию о себе</p>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <!-- Заголовок страницы -->
-            <div class="page-header-section mb-5">
-                <div class="page-header-icon">
-                    <i class="fas fa-user-edit"></i>
-                </div>
-                <div>
-                    <h1 class="page-title">
-                        Редактирование профиля
-                    </h1>
-                    <p class="page-subtitle">Обновите информацию о себе</p>
+
+        <!-- Левая колонка — аватар (визуально) -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="avatar-circle-lg mb-3">
+                        <div class="avatar-initials-lg">
+                            @Model.Name[0].ToString().ToUpper()
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-0">
+                        Загрузка изображения будет добавлена позже
+                    </p>
                 </div>
             </div>
+        </div>
 
-            <div class="row">
-                <!-- Левая колонка - аватар -->
-                <div class="col-lg-4 mb-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body text-center p-4">
-                            <div class="avatar-editor mb-4">
-                                <div class="avatar-preview mb-3">
-                                    <div class="avatar-circle-lg">
-                                        <div class="avatar-initials-lg">
-                                            И
-                                        </div>
-                                    </div>
-                                </div>
+        <!-- Правая колонка — форма -->
+        <div class="col-lg-8">
+            <form asp-action="Edit" method="post" class="card border-0 shadow-sm">
 
-                                <div class="avatar-actions">
-                                    <input type="file" id="avatarUpload" accept="image/*" class="d-none">
-                                    <button class="btn btn-primary mb-2" onclick="document.getElementById('avatarUpload').click()">
-                                        <i class="fas fa-camera me-2"></i>Загрузить фото
-                                    </button>
-                                    <button class="btn btn-outline-danger">
-                                        <i class="fas fa-trash-alt me-2"></i>Удалить фото
-                                    </button>
-                                </div>
-                            </div>
+                @Html.AntiForgeryToken()
 
-                            <div class="mt-4">
-                                <h6 class="fw-semibold mb-2">Информация об аватаре</h6>
-                                <p class="text-muted small mb-0">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Поддерживаются форматы: JPG, PNG, GIF
-                                </p>
-                                <p class="text-muted small mb-0">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Максимальный размер: 5 MB
-                                </p>
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="section-subtitle mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Основная информация
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input asp-for="Name" class="form-control" placeholder="Имя" />
+                                <label asp-for="Name">Имя и фамилия</label>
+                                <span asp-validation-for="Name" class="text-danger small"></span>
                             </div>
                         </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input asp-for="Email" class="form-control" placeholder="Email" />
+                                <label asp-for="Email">Email</label>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input asp-for="Age" type="number" class="form-control" placeholder="Возраст" />
+                                <label asp-for="Age">Возраст</label>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                <!-- Правая колонка - форма -->
-                <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0 py-3">
-                            <h5 class="section-subtitle mb-0">
-                                <i class="fas fa-info-circle text-primary me-2"></i>
-                                Основная информация
-                            </h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <form>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="name"
-                                                   placeholder="Имя" value="Иван Иванов">
-                                            <label for="name">Имя и фамилия</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="email" class="form-control" id="email"
-                                                   placeholder="Email" value="ivan@example.com">
-                                            <label for="email">Email адрес</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="tel" class="form-control" id="phone"
-                                                   placeholder="Телефон" value="+7 (999) 123-45-67">
-                                            <label for="phone">Телефон</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="date" class="form-control" id="birthDate"
-                                                   value="1990-05-15">
-                                            <label for="birthDate">Дата рождения</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <div class="form-floating mb-3">
-                                            <textarea class="form-control" id="bio"
-                                                      placeholder="О себе" style="height: 100px">Люблю путешествовать и открывать новые места</textarea>
-                                            <label for="bio">О себе</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="city"
-                                                   placeholder="Город" value="Москва">
-                                            <label for="city">Город проживания</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-floating mb-3">
-                                            <select class="form-select" id="gender">
-                                                <option value="">Не указан</option>
-                                                <option value="male" selected>Мужской</option>
-                                                <option value="female">Женский</option>
-                                            </select>
-                                            <label for="gender">Пол</label>
-                                        </div>
-                                    </div>
-
-                                    <!-- Настройки уведомлений -->
-                                    <div class="col-12">
-                                        <hr class="my-4">
-                                        <h6 class="fw-semibold mb-3">
-                                            <i class="fas fa-bell text-warning me-2"></i>
-                                            Настройки уведомлений
-                                        </h6>
-
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="emailNotifications" checked>
-                                                    <label class="form-check-label" for="emailNotifications">
-                                                        Email уведомления
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="newsletter" checked>
-                                                    <label class="form-check-label" for="newsletter">
-                                                        Рассылка новостей
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="tripReminders" checked>
-                                                    <label class="form-check-label" for="tripReminders">
-                                                        Напоминания о поездках
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                           id="specialOffers">
-                                                    <label class="form-check-label" for="specialOffers">
-                                                        Специальные предложения
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="card-footer bg-white border-0 py-3 px-4">
-                            <div class="d-flex justify-content-between">
-                                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Назад
-                                </a>
-                                <div>
-                                    <button type="button" class="btn btn-secondary me-2">
-                                        <i class="fas fa-redo me-2"></i>Сбросить
-                                    </button>
-                                    <button type="button" class="btn btn-primary">
-                                        <i class="fas fa-save me-2"></i>Сохранить изменения
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="card-footer bg-white border-0 py-3 px-4">
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Profile" class="btn btn-outline-secondary">
+                            Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            Сохранить изменения
+                        </button>
                     </div>
                 </div>
-            </div>
+
+            </form>
         </div>
     </div>
 </div>

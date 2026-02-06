@@ -4,36 +4,52 @@ using TripWise.Models;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using TripWise.Models.ViewModels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TripWise.Controllers
 {
     public class AccountController : Controller
     {
         private readonly TripWiseContext _context;
+        private readonly EmailService _emailService;
+        private readonly ILogger<AccountController> _logger;
+        private readonly IMemoryCache _cache;
+        private const string DELETE_CODE_PREFIX = "DeleteCode_";
 
-        public AccountController(TripWiseContext context)
+        public AccountController(TripWiseContext context, EmailService emailService,
+            ILogger<AccountController> logger, IMemoryCache memoryCache)
         {
             _context = context;
+            _emailService = emailService;
+            _logger = logger;
+            _cache = memoryCache;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TestEmail()
+        {
+            await _emailService.SendAsync(
+                "tyumenelizaveta@yandex.ru",
+                "Тест TripWise",
+                "<b>SMTP Яндекс работает!</b>"
+            );
+
+            return Content("Письмо отправлено");
         }
 
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login()
         {
-            return View();
-        }
-        // GET: /Account/Edit
-        [HttpGet]
-        public IActionResult Edit()
-        {
-            // Просто показываем страницу без модели
-            return View();
-        }
+            // Проверяем, есть ли сообщение об успешной регистрации
+            if (TempData["RegistrationSuccess"] != null && (bool)TempData["RegistrationSuccess"])
+            {
+                ViewData["RegistrationSuccess"] = true;
+                ViewData["RegisteredEmail"] = TempData["RegisteredEmail"];
+            }
 
-        [HttpGet]
-        public IActionResult ChangePassword()
-        {
-            // Просто показываем страницу без модели
             return View();
         }
 
@@ -129,6 +145,13 @@ namespace TripWise.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string fullName, string email, string password, string confirmPassword, string agreeTerms)
         {
+            // Сохраняем ВСЕ введенные значения для повторного отображения (ТОЛЬКО при ошибках)
+            ViewData["FullName"] = fullName;
+            ViewData["Email"] = email;
+            ViewData["Password"] = password;
+            ViewData["ConfirmPassword"] = confirmPassword;
+            ViewData["AgreeTerms"] = agreeTerms;
+
             // Валидация
             if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) ||
                 string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
@@ -189,8 +212,14 @@ namespace TripWise.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // Сообщение об успехе на этой же странице
+                // УСПЕШНАЯ РЕГИСТРАЦИЯ - очищаем поля и показываем сообщение
                 ViewData["SuccessMessage"] = "Регистрация прошла успешно! Теперь вы можете войти в систему.";
+                ViewData["FullName"] = "";
+                ViewData["Email"] = "";
+                ViewData["Password"] = "";
+                ViewData["ConfirmPassword"] = "";
+                ViewData["AgreeTerms"] = "";
+
                 return View();
             }
             catch (Exception ex)
@@ -202,32 +231,270 @@ namespace TripWise.Controllers
             }
         }
 
+        // GET: /Account/Edit
+        [HttpGet]
+        public async Task<IActionResult> Edit()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.IdUser == userId);
+            if (user == null)
+                return RedirectToAction("Login");
+
+            var model = new EditProfileViewModel
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Age = user.Age
+            };
+
+            return View(model);
+        }
+
+        // POST: /Account/Edit
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditProfileViewModel model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.IdUser == userId);
+            if (user == null)
+                return RedirectToAction("Login");
+
+            user.Name = model.Name;
+            user.Email = model.Email;
+            user.Age = model.Age;
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Profile");
+        }
+
+        // GET: /Account/ChangePassword
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
         // GET: /Account/Profile
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
-            // Проверяем авторизацию
-            if (HttpContext.Session.GetInt32("UserId") == null)
-            {
-                return RedirectToAction("Login", "Account");
-            }
-
-            // Получаем ID пользователя из сессии
             var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
 
-            // Получаем полные данные пользователя из базы
             var user = await _context.Users
                 .Include(u => u.IdRoleNavigation)
                 .FirstOrDefaultAsync(u => u.IdUser == userId);
 
             if (user == null)
             {
-                // Если пользователь не найден в базе, разлогиниваем
                 HttpContext.Session.Clear();
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("Login");
             }
 
+            // Количество поездок
+            var trips = await _context.TripParticipants
+                .Where(tp => tp.IdUser == userId)
+                .Select(tp => tp.IdTrip)
+                .Distinct()
+                .ToListAsync();
+
+            var tripCount = trips.Count;
+
+            // Количество дней в поездках
+            var travelDays = await _context.Trips
+                .Where(t => trips.Contains(t.IdTrip))
+                .Select(t => new { t.StartDate, t.EndDate })
+                .ToListAsync();
+            var totalTravelDays = travelDays.Sum(t =>
+                (t.EndDate.Date - t.StartDate.Date).Days
+            );
+
+            // Количество групп (разные поездки = разные группы)
+            var groupCount = tripCount;
+            var totalShare = await _context.ExpenseShares
+                .Where(es => es.IdUser == userId)
+                .SumAsync(es => es.ShareAmount);
+
+            var unpaidShare = await _context.ExpenseShares
+                .Where(es => es.IdUser == userId && !es.IsPaid)
+                .SumAsync(es => es.ShareAmount);
+
+            ViewBag.TripCount = tripCount;
+            ViewBag.TravelDays = totalTravelDays;
+            ViewBag.GroupCount = groupCount;
+            ViewBag.TotalShare = totalShare;
+            ViewBag.UnpaidShare = unpaidShare;
+            ViewBag.LastExpenses = await _context.Expenses
+                .Where(e => e.PaidById == userId)
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+
             return View(user);
+        }
+
+        // GET: /Account/Delete
+        [HttpGet]
+        public IActionResult Delete()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            var email = HttpContext.Session.GetString("UserEmail");
+
+            var model = new DeleteAccountViewModel
+            {
+                Email = email,
+                CodeSent = false
+            };
+
+            return View(model);
+        }
+
+        // POST: /Account/SendDeleteCode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendDeleteCode()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Json(new { success = false, message = "Сессия истекла" });
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return Json(new { success = false, message = "Пользователь не найден" });
+
+            try
+            {
+                // Генерируем 6-значный код
+                var random = new Random();
+                var code = random.Next(100000, 999999).ToString();
+
+                // Сохраняем код в кэш на 15 минут
+                var cacheKey = DELETE_CODE_PREFIX + userId;
+                _cache.Set(cacheKey, code, TimeSpan.FromMinutes(15));
+
+                // Отправляем код на email
+                await _emailService.SendConfirmationCodeAsync(user.Email, code);
+
+                _logger.LogInformation($"Код подтверждения отправлен пользователю {user.Email}");
+
+                return Json(new { success = true, message = "Код подтверждения отправлен на ваш email" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке кода подтверждения");
+                return Json(new { success = false, message = "Ошибка при отправке кода" });
+            }
+        }
+
+        // POST: /Account/ConfirmDelete
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmDelete(string code)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Json(new { success = false, message = "Сессия истекла" });
+
+            try
+            {// Более гибкая проверка кода
+                if (string.IsNullOrWhiteSpace(code))
+                    return Json(new { success = false, message = "Введите код" });
+
+                // Убираем все нецифровые символы
+                code = new string(code.Where(char.IsDigit).ToArray());
+
+                if (code.Length != 6)
+                    return Json(new { success = false, message = "Код должен содержать 6 цифр" });
+
+                // Проверяем код из кэша
+                var cacheKey = DELETE_CODE_PREFIX + userId;
+                if (!_cache.TryGetValue(cacheKey, out string cachedCode))
+                    return Json(new { success = false, message = "Код истек или не был отправлен" });
+
+                if (cachedCode != code)
+                    return Json(new { success = false, message = "Неверный код подтверждения" });
+
+                // Находим пользователя
+                var user = await _context.Users
+                    .Include(u => u.Expenses)
+                    .Include(u => u.ExpenseShares)
+                    .Include(u => u.TripParticipants)
+                    .FirstOrDefaultAsync(u => u.IdUser == userId);
+
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                // Начинаем транзакцию для безопасного удаления
+                using (var transaction = await _context.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        // 1. Удаляем доли расходов
+                        _context.ExpenseShares.RemoveRange(user.ExpenseShares);
+
+                        // 2. Удаляем участие в поездках
+                        _context.TripParticipants.RemoveRange(user.TripParticipants);
+
+                        // 3. Для расходов, которые оплатил пользователь, очищаем PaidById
+                        var userExpenses = await _context.Expenses
+                            .Where(e => e.PaidById == userId)
+                            .ToListAsync();
+
+                        foreach (var expense in userExpenses)
+                        {
+                            expense.PaidById = null;
+                            _context.Expenses.Update(expense);
+                        }
+
+                        // 4. Удаляем самого пользователя
+                        _context.Users.Remove(user);
+
+                        // 5. Сохраняем изменения
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        // 6. Очищаем сессию и кэш
+                        HttpContext.Session.Clear();
+                        Response.Cookies.Delete("UserEmail");
+                        _cache.Remove(cacheKey);
+
+                        _logger.LogInformation($"Аккаунт пользователя {user.Email} успешно удален");
+
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Аккаунт успешно удален",
+                            redirectUrl = Url.Action("Index", "Home")
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        _logger.LogError(ex, "Ошибка при удалении аккаунта");
+                        return Json(new { success = false, message = "Ошибка при удалении аккаунта" });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при подтверждении удаления");
+                return Json(new { success = false, message = "Произошла ошибка" });
+            }
         }
 
         // Метод для проверки сложности пароля

@@ -81,6 +81,10 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Результаты поиска будут появляться здесь -->
+            <div id="flightResultsContainer"></div>
+
             <!-- Популярные направления -->
             <div class="mt-5">
                 <h3 class="mb-4">Популярные направления</h3>
@@ -92,6 +96,39 @@
                         <p class="mt-2 text-muted">Загружаем популярные направления...</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для требования авторизации -->
+<div class="modal fade" id="authRequiredModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-primary">
+                    <i class="fas fa-lock me-2"></i>Требуется авторизация
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-heart text-danger mb-3" style="font-size: 3rem;"></i>
+                <h4 class="mb-3">Войдите в аккаунт</h4>
+                <p class="text-muted mb-4">
+                    Для сохранения рейсов в избранное необходимо авторизоваться.<br>
+                    Сохраняйте понравившиеся направления и отслеживайте изменения цен.
+                </p>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Войти
+                    </a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <small class="text-muted">После авторизации вы сможете сохранять рейсы</small>
             </div>
         </div>
     </div>
@@ -221,6 +258,7 @@
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
     }
 
+    /* Анимации - экранируем @@ */
     @@keyframes fadeIn {
         from {
             opacity: 0;
@@ -241,6 +279,23 @@
         100% {
             transform: rotate(360deg);
         }
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .notification-alert {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease-out;
     }
 
     .destination-card {
@@ -400,7 +455,7 @@
     }
 
     .section-obratno {
-        border-left-color: #28a745;
+        border-left-color = #28a745;
         background: linear-gradient(135deg, #f8fff8, #e8f5e8);
     }
 
@@ -473,13 +528,114 @@
         outline: 2px solid #28a745 !important;
         outline-offset: 2px;
     }
+
+    .favorite-btn {
+        transition: all 0.3s ease;
+    }
+
+        .favorite-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .favorite-btn.favorited i {
+            animation: heartBeat 0.5s ease;
+        }
+
+    @@keyframes heartBeat {
+        0% {
+            transform: scale(1);
+        }
+
+        25% {
+            transform: scale(1.3);
+        }
+
+        50% {
+            transform: scale(1);
+        }
+
+        75% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
 </style>
 
 <script>
     let currentDropdown = null;
     let currentInput = null;
     let timeoutId;
-    let favoriteFlights = JSON.parse(localStorage.getItem('favoriteFlights') || '{}');
+    let isUserAuthenticated = false;
+    let userId = null;
+
+    // Проверяем авторизацию при загрузке страницы
+        // Функция проверки статуса авторизации
+    async function checkAuthStatus() {
+        try {
+            console.log('Проверяем статус авторизации...');
+
+            const response = await fetch('/api/auth/status', {
+                method: 'GET',
+                credentials: 'include', // Важно: отправляем cookies
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            console.log('Статус ответа:', response.status);
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Данные авторизации:', data);
+
+                isUserAuthenticated = data.isAuthenticated;
+                userId = data.userId;
+
+                console.log('Статус авторизации:', isUserAuthenticated, 'User ID:', userId);
+
+                // Обновляем состояние кнопок избранного если пользователь авторизован
+                if (isUserAuthenticated) {
+                    console.log('Пользователь авторизован, проверяем избранное...');
+                } else {
+                    console.log('Пользователь не авторизован');
+                }
+            } else {
+                console.error('Ошибка при проверке авторизации:', response.status);
+                isUserAuthenticated = false;
+                userId = null;
+            }
+        } catch (error) {
+            console.error('Ошибка проверки авторизации:', error);
+            isUserAuthenticated = false;
+            userId = null;
+        }
+    }
+        // Функция для отладки сессии
+    async function debugSession() {
+        try {
+            const response = await fetch('/api/auth/session-info', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Отладочная информация сессии:', data);
+            }
+        } catch (error) {
+            console.error('Ошибка получения информации о сессии:', error);
+        }
+    }
+
+    // В начале инициализации вызывайте отладку
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Инициализация страницы...');
+        checkAuthStatus();
+        // Для отладки:
+        setTimeout(debugSession, 1000);
+    });
 
     // Функция для поиска городов через TravelPayouts API
     async function searchCitiesFromTravelPayouts(query, dropdown) {
@@ -548,6 +704,7 @@
             { code: "SIP", name: "Симферополь", country: "Россия", type: "city", airport: "" },
             { code: "MRV", name: "Минеральные Воды", country: "Россия", type: "city", airport: "" },
             { code: "KGD", name: "Калининград", country: "Россия", type: "city", airport: "" },
+            { code: "TJM", name: "Тюмень", country: "Россия", type: "city", airport: "" },
             { code: "SVO", name: "Шереметьево", country: "Россия", type: "airport", airport: "Шереметьево" },
             { code: "DME", name: "Домодедово", country: "Россия", type: "airport", airport: "Домодедово" },
             { code: "VKO", name: "Внуково", country: "Россия", type: "airport", airport: "Внуково" }
@@ -614,78 +771,176 @@
         dropdown.style.display = 'block';
     }
 
-    // Функция для работы с избранными рейсами
-    function toggleFavorite(flightId) {
-        const escapedFlightId = CSS.escape(flightId);
-
-        if (favoriteFlights[flightId]) {
-            delete favoriteFlights[flightId];
-        } else {
-            favoriteFlights[flightId] = true;
+        // Функция для работы с избранными рейсами (обновленная)
+    async function toggleFavorite(flightData) {
+        if (!isUserAuthenticated) {
+            showAuthRequiredModal();
+            return;
         }
 
-        localStorage.setItem('favoriteFlights', JSON.stringify(favoriteFlights));
+        try {
+            const flightId = flightData.flightId;
 
-        const buttons = document.querySelectorAll('[data-flight-id="' + escapedFlightId + '"]');
-        buttons.forEach(button => {
-            if (favoriteFlights[flightId]) {
-                button.innerHTML = '<i class="fas fa-heart text-danger fa-lg"></i>';
-                button.title = 'Удалить из избранного';
+            // Сначала проверяем, есть ли уже в избранном
+            const checkResponse = await fetch(`/api/favorites/flights/check/${encodeURIComponent(flightId)}`, {
+                credentials: 'include'
+            });
+
+            if (!checkResponse.ok) {
+                const errorText = await checkResponse.text();
+                throw new Error(`Ошибка проверки: ${errorText}`);
+            }
+
+            const checkData = await checkResponse.json();
+            console.log('Результат проверки избранного:', checkData);
+
+            if (checkData.isFavorite) {
+                // Удаляем из избранного
+                const deleteResponse = await fetch(`/api/favorites/flights/${encodeURIComponent(flightId)}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (deleteResponse.ok) {
+                    updateFavoriteButton(flightId, false);
+                    showNotification('Рейс удален из избранного', 'info');
+                } else {
+                    const errorData = await deleteResponse.json();
+                    throw new Error(errorData.message || 'Ошибка при удалении');
+                }
             } else {
-                button.innerHTML = '<i class="far fa-heart fa-lg text-muted"></i>';
-                button.title = 'Добавить в избранное';
+                // Добавляем в избранное
+                const addResponse = await fetch('/api/favorites/flights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(flightData)
+                });
+
+                const result = await addResponse.json();
+                console.log('Результат добавления в избранное:', result);
+
+                if (result.success) {
+                    updateFavoriteButton(flightId, true);
+                    showNotification('Рейс добавлен в избранное!', 'success');
+                } else {
+                    showNotification(result.message || 'Ошибка при сохранении', 'danger');
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка при работе с избранным:', error);
+            showNotification(error.message || 'Ошибка при сохранении рейса', 'danger');
+        }
+    }
+
+    // Функция для показа модального окна с требованием авторизации
+    function showAuthRequiredModal() {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modalElement = document.getElementById('authRequiredModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            }
+        } else {
+            alert('Для сохранения рейсов в избранное необходимо авторизоваться.\n\nПерейдите на страницу входа или регистрации.');
+            window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
+        }
+    }
+
+        // Функция обновления кнопки избранного
+    function updateFavoriteButton(flightId, isFavorite) {
+        const buttons = document.querySelectorAll(`[data-flight-id="${CSS.escape(flightId)}"]`);
+        buttons.forEach(button => {
+            const icon = button.querySelector('i');
+            if (icon) {
+                if (isFavorite) {
+                    icon.className = 'fas fa-heart text-danger fa-lg';
+                    button.title = 'Удалить из избранного';
+                    button.classList.add('favorited');
+                } else {
+                    icon.className = 'far fa-heart fa-lg text-muted';
+                    button.title = 'Добавить в избранное';
+                    button.classList.remove('favorited');
+                }
             }
         });
     }
 
-    function isFavorite(flightId) {
-        return favoriteFlights[flightId] || false;
-    }
+    // Функция для получения данных рейса из карточки
+    function getFlightDataFromCard(flightCard, flightId) {
+        if (!flightCard) return null;
 
-    // Вспомогательная функция для извлечения IATA кода
-    function extractIataCode(cityString) {
-        const match = cityString.match(/\(([A-Z]{3})\)/);
-        return match ? match[1] : cityString;
+        try {
+            const airlineElement = flightCard.querySelector('.fw-bold');
+            const flightNumberElement = flightCard.querySelector('.text-muted');
+            const departureCityElement = flightCard.querySelectorAll('.text-muted')[1];
+            const arrivalCityElement = flightCard.querySelectorAll('.text-muted')[3];
+            const departureTimeElement = flightCard.querySelector('.time-display');
+            const arrivalTimeElement = flightCard.querySelectorAll('.time-display')[1];
+            const priceElement = flightCard.querySelector('h3');
+
+            return {
+                flightId: flightId,
+                airline: airlineElement ? airlineElement.textContent.trim() : 'Авиакомпания',
+                flightNumber: flightNumberElement ? flightNumberElement.textContent.trim() : '',
+                departureCity: departureCityElement ? departureCityElement.textContent.trim() : '',
+                arrivalCity: arrivalCityElement ? arrivalCityElement.textContent.trim() : '',
+                departureTime: new Date(),
+                arrivalTime: new Date(),
+                price: priceElement ? parseFloat(priceElement.textContent.replace(/\s/g, '')) : 0,
+                currency: 'RUB',
+                transfers: 0,
+                duration: 120,
+                aircraft: 'Airbus A320',
+                isReturn: flightCard.classList.contains('return-flight'),
+                bookingUrl: '#',
+                searchParameters: {}
+            };
+        } catch (error) {
+            console.error('Ошибка получения данных рейса:', error);
+            return null;
+        }
     }
 
     // Функция для извлечения названия города из строки автозаполнения
     function extractCityName(fullString) {
-        return fullString.split('(')[0].trim();
+        if (!fullString) return '';
+
+        // Удаляем код в скобках и любые скобки
+        let cityName = fullString.replace(/\([^)]*\)/g, '').trim();
+
+        // Если после удаления скобок ничего не осталось, возвращаем оригинал
+        if (!cityName) {
+            return fullString;
+        }
+
+        return cityName;
     }
 
         // Функция показа результатов
-        // Функция показа результатов
     function showFlightResults(flights, searchData) {
         console.log('=== ПОКАЗ РЕЗУЛЬТАТОВ ===');
-        console.log('Получено рейсов:', flights.length);
+        console.log('Получено рейсов:', flights?.length || 0);
         console.log('Данные поиска:', searchData);
-
-        // Разделяем рейсы на туда и обратно
-        const oneWayFlights = flights.filter(flight => !flight.isReturn);
-        const returnFlights = flights.filter(flight => flight.isReturn);
-
-        const hasReturnDate = searchData.returnDate && searchData.returnDate !== null && searchData.returnDate !== '';
-        const hasReturnFlights = returnFlights.length > 0;
-
-        console.log(`Статистика: ${oneWayFlights.length} туда, ${returnFlights.length} обратно`);
-        console.log(`Есть обратная дата: ${hasReturnDate}, Есть рейсы обратно: ${hasReturnFlights}`);
+        console.log('Пользователь авторизован:', isUserAuthenticated);
 
         // Удаляем старые результаты
-        const oldResults = document.querySelector('.flight-results');
+        const oldResults = document.getElementById('flightResultsContainer');
         if (oldResults) {
             console.log('Удаляем предыдущие результаты');
-            oldResults.remove();
+            oldResults.innerHTML = '';
         }
-
-        // Создаем новый контейнер
-        const resultsContainer = document.createElement('div');
-        resultsContainer.className = 'flight-results mt-4';
-        resultsContainer.id = 'flightResultsContainer'; // Добавляем ID для тестирования
 
         if (!flights || flights.length === 0) {
             console.log('Нет рейсов для отображения');
-            resultsContainer.innerHTML = `
-                <div class="alert alert-info">
+            document.getElementById('flightResultsContainer').innerHTML = `
+                <div class="alert alert-info mt-4">
                     <h5 class="alert-heading">Рейсы не найдены</h5>
                     <p>Попробуйте изменить параметры поиска или даты</p>
                 </div>
@@ -693,8 +948,13 @@
         } else {
             console.log('Создаем HTML с результатами...');
 
+            // Разделяем рейсы на туда и обратно
+            const oneWayFlights = flights.filter(flight => !flight.isReturn);
+            const returnFlights = flights.filter(flight => flight.isReturn);
+            const hasReturnDate = searchData.returnDate && searchData.returnDate !== null && searchData.returnDate !== '';
+
             let html = `
-                <div class="card shadow-lg border-0 mb-4">
+                <div class="card shadow-lg border-0 mb-4 mt-4">
                     <div class="card-header bg-primary text-white py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">
@@ -712,7 +972,6 @@
 
             // === РАЗДЕЛ "РЕЙСЫ ТУДА" ===
             if (oneWayFlights.length > 0) {
-                console.log('Добавляем раздел "Рейсы туда"');
                 html += `
                     <div class="flight-section-header section-tuda p-3">
                         <div class="d-flex align-items-center">
@@ -734,8 +993,7 @@
             }
 
             // === РАЗДЕЛ "РЕЙСЫ ОБРАТНО" ===
-            if (hasReturnDate && hasReturnFlights) {
-                console.log('Добавляем раздел "Рейсы обратно"');
+            if (hasReturnDate && returnFlights.length > 0) {
                 html += `
                     <div class="flight-section-header section-obratno p-3">
                         <div class="d-flex align-items-center">
@@ -754,28 +1012,6 @@
                 returnFlights.forEach((flight, index) => {
                     html += generateFlightCard(flight, index, true);
                 });
-            } else if (hasReturnDate && !hasReturnFlights) {
-                console.log('Есть дата обратно, но нет рейсов');
-                html += `
-                    <div class="flight-section-header section-obratno p-3">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
-                            <div>
-                                <h5 class="mb-1 fw-bold text-warning">Рейсы обратно</h5>
-                                <p class="mb-0">
-                                    ${searchData.arrivalCity} → ${searchData.departureCity}
-                                    <span class="ms-2 badge bg-warning">${formatDateForDisplay(searchData.returnDate)}</span>
-                                    <span class="ms-2 badge bg-danger">Рейсы не найдены</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-4 text-center bg-light">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Не удалось найти рейсы на обратную дату</h5>
-                        <p class="text-muted small">Попробуйте изменить дату возвращения</p>
-                    </div>
-                `;
             }
 
             html += `
@@ -785,7 +1021,7 @@
                             <div class="col-md-6">
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Все цены указаны в рублях
+                                    Все цены указаны в рублях (демо-данные)
                                 </small>
                             </div>
                             <div class="col-md-6 text-end">
@@ -799,38 +1035,21 @@
                 </div>
             `;
 
-            resultsContainer.innerHTML = html;
-            console.log('HTML создан, размер:', html.length, 'символов');
+            document.getElementById('flightResultsContainer').innerHTML = html;
+
+            // Назначаем обработчики для новых кнопок
+            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+            favoriteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    handleFavoriteClick(this);
+                });
+            });
+                requestAnimationFrame(() => {
+        if (isUserAuthenticated) {
+            checkFavoritesForFlights();
         }
+    });
 
-        // Вставляем результаты на страницу
-        const formCard = document.querySelector('.card.shadow-sm.border-0');
-        if (formCard && formCard.parentNode) {
-            console.log('Вставляем результаты после формы поиска...');
-            formCard.parentNode.insertBefore(resultsContainer, formCard.nextSibling);
-
-            // Проверка через 100мс
-            setTimeout(() => {
-                console.log('=== ПРОВЕРКА ВСТАВКИ ===');
-                const inserted = document.getElementById('flightResultsContainer');
-                console.log('Контейнер в DOM:', !!inserted);
-                console.log('Высота контейнера:', inserted ? inserted.offsetHeight : 'не найден');
-
-                // Добавляем визуальный маркер для отладки
-                if (inserted) {
-                    inserted.style.border = '2px dashed #0d6efd';
-                    inserted.style.borderRadius = '10px';
-                    inserted.style.padding = '5px';
-                }
-            }, 100);
-        } else {
-            console.error('Не найден элемент формы для вставки результатов');
-            // Альтернативная вставка
-            const mainContainer = document.querySelector('.container .row .col-12');
-            if (mainContainer) {
-                mainContainer.appendChild(resultsContainer);
-                console.log('Вставлено в основной контейнер');
-            }
         }
 
         // Прокрутка к результатам
@@ -840,12 +1059,21 @@
                 resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }, 200);
+    }
 
-        console.log('=== РЕЗУЛЬТАТЫ ПОКАЗАНЫ ===');
+        function buildStableFlightId(flight, isReturnFlight) {
+        return [
+            flight.airlineCode || flight.airline || 'AIR',
+            flight.flightNumber || 'FN',
+            flight.departureCity || 'FROM',
+            flight.arrivalCity || 'TO',
+            formatDateForApi(flight.departureTime),
+            isReturnFlight ? 'R' : 'O'
+        ].join('_');
     }
 
         function generateFlightCard(flight, index, isReturnFlight) {
-        console.log(`Генерация карточки реального рейса:`, flight);
+        if (!flight) return '';
 
         // Форматирование времени
         const departureTime = formatTime(flight.departureTime);
@@ -855,8 +1083,7 @@
         const durationText = `${durationHours}ч ${durationMinutes}м`;
 
         // Уникальный ID
-        const uniqueFlightId = `flight-${flight.id}-${isReturnFlight ? 'return' : 'oneway'}-${index}`;
-        const isFav = isFavorite(uniqueFlightId);
+        const flightId = buildStableFlightId(flight, isReturnFlight);
 
         // Определяем тип рейса
         const typeColor = isReturnFlight ? 'success' : 'primary';
@@ -866,6 +1093,32 @@
         // Форматируем цену
         const priceFormatted = flight.price ? flight.price.toLocaleString('ru-RU') : '0';
         const currency = flight.currency || 'RUB';
+
+        // Данные для избранного
+        const flightData = {
+            flightId: flightId,
+            airline: flight.airline || 'Авиакомпания',
+            airlineCode: flight.airlineCode || '',
+            flightNumber: flight.flightNumber || 'Рейс',
+            departureCity: flight.departureCity || '',
+            arrivalCity: flight.arrivalCity || '',
+            departureAirport: flight.departureAirport || '',
+            arrivalAirport: flight.arrivalAirport || '',
+            departureTime: flight.departureTime,
+            arrivalTime: flight.arrivalTime,
+            price: flight.price || 0,
+            currency: flight.currency || 'RUB',
+            transfers: flight.transfers || 0,
+            duration: flight.duration || 0,
+            aircraft: flight.aircraft || '',
+            isReturn: isReturnFlight,
+            bookingUrl: flight.bookingUrl || '#',
+            searchParameters: {
+                departureCity: flight.departureCity,
+                arrivalCity: flight.arrivalCity,
+                departureDate: formatDateForApi(flight.departureTime)
+            }
+        };
 
         return `
             <div class="flight-card ${typeClass} border-bottom p-4">
@@ -923,14 +1176,12 @@
                         <div class="d-flex align-items-center justify-content-end gap-3">
                             <!-- Избранное -->
                             <button class="favorite-btn p-2 border-0 bg-transparent"
-                                    data-flight-id="${uniqueFlightId}"
-                                    onclick="toggleFavorite('${uniqueFlightId}')"
-                                    title="${isFav ? 'Удалить из избранного' : 'Добавить в избранное'}"
-                                    style="transition: transform 0.2s;">
-                                ${isFav ?
-                                    '<i class="fas fa-heart text-danger fa-lg"></i>' :
-                                    '<i class="far fa-heart fa-lg text-muted"></i>'
-                                }
+                                    data-flight-id="${flightId}"
+                                    data-flight-data='${JSON.stringify(flightData).replace(/'/g, "&apos;")}'
+                                    title="${isUserAuthenticated ? 'Добавить в избранное' : 'Войдите для сохранения'}"
+                                    style="transition: transform 0.2s;"
+                                    onclick="handleFavoriteClick(this)">
+                                <i class="far fa-heart fa-lg text-muted"></i>
                             </button>
 
                             <!-- Цена -->
@@ -941,128 +1192,69 @@
                                 </div>
                                 <small class="text-muted d-block">за пассажира</small>
                                 <button class="btn btn-${typeColor} btn-lg px-4 mt-2 fw-bold"
-                                        onclick="selectRealFlight('${flight.id}', ${flight.price || 0}, '${flight.airline || ''}', ${isReturnFlight})">
+                                        onclick="selectRealFlight('${flightId}', ${flight.price || 0}, '${flight.airline || ''}', ${isReturnFlight})">
                                     <i class="fas fa-shopping-cart me-2"></i>Купить
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Дополнительная информация -->
-                ${flight.transfers > 0 ? `
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="alert alert-warning small mb-0 py-2">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Этот рейс включает ${flight.transfers} пересад${flight.transfers === 1 ? 'ку' : 'ки'}
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
             </div>
         `;
+    }
+        // Функция для обработки клика на кнопку избранного
+    async function handleFavoriteClick(button) {
+        const flightId = button.getAttribute('data-flight-id');
+        const flightDataStr = button.getAttribute('data-flight-data');
+
+        if (!flightDataStr) {
+            console.error('Данные рейса не найдены');
+            return;
+        }
+
+        try {
+            const flightData = JSON.parse(flightDataStr.replace(/&apos;/g, "'"));
+            await toggleFavorite(flightData);
+        } catch (error) {
+            console.error('Ошибка при обработке данных рейса:', error);
+            showNotification('Ошибка при сохранении рейса', 'danger');
+        }
+    }
+
+    // Функция для проверки избранного после загрузки результатов
+        // Функция для проверки избранного после загрузки результатов
+    async function checkFavoritesForFlights() {
+        if (!isUserAuthenticated) return;
+
+        const buttons = document.querySelectorAll('.favorite-btn');
+        console.log('Проверяем избранное для', buttons.length, 'кнопок');
+
+        for (const button of buttons) {
+            const flightId = button.getAttribute('data-flight-id');
+            if (!flightId) continue;
+
+            try {
+                const response = await fetch(`/api/favorites/flights/check/${encodeURIComponent(flightId)}`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isFavorite) {
+                        updateFavoriteButton(flightId, true);
+                    }
+                } else {
+                    console.error('Ошибка ответа при проверке избранного:', response.status);
+                }
+            } catch (error) {
+                console.error('Ошибка проверки избранного для рейса:', flightId, error);
+            }
+        }
     }
 
     function selectRealFlight(flightId, price, airline, isReturn) {
         const direction = isReturn ? 'обратно' : 'туда';
-        alert(`Выбран рейс ${flightId}\n${airline}\nЦена: ${price.toLocaleString('ru-RU')} RUB\nНаправление: ${direction}`);
-
-        // Здесь можно добавить логику для перехода к бронированию
-        console.log('Выбран рейс для бронирования:', { flightId, price, airline, isReturn });
-    }
-
-    // Вспомогательные функции
-    function selectFlight(flightId, isReturn) {
-        alert(`Выбран рейс ${flightId} (${isReturn ? 'обратно' : 'туда'})`);
-        console.log('Выбран рейс:', flightId, isReturn ? 'обратно' : 'туда');
-    }
-
-    console.log('Функция showFlightResults обновлена и готова к использованию');
-
-    // Вспомогательная функция для генерации карточки рейса
-    function generateFlightCard(flight, index, isReturnFlight) {
-        console.log(`Генерация карточки ${isReturnFlight ? 'обратно' : 'туда'}:`, flight);
-
-        if (!flight) {
-            console.error('Пустой объект flight!');
-            return '';
-        }
-
-        const departureTime = formatTime(flight.departureTime);
-        const arrivalTime = formatTime(flight.arrivalTime);
-        const durationHours = Math.floor(flight.duration / 60);
-        const durationMinutes = flight.duration % 60;
-        const durationText = `${durationHours}ч ${durationMinutes}м`;
-
-        // Создаем уникальный ID для каждого рейса
-        const uniqueFlightId = `flight-${flight.id}-${isReturnFlight ? 'return' : 'oneway'}-${index}`;
-        const isFav = isFavorite(uniqueFlightId);
-
-        return `
-            <div class="flight-card border-bottom p-4 ${isReturnFlight ? 'return-flight' : 'oneway-flight'}">
-                <div class="row align-items-center">
-                    <div class="col-md-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas ${isReturnFlight ? 'fa-plane-arrival text-success me-2' : 'fa-plane-departure text-primary me-2'}"></i>
-                            <div>
-                                <h6 class="mb-1">${flight.airline || 'Авиакомпания'}</h6>
-                                <small class="text-muted">${flight.flightNumber || ''}</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <div class="row align-items-center">
-                            <div class="col-4 text-end">
-                                <div class="fw-bold fs-5 time-display">${departureTime}</div>
-                                <small class="text-muted">${flight.departureAirport}</small>
-                            </div>
-                            <div class="col-4 text-center">
-                                <div class="flight-duration">
-                                    <i class="fas fa-plane ${isReturnFlight ? 'text-success' : 'text-primary'}"></i>
-                                    <div class="small text-muted mt-1">${durationText}</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="fw-bold fs-5 time-display">${arrivalTime}</div>
-                                <small class="text-muted">${flight.arrivalAirport}</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-1 text-center">
-                        <span class="badge ${flight.transfers === 0 ? 'bg-success' : 'bg-warning'}">
-                            ${flight.transfers === 0 ? 'Прямой' : flight.transfers + ' пересадка'}
-                        </span>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <div class="d-flex align-items-center justify-content-end gap-3">
-                            <button class="favorite-btn p-1 border-0 bg-transparent"
-                                    data-flight-id="${uniqueFlightId}"
-                                    onclick="toggleFavorite('${uniqueFlightId}')"
-                                    title="${isFav ? 'Удалить из избранного' : 'Добавить в избранное'}">
-                                ${isFav ? '<i class="fas fa-heart text-danger fa-lg"></i>' : '<i class="far fa-heart fa-lg text-muted"></i>'}
-                            </button>
-                            <div class="text-end">
-                                <h4 class="${isReturnFlight ? 'text-success' : 'text-primary'} mb-1">${flight.price ? flight.price.toLocaleString('ru-RU') : '0'} ₽</h4>
-                                <button class="btn ${isReturnFlight ? 'btn-success' : 'btn-primary'} btn-sm">
-                                    Выбрать
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                ${flight.transfers > 0 ? `
-                <div class="row mt-2">
-                    <div class="col-12">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            ${flight.transfers} пересадка(и)
-                        </small>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        `;
+        alert(`Выбран рейс ${flightId}\n${airline}\nЦена: ${price.toLocaleString('ru-RU')} RUB\nНаправление: ${direction}\n\n(Это демо-версия. Для реального бронирования перейдите по ссылкам партнеров)`);
     }
 
     // Функция для форматирования времени
@@ -1070,7 +1262,6 @@
         if (!dateTimeString) return '--:--';
 
         try {
-            // Пробуем разные форматы даты
             let date;
             if (typeof dateTimeString === 'string') {
                 date = new Date(dateTimeString);
@@ -1116,9 +1307,22 @@
         }
     }
 
+    // Функция для форматирования даты для API
+    function formatDateForApi(date) {
+        if (!date) return '';
+
+        try {
+            const d = new Date(date);
+            return d.toISOString().split('T')[0];
+        } catch (error) {
+            console.error('Ошибка форматирования даты для API:', error);
+            return '';
+        }
+    }
+
     // Функция показа уведомлений
     function showAlert(message, type) {
-        const oldAlerts = document.querySelectorAll('.alert');
+        const oldAlerts = document.querySelectorAll('.alert:not(.notification-alert)');
         oldAlerts.forEach(alert => alert.remove());
 
         const alertDiv = document.createElement('div');
@@ -1137,12 +1341,48 @@
         }, 5000);
     }
 
+    // Функция показа уведомлений (всплывающих)
+    function showNotification(message, type = 'info') {
+        // Удаляем старые уведомления
+        const oldNotifications = document.querySelectorAll('.notification-alert');
+        oldNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification-alert alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        `;
+
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} me-2"></i>
+                <div>${message}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Автоматически удаляем через 5 секунд
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
     // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         const departureInput = document.getElementById('departureCity');
         const arrivalInput = document.getElementById('arrivalCity');
         const departureDropdown = document.getElementById('departureDropdown');
         const arrivalDropdown = document.getElementById('arrivalDropdown');
+
+        // Проверяем авторизацию
+        checkAuthStatus();
 
         // Обработчики для поля "Откуда"
         departureInput.addEventListener('input', () => {
@@ -1224,12 +1464,6 @@
             e.preventDefault();
 
             console.log('=== ОТПРАВКА ФОРМЫ ===');
-            console.log('departure:', document.getElementById('departureCity').value);
-            console.log('arrival:', document.getElementById('arrivalCity').value);
-            console.log('departureDate:', document.getElementById('departureDate').value);
-            console.log('returnDate:', document.getElementById('returnDate').value);
-            console.log('returnDate type:', typeof document.getElementById('returnDate').value);
-            console.log('returnDate length:', document.getElementById('returnDate').value ? document.getElementById('returnDate').value.length : 'empty');
 
             const departure = document.getElementById('departureCity').value;
             const arrival = document.getElementById('arrivalCity').value;
@@ -1237,18 +1471,33 @@
             const returnDate = document.getElementById('returnDate').value;
             const passengers = document.getElementById('passengers').value;
 
+            console.log('departure:', departure);
+            console.log('arrival:', arrival);
+            console.log('departureDate:', departureDate);
+            console.log('returnDate:', returnDate);
+
+            // Извлекаем названия городов (без кодов в скобках)
+            const departureCity = extractCityName(departure);
+            const arrivalCity = extractCityName(arrival);
+
+            // Создаем объект запроса
             const searchData = {
-                departureCity: extractCityName(departure),
-                arrivalCity: extractCityName(arrival),
+                departureCity: departureCity,
+                arrivalCity: arrivalCity,
                 departureDate: departureDate,
-                returnDate: returnDate || null,
                 passengers: parseInt(passengers),
-                tripType: returnDate ? "round" : "oneway",
-                class: "economy"
+                class: "economy",
+                tripType: returnDate && returnDate.length > 0 ? "round" : "oneway"
             };
+
+            // Добавляем обратную дату, если она есть
+            if (returnDate && returnDate.length > 0) {
+                searchData.returnDate = returnDate;
+            }
+
             console.log('searchData:', JSON.stringify(searchData, null, 2));
 
-            if (!departure || !arrival) {
+            if (!departureCity || !arrivalCity) {
                 showAlert('Пожалуйста, заполните города вылета и прилета', 'warning');
                 return;
             }
@@ -1266,7 +1515,6 @@
 
             try {
                 console.log('Отправка запроса к API:', searchData);
-                console.log('ReturnDate в запросе:', searchData.returnDate);
 
                 const response = await fetch('/api/flights/search', {
                     method: 'POST',
@@ -1276,8 +1524,18 @@
                     body: JSON.stringify(searchData)
                 });
 
+                console.log('Статус ответа:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    let errorText = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        console.log('Данные ошибки:', errorData);
+                        errorText = errorData.error || errorData.message || errorText;
+                    } catch (e) {
+                        console.log('Не удалось распарсить ошибку:', e);
+                    }
+                    throw new Error(errorText);
                 }
 
                 const result = await response.json();
@@ -1285,24 +1543,29 @@
 
                 if (result.success) {
                     showFlightResults(result.flights, searchData);
+                    showNotification(`Найдено ${result.flights?.length || 0} рейсов`, 'success');
                 } else {
                     showAlert(result.error || 'Произошла ошибка при поиске', 'danger');
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                showAlert('Ошибка соединения с сервером. Пожалуйста, попробуйте позже.', 'danger');
+                showAlert(`Ошибка: ${error.message}`, 'danger');
             } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         });
 
-
-
         // Установка минимальной даты (сегодня)
         const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        // Устанавливаем значения по умолчанию
         document.getElementById('departureDate').min = today;
-        document.getElementById('returnDate').min = today;
+        document.getElementById('departureDate').value = tomorrowStr;
+        document.getElementById('returnDate').min = tomorrowStr;
 
         // Обновление минимальной даты для обратного билета
         document.getElementById('departureDate').addEventListener('change', function() {
@@ -1378,42 +1641,12 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card destination-card h-100" onclick="selectPopularDestination('Москва', 'Минеральные Воды')">
-                            <img src="https://resize.tripster.ru/eZjL9fLGA5RP_y30kWzw_7AlzaM=/fit-in/1080x810/filters:no_upscale()/https://cdn.tripster.ru/photos/b94bdc96-d37d-46e8-b08e-8e9f4f989d26.jpg" class="card-img-top" alt="Москва - Минеральные Воды">
+                        <div class="card destination-card h-100" onclick="selectPopularDestination('Тюмень', 'Москва')">
+                            <img src="https://avatars.mds.yandex.net/get-altay/9888332/2a0000018df4ed7c23145a090d52f79baa93/orig" class="card-img-top" alt="Тюмень - Москва">
                             <div class="card-body">
-                                <h5 class="card-title">Москва → Минеральные Воды</h5>
-                                <p class="card-text">От 5 100 ₽</p>
-                                <p class="text-muted small">В пути от 2ч 30м</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100" onclick="selectPopularDestination('Москва', 'Симферополь')">
-                            <img src="https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_65ec5340ca13f70dc5edc8cd_65ec6421dbdab733d52b3cb2/scale_1200" class="card-img-top" alt="Москва - Симферополь">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Симферополь</h5>
+                                <h5 class="card-title">Тюмень → Москва</h5>
                                 <p class="card-text">От 5 500 ₽</p>
-                                <p class="text-muted small">В пути от 2ч 45м</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100" onclick="selectPopularDestination('Москва', 'Калининград')">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Old_cathedral_of_Kaliningrad_in_Russia.jpg" class="card-img-top" alt="Москва - Калининград">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Калининград</h5>
-                                <p class="card-text">От 4 600 ₽</p>
-                                <p class="text-muted small">В пути от 2ч</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card destination-card h-100" onclick="selectPopularDestination('Москва', 'Новосибирск')">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Novosibirsk_skyline_in_winter.jpg/960px-Novosibirsk_skyline_in_winter.jpg" class="card-img-top" alt="Москва - Новосибирск">
-                            <div class="card-body">
-                                <h5 class="card-title">Москва → Новосибирск</h5>
-                                <p class="card-text">От 6 200 ₽</p>
-                                <p class="text-muted small">В пути от 4ч</p>
+                                <p class="text-muted small">В пути от 2ч 30м</p>
                             </div>
                         </div>
                     </div>
@@ -1424,7 +1657,7 @@
 
                 console.log('✅ Популярные направления загружены');
 
-            }, 2000);
+            }, 1000);
         } catch (error) {
             console.error('❌ Ошибка загрузки популярных направлений:', error);
         }
@@ -1455,7 +1688,7 @@
         });
 
         // Показываем сообщение
-        showAlert(`Направление ${fromCity} → ${toCity} добавлено в форму поиска`, 'success');
+        showNotification(`Направление ${fromCity} → ${toCity} добавлено в форму поиска`, 'success');
     }
 
     // Вспомогательная функция для получения кода города
@@ -1470,61 +1703,17 @@
             "Минеральные Воды": "MRV",
             "Симферополь": "SIP",
             "Калининград": "KGD",
-            "Новосибирск": "OVB"
+            "Новосибирск": "OVB",
+            "Тюмень": "TJM"
         };
 
         return cityCodes[cityName] || "---";
     }
 
-        async function testDirectApiCall() {
-        console.log('=== ТЕСТИРОВАНИЕ ПРЯМОГО ВЫЗОВА API ===');
-
-        const testData = {
-            departureCity: 'Москва',
-            arrivalCity: 'Санкт-Петербург',
-            departureDate: new Date().toISOString().split('T')[0],
-            returnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            passengers: 2,
-            class: 'economy',
-            tripType: 'round'
-        };
-
-        console.log('Отправляемые данные:', testData);
-        console.log('returnDate:', testData.returnDate);
-
-        try {
-            const response = await fetch('/api/flights/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(testData)
-            });
-
-            const result = await response.json();
-            console.log('Ответ от API:', result);
-
-            if (result.success) {
-                console.log('Всего рейсов:', result.flights.length);
-                console.log('Рейсы туда:', result.flights.filter(f => !f.isReturn).length);
-                console.log('Рейсы обратно:', result.flights.filter(f => f.isReturn).length);
-            }
-        } catch (error) {
-            console.error('Ошибка теста:', error);
-        }
-    }
-
-        function debugFormSubmission() {
-        console.log('=== ДЕБАГ ФОРМЫ ===');
-
-        // Симулируем заполнение формы
-        document.getElementById('departureCity').value = 'Москва (MOW)';
-        document.getElementById('arrivalCity').value = 'Санкт-Петербург (LED)';
-        document.getElementById('departureDate').value = '2025-12-04';
-        document.getElementById('returnDate').value = '2025-12-11';
-        document.getElementById('passengers').value = '2';
-
-        console.log('Форма заполнена. Нажмите кнопку "Найти" или выполните:');
-        console.log('document.getElementById("flightSearchForm").dispatchEvent(new Event("submit"))');
-    }
+        // В конце скрипта добавьте:
+    window.toggleFavorite = toggleFavorite;
+    window.selectRealFlight = selectRealFlight;
+    window.selectPopularDestination = selectPopularDestination;
+    window.checkAuthStatus = checkAuthStatus;
+    window.handleFavoriteClick = handleFavoriteClick;
 </script>

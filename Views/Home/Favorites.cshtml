@@ -1,4 +1,6 @@
-﻿@{
+﻿@using TripWise.Models
+@model List<FavoriteFlight>
+@{
     ViewData["Title"] = "Избранное";
 }
 
@@ -6,30 +8,358 @@
     <div class="row">
         <div class="col-12">
             <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
-                Избранное
+                <i class="fas fa-heart text-danger me-2"></i>Избранное
             </h1>
-            <p class="lead">Сохраненные направления, отели и маршруты</p>
 
-            @if (Context.Session.GetInt32("UserId") == null)
+            @{
+                var userId = Context.Session.GetInt32("UserId");
+                var favorites = Model ?? new List<FavoriteFlight>();
+            }
+
+            @if (!userId.HasValue)
             {
-                <div class="alert alert-light border shadow-sm">
-                    <h5>Войдите в аккаунт</h5>
-                    <p>Чтобы сохранять понравившиеся направления, войдите в свой аккаунт.</p>
-                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
-                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
+                <div class="card shadow-lg border-0">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-lock text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h4 class="mb-3">Доступ ограничен</h4>
+                        <p class="text-muted mb-4">
+                            Для просмотра избранных рейсов необходимо войти в систему.
+                        </p>
+                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-4">
+                                <i class="fas fa-sign-in-alt me-2"></i>Войти
+                            </a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary btn-lg px-4">
+                                <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                            </a>
+                        </div>
+                    </div>
                 </div>
             }
             else
             {
-                <div class="card shadow-sm border-0">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-heart text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5>Пока ничего нет в избранном</h5>
-                        <p class="text-muted">Сохраняйте понравившиеся направления, нажимая на сердечко</p>
-                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Начать поиск</a>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <p class="lead mb-0">Сохраненные рейсы и направления</p>
+                    <div>
+                        <span class="badge bg-primary fs-6">
+                            <i class="fas fa-plane me-1"></i> @favorites.Count рейсов
+                        </span>
                     </div>
                 </div>
+
+                @if (favorites.Count == 0)
+                {
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-heart text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5>Пока ничего нет в избранном</h5>
+                            <p class="text-muted mb-4">
+                                Сохраняйте понравившиеся направления, нажимая на сердечко<br>
+                                при поиске рейсов.
+                            </p>
+                            <a asp-controller="Flights" asp-action="Index" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search me-2"></i>Найти рейсы
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        <!-- Фильтры и статистика -->
+                        <div class="col-md-3 mb-4">
+                            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">
+                                        <i class="fas fa-filter me-2"></i>Фильтры
+                                    </h6>
+
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted mb-2">Направления</label>
+                                        <select class="form-select" id="directionFilter">
+                                            <option value="">Все направления</option>
+                                            @foreach (var direction in favorites.Select(f => $"{f.DepartureCity} → {f.ArrivalCity}").Distinct())
+                                            {
+                                                <option value="@direction">@direction</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted mb-2">Авиакомпании</label>
+                                        <select class="form-select" id="airlineFilter">
+                                            <option value="">Все авиакомпании</option>
+                                            @foreach (var airline in favorites.Select(f => f.Airline).Distinct())
+                                            {
+                                                <option value="@airline">@airline</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted mb-2">Сортировка</label>
+                                        <select class="form-select" id="sortFilter">
+                                            <option value="date">По дате добавления</option>
+                                            <option value="price_asc">По цене (дешевые)</option>
+                                            <option value="price_desc">По цене (дорогие)</option>
+                                            <option value="date_asc">По дате вылета</option>
+                                        </select>
+                                    </div>
+
+                                    <button class="btn btn-outline-primary w-100" onclick="applyFilters()">
+                                        <i class="fas fa-sync-alt me-2"></i>Применить
+                                    </button>
+
+                                    <hr class="my-3">
+
+                                    <div class="small text-muted">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Всего рейсов:</span>
+                                            <strong>@favorites.Count</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Прямых рейсов:</span>
+                                            <strong>@favorites.Count(f => f.Transfers == 0)</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>С пересадками:</span>
+                                            <strong>@favorites.Count(f => f.Transfers > 0)</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Список избранных рейсов -->
+                        <div class="col-md-9">
+                            <div id="favoritesList">
+                                @foreach (var flight in favorites)
+                                {
+                                    <div class="card shadow-sm border-0 mb-3 flight-item"
+                                         data-direction="@($"{flight.DepartureCity} → {flight.ArrivalCity}")"
+                                         data-airline="@flight.Airline"
+                                         data-price="@flight.Price"
+                                         data-date="@flight.AddedDate.Ticks"
+                                         data-departure="@flight.DepartureTime.Ticks">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <!-- Информация о рейсе -->
+                                                <div class="col-md-8">
+                                                    <div class="d-flex align-items-start">
+                                                        <div class="me-3">
+                                                            @if (flight.IsReturn)
+                                                            {
+                                                                <span class="badge bg-success">Обратно</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-primary">Туда</span>
+                                                            }
+                                                        </div>
+                                                        <div>
+                                                            <h5 class="mb-1">
+                                                                @flight.DepartureCity → @flight.ArrivalCity
+                                                            </h5>
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <span class="me-3">
+                                                                    <i class="fas fa-plane text-muted me-1"></i>
+                                                                    @flight.Airline (@flight.FlightNumber)
+                                                                </span>
+                                                                <span class="me-3">
+                                                                    <i class="fas fa-chair text-muted me-1"></i>
+                                                                    @flight.Aircraft
+                                                                </span>
+                                                                <span>
+                                                                    <i class="fas fa-exchange-alt text-muted me-1"></i>
+                                                                    @(flight.Transfers == 0 ? "Прямой" : $"{flight.Transfers} пересадки")
+                                                                </span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center text-muted small">
+                                                                <span class="me-3">
+                                                                    <i class="far fa-calendar me-1"></i>
+                                                                    @flight.DepartureTime.ToString("dd.MM.yyyy")
+                                                                </span>
+                                                                <span class="me-3">
+                                                                    <i class="far fa-clock me-1"></i>
+                                                                    @flight.DepartureTime.ToString("HH:mm") → @flight.ArrivalTime.ToString("HH:mm")
+                                                                </span>
+                                                                <span>
+                                                                    <i class="fas fa-hourglass-half me-1"></i>
+                                                                    @(flight.Duration / 60)ч @(flight.Duration % 60)м
+                                                                </span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">
+                                                                    <i class="far fa-calendar-plus me-1"></i>
+                                                                    Добавлен: @flight.AddedDate.ToString("dd.MM.yyyy")
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Цена и действия -->
+                                                <div class="col-md-4">
+                                                    <div class="d-flex flex-column align-items-end">
+                                                        <div class="mb-3 text-end">
+                                                            <h4 class="text-primary mb-0">@flight.Price.ToString("N0") @flight.Currency</h4>
+                                                            <small class="text-muted">за пассажира</small>
+                                                        </div>
+                                                        <div class="d-flex gap-2">
+                                                            @if (!string.IsNullOrEmpty(flight.BookingUrl))
+                                                            {
+                                                                <a href="@flight.BookingUrl" target="_blank" class="btn btn-primary">
+                                                                    <i class="fas fa-shopping-cart me-2"></i>Купить
+                                                                </a>
+                                                            }
+                                                            <button class="btn btn-outline-danger remove-favorite"
+                                                                    data-flight-id="@flight.FlightId">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (favorites.Count > 10)
+                            {
+                                <div class="text-center mt-4">
+                                    <button class="btn btn-outline-primary" id="loadMoreBtn">
+                                        <i class="fas fa-chevron-down me-2"></i>Показать еще
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Функция применения фильтров
+        function applyFilters() {
+            const direction = document.getElementById('directionFilter').value;
+            const airline = document.getElementById('airlineFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+
+            const items = document.querySelectorAll('.flight-item');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const itemDirection = item.getAttribute('data-direction');
+                const itemAirline = item.getAttribute('data-airline');
+
+                const directionMatch = !direction || itemDirection === direction;
+                const airlineMatch = !airline || itemAirline === airline;
+
+                if (directionMatch && airlineMatch) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Сортировка
+            const container = document.getElementById('favoritesList');
+            const sortedItems = Array.from(items)
+                .filter(item => item.style.display !== 'none')
+                .sort((a, b) => {
+                    switch(sort) {
+                        case 'price_asc':
+                            return parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price'));
+                        case 'price_desc':
+                            return parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price'));
+                        case 'date_asc':
+                            return new Date(parseInt(a.getAttribute('data-departure'))) - new Date(parseInt(b.getAttribute('data-departure')));
+                        default: // date (по дате добавления)
+                            return new Date(parseInt(b.getAttribute('data-date'))) - new Date(parseInt(a.getAttribute('data-date')));
+                    }
+                });
+
+            // Переставляем элементы
+            sortedItems.forEach(item => container.appendChild(item));
+
+            // Показываем/скрываем кнопку "Показать еще"
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = visibleCount > 10 ? '' : 'none';
+            }
+        }
+
+        // Удаление из избранного
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('.remove-favorite')) {
+                const button = e.target.closest('.remove-favorite');
+                const flightId = button.getAttribute('data-flight-id');
+
+                if (confirm('Удалить рейс из избранного?')) {
+                    try {
+                        const response = await fetch(`/api/favorites/flights/${encodeURIComponent(flightId)}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            const card = button.closest('.flight-item');
+                            card.style.opacity = '0.5';
+                            setTimeout(() => {
+                                card.remove();
+                                // Обновляем счетчик
+                                const remainingItems = document.querySelectorAll('.flight-item').length;
+                                document.querySelector('.badge.fs-6').innerHTML = `<i class="fas fa-plane me-1"></i> ${remainingItems} рейсов`;
+
+                                // Показываем сообщение если список пуст
+                                if (remainingItems === 0) {
+                                    location.reload();
+                                }
+                            }, 300);
+                        } else {
+                            const result = await response.json();
+                            alert(result.message || 'Ошибка при удалении рейса');
+                        }
+                    } catch (error) {
+                        console.error('Ошибка удаления:', error);
+                        alert('Ошибка при удалении рейса');
+                    }
+                }
+            }
+        });
+
+        // Кнопка "Показать еще"
+        document.addEventListener('DOMContentLoaded', function() {
+            const items = document.querySelectorAll('.flight-item');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+            if (loadMoreBtn && items.length > 10) {
+                // Показываем первые 10, остальные скрываем
+                items.forEach((item, index) => {
+                    if (index >= 10) {
+                        item.style.display = 'none';
+                    }
+                });
+
+                loadMoreBtn.addEventListener('click', function() {
+                    const hiddenItems = document.querySelectorAll('.flight-item[style*="display: none"]');
+                    const toShow = Math.min(10, hiddenItems.length);
+
+                    for (let i = 0; i < toShow; i++) {
+                        hiddenItems[i].style.display = '';
+                    }
+
+                    // Скрываем кнопку если больше нет элементов
+                    if (document.querySelectorAll('.flight-item[style*="display: none"]').length === 0) {
+                        loadMoreBtn.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+}

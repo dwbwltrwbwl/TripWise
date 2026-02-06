@@ -38,4 +38,5 @@ public partial class User
     public virtual ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
 
     public virtual ICollection<VotingSystem> VotingSystems { get; set; } = new List<VotingSystem>();
+    public virtual ICollection<FavoriteFlight> FavoriteFlights { get; set; } = new List<FavoriteFlight>();
 }

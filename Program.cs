@@ -1,51 +1,35 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using TripWise.Models;
 using TripWise.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Конфигурация логгирования
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// Добавление контроллеров
 builder.Services.AddControllersWithViews();
-builder.Services.AddControllers(); // для Web API
+builder.Services.AddControllers();
 
-builder.Services.AddDbContext<TripWiseContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// HTTP клиент
+builder.Services.AddHttpClient();
 
-// Добавьте эту строку для сессий
+// Кэширование
+builder.Services.AddMemoryCache();
+
+// Сессии
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax; // Или None для кросдоменных запросов
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Или Always для HTTPS
 });
 
-// Добавьте эти строки для API и HttpClient
-builder.Services.AddHttpClient<RzdApiService>();
-builder.Services.AddScoped<RzdApiService>();
-
-// === ДОБАВЬТЕ ЭТО ДЛЯ АВИАБИЛЕТОВ ===
-builder.Services.AddHttpClient(); // Общий HttpClient для других нужд
-
-// КОНКРЕТНАЯ НАСТРОЙКА ДЛЯ AviasalesRealService
-builder.Services.AddHttpClient<AviasalesRealService>(client =>
-{
-    client.DefaultRequestHeaders.Add("User-Agent", "TripWise/1.0");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(60); // Увеличиваем для API запросов
-});
-
-// Регистрируем сервис как реализацию интерфейса
-builder.Services.AddScoped<IAviasalesRealService, AviasalesRealService>();
-
-// УПРОЩЕННЫЙ СЕРВИС для тестирования (отключи если используешь реальный)
-// builder.Services.AddHttpClient<IAviasalesRealService, SimpleAviasalesService>();
-
-// Вместо старого сервиса используй российский
-builder.Services.Configure<TravelPayoutsConfig>(builder.Configuration.GetSection("TravelPayouts"));
-builder.Services.AddHttpClient<IHotelService, TravelPayoutsService>();
-
-// Настройка CORS
+// CORS - ДОЛЖНО БЫТЬ ЗДЕСЬ, в ConfigureServices
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -56,11 +40,28 @@ builder.Services.AddCors(options =>
     });
 });
 
-// === КОНЕЦ ДОБАВЛЕНИЯ ДЛЯ АВИАБИЛЕТОВ ===
+// База данных
+builder.Services.AddDbContext<TripWiseContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Регистрация сервисов
+builder.Services.AddScoped<IHotelService, HotelService>();
+builder.Services.AddScoped<ICacheService, MemoryCacheService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+
+// API сервисы
+builder.Services.AddScoped<RzdApiService>();
+builder.Services.AddHttpClient<RzdApiService>();
+
+// Авиабилеты - RealisticFlightService
+builder.Services.AddScoped<IFlightService, RealisticFlightService>();
+
+// Сборка приложения
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Конфигурация пайплайна HTTP запросов
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -69,22 +70,19 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
-app.UseAuthorization();
-
-// Добавьте CORS (используйте ту политику, которую определили выше)
+// CORS middleware - ДОЛЖНО БЫТЬ ПОСЛЕ UseRouting и ДО UseAuthorization
 app.UseCors("AllowAll");
 
-// Добавьте эту строку для использования сессий
-app.UseSession();
 
-// Map both MVC controllers and API controllers
+app.UseSession();
+app.UseAuthorization();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapControllers(); // Это для API контроллеров
+app.MapControllers();
 
 app.Run();

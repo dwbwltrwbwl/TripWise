@@ -1,0 +1,965 @@
+﻿@{
+    ViewData["Title"] = "Чаты";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #0379D9;">
+                Чаты
+            </h1>
+            <p class="lead">Общайтесь с попутчиками, планируйте совместные путешествия и находите новых друзей</p>
+
+            @if (Context.Session.GetInt32("UserId") == null)
+            {
+                <div class="alert alert-info">
+                    <h5>Войдите в аккаунт</h5>
+                    <p>Чтобы использовать чаты и находить попутчиков, войдите в свой аккаунт.</p>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary">Зарегистрироваться</a>
+                </div>
+            }
+            else
+            {
+                <!-- Основной контент чатов -->
+                <div class="row">
+                    <!-- Левая колонка: Список чатов -->
+                    <div class="col-md-4">
+                        <div class="card shadow-sm" style="height: 700px;">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0" style="font-family: 'Nunito', sans-serif;">
+                                        <i class="fas fa-comments me-2"></i>Мои чаты
+                                    </h5>
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                                        <i class="fas fa-plus me-1"></i>Новый
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0" style="overflow-y: auto;">
+                                <!-- Поиск чатов -->
+                                <div class="p-3 border-bottom">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text"
+                                               class="form-control"
+                                               placeholder="Поиск чатов или пользователей..."
+                                               id="chatSearch">
+                                        <button class="btn btn-outline-secondary" onclick="searchChats()">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Список чатов -->
+                                <div id="chatsList">
+                                    <!-- Пример чата 1 (активный) -->
+                                    <div class="chat-item active p-3 border-bottom" onclick="selectChat(1)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-primary">
+                                                    <i class="fas fa-users"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Сочи 2024</h6>
+                                                    <small class="text-muted">14:30</small>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <p class="small text-muted mb-0 truncate">
+                                                        <span class="text-primary">Анна:</span> Кто завтра на экскурсию?
+                                                    </p>
+                                                    <span class="badge bg-primary rounded-pill">3</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пример чата 2 -->
+                                    <div class="chat-item p-3 border-bottom" onclick="selectChat(2)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-success">
+                                                    <i class="fas fa-user-friends"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Иван Петров</h6>
+                                                    <small class="text-muted">Вчера</small>
+                                                </div>
+                                                <p class="small text-muted mb-0 truncate">
+                                                    Договорились о встрече в аэропорту
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пример чата 3 -->
+                                    <div class="chat-item p-3 border-bottom" onclick="selectChat(3)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-warning">
+                                                    <i class="fas fa-mountain"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Поход в горы</h6>
+                                                    <small class="text-muted">2 дн.</small>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <p class="small text-muted mb-0 truncate">
+                                                        Обсуждаем маршрут на Эльбрус
+                                                    </p>
+                                                    <span class="badge bg-danger rounded-pill">5</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пример чата 4 -->
+                                    <div class="chat-item p-3 border-bottom" onclick="selectChat(4)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-info">
+                                                    <i class="fas fa-umbrella-beach"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Крым, июль</h6>
+                                                    <small class="text-muted">5 дн.</small>
+                                                </div>
+                                                <p class="small text-muted mb-0 truncate">
+                                                    Ищем компанию для поездки в Крым
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пример чата 5 -->
+                                    <div class="chat-item p-3 border-bottom" onclick="selectChat(5)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-danger">
+                                                    <i class="fas fa-skiing"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Горные лыжи</h6>
+                                                    <small class="text-muted">Неделю</small>
+                                                </div>
+                                                <p class="small text-muted mb-0 truncate">
+                                                    Планируем поездку на Красную Поляну
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Пример чата 6 -->
+                                    <div class="chat-item p-3 border-bottom" onclick="selectChat(6)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-avatar me-3">
+                                                <div class="avatar-circle bg-secondary">
+                                                    <i class="fas fa-city"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-1">Санкт-Петербург</h6>
+                                                    <small class="text-muted">2 нед.</small>
+                                                </div>
+                                                <p class="small text-muted mb-0 truncate">
+                                                    Культурный тур по музеям
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Быстрые действия -->
+                        <div class="card shadow-sm mt-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                                </h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#findCompanionModal">
+                                        <i class="fas fa-search me-2"></i>Найти попутчика
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="createTripFromChat()">
+                                        <i class="fas fa-plus-circle me-2"></i>Создать поездку
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Правая колонка: Окно чата и информация -->
+                    <div class="col-md-8">
+                        <div class="card shadow-sm mb-4" style="height: 500px;">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="chat-avatar me-3">
+                                            <div class="avatar-circle bg-primary">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0" id="chatTitle">Сочи 2024</h5>
+                                            <small class="text-muted" id="chatMembers">Анна, Иван, Мария, Вы</small>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="showChatInfo()"><i class="fas fa-info-circle me-2"></i>Информация</a></li>
+                                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addMembersModal"><i class="fas fa-user-plus me-2"></i>Добавить участников</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="leaveChat()"><i class="fas fa-sign-out-alt me-2"></i>Покинуть чат</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Область сообщений -->
+                            <div class="card-body p-0" style="overflow-y: auto;" id="messagesArea">
+                                <div class="p-3">
+                                    <!-- Дата разделитель -->
+                                    <div class="text-center my-3">
+                                        <span class="badge bg-light text-dark">Сегодня</span>
+                                    </div>
+
+                                    <!-- Сообщения -->
+                                    <div class="message message-incoming">
+                                        <div class="message-content">
+                                            <div class="message-sender">Анна</div>
+                                            <div class="message-text">
+                                                Привет всем! Кто завтра планирует на экскурсию в Красную Поляну?
+                                            </div>
+                                            <div class="message-time">14:25</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="message message-outgoing">
+                                        <div class="message-content">
+                                            <div class="message-text">
+                                                Я планирую! Уже забронировал билеты на канатную дорогу
+                                            </div>
+                                            <div class="message-time">14:28</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="message message-incoming">
+                                        <div class="message-content">
+                                            <div class="message-sender">Мария</div>
+                                            <div class="message-text">
+                                                Я тоже хочу! Во сколько встречаемся?
+                                            </div>
+                                            <div class="message-time">14:30</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="message message-outgoing">
+                                        <div class="message-content">
+                                            <div class="message-text">
+                                                Предлагаю встретиться у входа в Сочи Парк в 10:00. Оттуда удобнее всего добираться
+                                            </div>
+                                            <div class="message-time">14:32</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="message message-incoming">
+                                        <div class="message-content">
+                                            <div class="message-sender">Анна</div>
+                                            <div class="message-text">
+                                                Отличный план! Я запишусь на экскурсию с гидом на 11:00
+                                            </div>
+                                            <div class="message-time">14:35</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="message message-incoming">
+                                        <div class="message-content">
+                                            <div class="message-sender">Иван</div>
+                                            <div class="message-text">
+                                                Я с вами! Забронировал столик в ресторане на вечер
+                                            </div>
+                                            <div class="message-time">14:40</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Поле ввода сообщения -->
+                            <div class="card-footer">
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="attachFile()">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="text"
+                                           class="form-control"
+                                           placeholder="Введите сообщение..."
+                                           id="messageInput"
+                                           onkeypress="handleMessageKeyPress(event)">
+                                    <button class="btn btn-primary" type="button" onclick="sendMessage()">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2 small text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Нажмите Enter для отправки сообщения
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Информация о чате/поездке -->
+                        <div class="card shadow-sm" id="chatInfo">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>Информация о поездке
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <h6><i class="far fa-calendar me-2"></i>Даты</h6>
+                                            <p class="mb-1">15 июля - 22 июля 2024</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <h6><i class="fas fa-map-marker-alt me-2"></i>Направление</h6>
+                                            <p class="mb-1">Сочи, Краснодарский край</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-users me-2"></i>Участники (4)</h6>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <div class="participant">
+                                            <div class="avatar-circle-sm bg-primary">
+                                                <span>А</span>
+                                            </div>
+                                            <small>Анна</small>
+                                        </div>
+                                        <div class="participant">
+                                            <div class="avatar-circle-sm bg-success">
+                                                <span>И</span>
+                                            </div>
+                                            <small>Иван</small>
+                                        </div>
+                                        <div class="participant">
+                                            <div class="avatar-circle-sm bg-warning">
+                                                <span>М</span>
+                                            </div>
+                                            <small>Мария</small>
+                                        </div>
+                                        <div class="participant">
+                                            <div class="avatar-circle-sm bg-info">
+                                                <span>Я</span>
+                                            </div>
+                                            <small>Вы</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addMembersModal">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-wallet me-2"></i>Бюджет</h6>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar bg-success" style="width: 65%"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Собрано 32,500 ₽</small>
+                                        <small class="text-muted">Цель: 50,000 ₽</small>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="viewTripDetails()">
+                                        <i class="fas fa-external-link-alt me-2"></i>Перейти к поездке
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания нового чата -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать новый чат</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newChatForm">
+                    <div class="mb-3">
+                        <label class="form-label">Название чата *</label>
+                        <input type="text" class="form-control" placeholder="Например: Путешествие в Сочи" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип чата</label>
+                        <select class="form-select" id="chatType">
+                            <option value="trip">Чат поездки</option>
+                            <option value="group">Групповой чат</option>
+                            <option value="private">Личный чат</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание (необязательно)</label>
+                        <textarea class="form-control" rows="2" placeholder="О чем будет этот чат?"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="createNewChat()">Создать чат</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления участников -->
+<div class="modal fade" id="addMembersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить участников</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Поиск пользователей</label>
+                    <input type="text" class="form-control" placeholder="Введите имя или email...">
+                </div>
+                <div class="mt-3">
+                    <h6>Рекомендуемые</h6>
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="user1">
+                                <label class="form-check-label" for="user1">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle-sm bg-primary me-2">
+                                            <span>К</span>
+                                        </div>
+                                        Константин Сидоров
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="user2">
+                                <label class="form-check-label" for="user2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle-sm bg-success me-2">
+                                            <span>Е</span>
+                                        </div>
+                                        Елена Иванова
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="addSelectedMembers()">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно поиска попутчиков -->
+<div class="modal fade" id="findCompanionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Найти попутчиков</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="findCompanionForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Куда планируете?</label>
+                            <input type="text" class="form-control" placeholder="Город или страна">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Даты поездки</label>
+                            <input type="text" class="form-control" placeholder="Пример: 15-22 июля 2024">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Интересы</label>
+                            <select class="form-select" multiple>
+                                <option value="beach">Пляжный отдых</option>
+                                <option value="mountains">Горы/походы</option>
+                                <option value="city">Городской туризм</option>
+                                <option value="ski">Горные лыжи</option>
+                                <option value="culture">Культура/искусство</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Бюджет</label>
+                            <select class="form-select">
+                                <option value="budget">Бюджетный</option>
+                                <option value="medium">Средний</option>
+                                <option value="luxury">Премиум</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="searchCompanions()">Найти</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для чатов */
+    .chat-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+
+        .chat-item:hover {
+            background-color: #f8f9fa;
+            border-left-color: #dee2e6;
+        }
+
+        .chat-item.active {
+            background-color: #e7f1ff;
+            border-left-color: #0379D9;
+        }
+
+    .chat-avatar .avatar-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+    }
+
+    .avatar-circle-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+    }
+
+    /* Стили для сообщений */
+    .message {
+        margin-bottom: 15px;
+        display: flex;
+    }
+
+        .message.message-outgoing {
+            justify-content: flex-end;
+        }
+
+        .message.message-incoming {
+            justify-content: flex-start;
+        }
+
+    .message-content {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        position: relative;
+    }
+
+    .message-outgoing .message-content {
+        background-color: #0379D9;
+        color: white;
+        border-bottom-right-radius: 5px;
+    }
+
+    .message-incoming .message-content {
+        background-color: #f0f2f5;
+        color: #333;
+        border-bottom-left-radius: 5px;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.85em;
+        margin-bottom: 3px;
+        color: #666;
+    }
+
+    .message-text {
+        margin-bottom: 5px;
+    }
+
+    .message-time {
+        font-size: 0.75em;
+        opacity: 0.7;
+        text-align: right;
+    }
+
+    .message-incoming .message-time {
+        color: #666;
+    }
+
+    .message-outgoing .message-time {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Стили для участников */
+    .participant {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 50px;
+    }
+
+        .participant small {
+            margin-top: 4px;
+            font-size: 0.75em;
+            text-align: center;
+        }
+
+    /* Анимация появления сообщений */
+    @@keyframes messageAppear {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .message {
+        animation: messageAppear 0.3s ease;
+    }
+
+    /* Стили для области сообщений */
+    #messagesArea {
+        height: 350px;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация чатов
+        initializeChats();
+
+        // Автоматическая прокрутка к последнему сообщению
+        scrollToBottom();
+    });
+
+    // Инициализация чатов
+    function initializeChats() {
+        console.log('Чаты инициализированы');
+
+        // Загрузка чатов из localStorage
+        loadChatsFromStorage();
+    }
+
+    // Загрузка чатов из localStorage
+    function loadChatsFromStorage() {
+        const savedChats = localStorage.getItem('userChats');
+        if (savedChats) {
+            try {
+                const chats = JSON.parse(savedChats);
+                console.log('Загружены сохраненные чаты:', chats);
+            } catch (e) {
+                console.error('Ошибка загрузки чатов:', e);
+            }
+        }
+    }
+
+    // Поиск чатов
+    function searchChats() {
+        const searchTerm = document.getElementById('chatSearch').value.toLowerCase();
+        const chatItems = document.querySelectorAll('.chat-item');
+
+        chatItems.forEach(item => {
+            const chatText = item.textContent.toLowerCase();
+            if (chatText.includes(searchTerm) || searchTerm === '') {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Выбор чата
+    function selectChat(chatId) {
+        // Убираем активный класс у всех чатов
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Добавляем активный класс выбранному чату
+        const selectedChat = event.currentTarget;
+        selectedChat.classList.add('active');
+
+        // Обновляем информацию о чате
+        updateChatInfo(chatId);
+
+        // Загружаем сообщения для выбранного чата
+        loadChatMessages(chatId);
+    }
+
+    // Обновление информации о чате
+    function updateChatInfo(chatId) {
+        const chatData = {
+            1: { title: "Сочи 2024", members: "Анна, Иван, Мария, Вы", type: "trip" },
+            2: { title: "Иван Петров", members: "Иван Петров, Вы", type: "private" },
+            3: { title: "Поход в горы", members: "7 участников", type: "group" },
+            4: { title: "Крым, июль", members: "8 участников", type: "trip" },
+            5: { title: "Горные лыжи", members: "5 участников", type: "trip" },
+            6: { title: "Санкт-Петербург", members: "3 участника", type: "trip" }
+        };
+
+        const chat = chatData[chatId] || { title: "Новый чат", members: "", type: "group" };
+
+        document.getElementById('chatTitle').textContent = chat.title;
+        document.getElementById('chatMembers').textContent = chat.members;
+    }
+
+    // Загрузка сообщений чата
+    function loadChatMessages(chatId) {
+        console.log('Загрузка сообщений для чата:', chatId);
+
+        // В реальном приложении здесь был бы запрос к серверу
+        // Сейчас просто прокручиваем вниз
+        scrollToBottom();
+    }
+
+    // Отправка сообщения
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const messageText = input.value.trim();
+
+        if (!messageText) return;
+
+        // Создаем новое сообщение
+        const messagesArea = document.getElementById('messagesArea');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message message-outgoing';
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(messageText)}</div>
+                <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+        `;
+
+        // Добавляем сообщение
+        messagesArea.querySelector('.p-3').appendChild(messageDiv);
+
+        // Очищаем поле ввода
+        input.value = '';
+
+        // Прокручиваем вниз
+        scrollToBottom();
+
+        // Сохраняем в localStorage
+        saveMessageToStorage(messageText);
+    }
+
+    // Вложить файл
+    function attachFile() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.style.display = 'none';
+        fileInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showNotification(`Файл "${file.name}" прикреплен`, 'success');
+            }
+        };
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+    }
+
+    // Обработка нажатия Enter
+    function handleMessageKeyPress(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+
+    // Прокрутка к последнему сообщению
+    function scrollToBottom() {
+        const messagesArea = document.getElementById('messagesArea');
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    // Экранирование HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Сохранение сообщения в localStorage
+    function saveMessageToStorage(messageText) {
+        try {
+            const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+            messages.push({
+                text: messageText,
+                time: new Date().toISOString(),
+                chatId: 1
+            });
+            localStorage.setItem('chatMessages', JSON.stringify(messages));
+        } catch (e) {
+            console.error('Ошибка сохранения сообщения:', e);
+        }
+    }
+
+    // Создание нового чата
+    function createNewChat() {
+        const form = document.getElementById('newChatForm');
+        const chatName = form.querySelector('input[type="text"]').value;
+        const chatType = document.getElementById('chatType').value;
+        const description = form.querySelector('textarea').value;
+
+        if (!chatName) {
+            alert('Пожалуйста, введите название чата');
+            return;
+        }
+
+        console.log('Создание нового чата:', { chatName, chatType, description });
+
+        // Закрываем модальное окно
+        const modal = bootstrap.Modal.getInstance(document.getElementById('newChatModal'));
+        modal.hide();
+
+        // Показываем уведомление
+        showNotification(`Чат "${chatName}" успешно создан!`, 'success');
+
+        // Очищаем форму
+        form.reset();
+    }
+
+    // Добавить выбранных участников
+    function addSelectedMembers() {
+        console.log('Добавление участников');
+        showNotification('Участники успешно добавлены', 'success');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addMembersModal'));
+        modal.hide();
+    }
+
+    // Поиск попутчиков
+    function searchCompanions() {
+        console.log('Поиск попутчиков');
+        showNotification('Поиск выполнен. Найдены подходящие пользователи.', 'info');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('findCompanionModal'));
+        modal.hide();
+    }
+
+    // Показать информацию о чате
+    function showChatInfo() {
+        // В реальном приложении здесь было бы модальное окно с детальной информацией
+        alert('Информация о чате будет отображена здесь');
+    }
+
+    // Покинуть чат
+    function leaveChat() {
+        if (confirm('Вы уверены, что хотите покинуть этот чат?')) {
+            showNotification('Вы покинули чат', 'info');
+            // Здесь была бы логика удаления пользователя из чата
+        }
+    }
+
+    // Создать поездку из чата
+    function createTripFromChat() {
+        console.log('Создание поездки из чата');
+        showNotification('Создайте поездку в разделе "Мои поездки"', 'info');
+    }
+
+    // Просмотр деталей поездки
+    function viewTripDetails() {
+        console.log('Переход к деталям поездки');
+        showNotification('Переход к поездке...', 'info');
+        // В реальном приложении был бы переход на страницу поездки
+    }
+
+    // Показать уведомление
+    function showNotification(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }
+        }, 3000);
+    }
+
+    // Привязка события поиска при вводе
+    document.getElementById('chatSearch').addEventListener('input', searchChats);
+
+    // Экспортируем функции для использования в HTML
+    window.selectChat = selectChat;
+    window.sendMessage = sendMessage;
+    window.attachFile = attachFile;
+    window.handleMessageKeyPress = handleMessageKeyPress;
+    window.createNewChat = createNewChat;
+    window.addSelectedMembers = addSelectedMembers;
+    window.searchCompanions = searchCompanions;
+    window.showChatInfo = showChatInfo;
+    window.leaveChat = leaveChat;
+    window.createTripFromChat = createTripFromChat;
+    window.viewTripDetails = viewTripDetails;
+</script>

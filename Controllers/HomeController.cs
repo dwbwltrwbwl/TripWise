@@ -94,6 +94,18 @@ public class HomeController : Controller
     {
         return View();
     }
+    public IActionResult Chats()
+    {
+        // ѕровер€ем авторизацию пользовател€
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null)
+        {
+            // ѕользователь не авторизован, но показываем страницу
+            // ¬ реальном приложении можно редиректить на логин
+        }
+
+        return View();
+    }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

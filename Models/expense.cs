@@ -19,7 +19,7 @@ public partial class Expense
 
     public int IdTrip { get; set; }
 
-    public int PaidById { get; set; }
+    public int? PaidById { get; set; }
 
     public int? IdPoint { get; set; }
 

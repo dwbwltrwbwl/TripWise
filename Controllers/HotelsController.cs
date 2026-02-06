@@ -1,196 +1,209 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TripWise.Services;
 using TripWise.Models;
-using Microsoft.Extensions.Hosting;
+using TripWise.Services;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TripWise.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/hotels")]
     public class HotelsController : ControllerBase
     {
         private readonly IHotelService _hotelService;
         private readonly ILogger<HotelsController> _logger;
+        private readonly HttpClient _httpClient;
+        private readonly IMemoryCache _memoryCache;
 
-        public HotelsController(IHotelService hotelService, ILogger<HotelsController> logger)
+        public HotelsController(
+            IHotelService hotelService,
+            ILogger<HotelsController> logger,
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache memoryCache)
         {
             _hotelService = hotelService;
             _logger = logger;
+            _httpClient = httpClientFactory.CreateClient();
+            _memoryCache = memoryCache;
+
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TripWise/1.0");
+            _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
         [HttpPost("search")]
-        public async Task<ActionResult<HotelSearchResponse>> SearchHotels([FromBody] HotelSearchRequest request)
+        public async Task<ActionResult<HotelSearchResponse>> Search(
+            [FromBody] HotelSearchRequest request)
         {
             try
             {
-                _logger.LogInformation("Получен запрос на поиск отелей: {@Request}", request);
+                _logger.LogInformation("Поиск отелей OSM: Город={City}, Радиус={Radius}м",
+                    request?.City, request?.Radius);
 
-                // Валидация
-                var validationError = ValidateHotelSearchRequest(request);
-                if (!string.IsNullOrEmpty(validationError))
+                // Валидация запроса
+                if (request == null)
                 {
                     return BadRequest(new HotelSearchResponse
                     {
                         Success = false,
-                        Error = validationError
+                        Error = "Запрос не может быть пустым"
                     });
                 }
 
+                // Проверяем координаты или город
+                bool hasCoordinates = request.Latitude.HasValue && request.Longitude.HasValue;
+                bool hasCity = !string.IsNullOrWhiteSpace(request.City);
+
+                if (!hasCoordinates && !hasCity)
+                {
+                    return BadRequest(new HotelSearchResponse
+                    {
+                        Success = false,
+                        Error = "Укажите город или координаты для поиска"
+                    });
+                }
+
+                // Ограничиваем радиус для безопасности
+                if (request.Radius > 20000) // максимум 20км
+                {
+                    request.Radius = 20000;
+                }
+
+                // Выполняем поиск
                 var hotels = await _hotelService.SearchHotelsAsync(request);
 
-                _logger.LogInformation("Найдено отелей: {Count}", hotels.Count);
-
-                return Ok(new HotelSearchResponse
+                var response = new HotelSearchResponse
                 {
                     Success = true,
                     Hotels = hotels,
-                    Message = hotels.Count > 0 ? $"Найдено {hotels.Count} отелей" : "Отели не найдены"
+                    OSMStats = new OSMStats
+                    {
+                        TotalFound = hotels.Count,
+                        DataTimestamp = DateTime.UtcNow,
+                        DataSource = "OpenStreetMap",
+                        Attribution = "© OpenStreetMap contributors, данные доступны по лицензии ODbL"
+                    }
+                };
+
+                return Ok(response);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                _logger.LogError(httpEx, "Ошибка HTTP при запросе к OSM API");
+                return StatusCode(503, new HotelSearchResponse
+                {
+                    Success = false,
+                    Error = "Сервис OSM временно недоступен. Попробуйте позже."
                 });
             }
-            catch (Exception ex)
+            catch (JsonException jsonEx)
             {
-                _logger.LogError(ex, "Ошибка при поиске отелей");
+                _logger.LogError(jsonEx, "Ошибка парсинга JSON от OSM API");
                 return StatusCode(500, new HotelSearchResponse
                 {
                     Success = false,
-                    Error = "Ошибка при поиске отелей",
-                    Message = ex.Message
+                    Error = "Ошибка обработки данных от OSM. Попробуйте другой запрос."
                 });
             }
-        }
-
-        [HttpGet("cities")]
-        public async Task<ActionResult<CitySearchResponse>> SearchCities([FromQuery] string query)
-        {
-            try
+            catch (TaskCanceledException)
             {
-                if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
-                {
-                    return Ok(new CitySearchResponse
-                    {
-                        Success = true,
-                        Cities = new List<City>(),
-                        Message = "Введите минимум 2 символа для поиска"
-                    });
-                }
-
-                _logger.LogInformation("Поиск городов для отелей: {Query}", query);
-
-                var cities = await _hotelService.SearchHotelCitiesAsync(query);
-                var result = cities.Take(15).ToList();
-
-                _logger.LogInformation("Найдено городов: {Count}", result.Count);
-
-                return Ok(new CitySearchResponse
-                {
-                    Success = true,
-                    Cities = result,
-                    Message = result.Count > 0 ? $"Найдено {result.Count} городов" : "Городы не найдены"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при поиске городов для отелей");
-                return Ok(new CitySearchResponse
+                _logger.LogWarning("Таймаут запроса к OSM API");
+                return StatusCode(504, new HotelSearchResponse
                 {
                     Success = false,
-                    Cities = new List<City>(),
-                    Error = "Ошибка при поиске городов"
-                });
-            }
-        }
-
-        [HttpGet("test")]
-        public async Task<ActionResult> TestConnection()
-        {
-            try
-            {
-                _logger.LogInformation("Тестирование подключения к Hotel API");
-
-                var cities = await _hotelService.SearchHotelCitiesAsync("Москва");
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Hotel API работает нормально",
-                    citiesCount = cities.Count
+                    Error = "Таймаут запроса. Попробуйте уменьшить радиус поиска."
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при тестировании Hotel API");
-                return StatusCode(500, new
+                _logger.LogError(ex, "Неожиданная ошибка при поиске отелей");
+                return StatusCode(500, new HotelSearchResponse
                 {
-                    success = false,
-                    error = "Ошибка подключения к Hotel API",
-                    details = ex.Message
+                    Success = false,
+                    Error = $"Внутренняя ошибка сервера: {ex.Message}"
                 });
             }
         }
 
-        [HttpGet("test-api")]
-        public async Task<ActionResult> TestHotelApi()
+        [HttpGet("nearby")]
+        public async Task<ActionResult<HotelSearchResponse>> SearchNearby(
+            [FromQuery] double lat,
+            [FromQuery] double lon,
+            [FromQuery] int radius = 5000,
+            [FromQuery] string type = "all")
+        {
+            var request = new HotelSearchRequest
+            {
+                Latitude = lat,
+                Longitude = lon,
+                Radius = radius,
+                AccommodationType = type
+            };
+
+            return await Search(request);
+        }
+
+        [HttpGet("osm/{id}")]
+        public async Task<ActionResult> GetOSMDetails(string id)
         {
             try
             {
-                _logger.LogInformation("Тестирование Hotel API");
+                var cacheKey = $"osm_details_{id}";
 
-                // Тест поиска городов
-                var cities = await _hotelService.SearchHotelCitiesAsync("Москва");
-
-                // Тест поиска отелей
-                var testRequest = new HotelSearchRequest
+                if (_memoryCache.TryGetValue(cacheKey, out string cachedJson))
                 {
-                    City = "Москва",
-                    CheckIn = DateTime.Now.AddDays(7),
-                    CheckOut = DateTime.Now.AddDays(9),
-                    Adults = 2,
-                    Rooms = 1
-                };
+                    return Content(cachedJson, "application/json");
+                }
 
-                var hotels = await _hotelService.SearchHotelsAsync(testRequest);
+                // Прямой запрос к OSM API для получения детальной информации
+                var url = $"https://api.openstreetmap.org/api/0.6/node/{id}.json";
 
-                return Ok(new
-                {
-                    success = true,
-                    citiesCount = cities.Count,
-                    hotelsCount = hotels.Count,
-                    message = "Hotel API работает"
-                });
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                // Кэшируем на 1 день
+                _memoryCache.Set(cacheKey, json, TimeSpan.FromDays(1));
+
+                return Content(json, "application/json");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка тестирования Hotel API");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    error = ex.Message,
-                    details = ex.StackTrace
-                });
+                _logger.LogError(ex, "Ошибка при получении деталей OSM для ID: {Id}", id);
+                return StatusCode(500, new { error = "Не удалось получить данные из OSM" });
             }
         }
 
-        private string ValidateHotelSearchRequest(HotelSearchRequest request)
+        [HttpGet("city/{cityName}/coordinates")]
+        public async Task<ActionResult> GetCityCoordinates(string cityName)
         {
-            if (request == null)
-                return "Запрос не может быть пустым";
+            try
+            {
+                var url = $"https://nominatim.openstreetmap.org/search?format=json&q={Uri.EscapeDataString(cityName)}&limit=5&accept-language=ru";
 
-            if (string.IsNullOrEmpty(request.City))
-                return "Город обязателен";
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
 
-            if (request.CheckIn < DateTime.Today)
-                return "Дата заезда не может быть в прошлом";
+                var json = await response.Content.ReadAsStringAsync();
+                var results = JsonSerializer.Deserialize<List<NominatimResult>>(json);
 
-            if (request.CheckOut <= request.CheckIn)
-                return "Дата выезда должна быть после даты заезда";
+                if (results == null || results.Count == 0)
+                {
+                    return NotFound(new { error = $"Город '{cityName}' не найден" });
+                }
 
-            if (request.Adults < 1 || request.Adults > 10)
-                return "Количество взрослых должно быть от 1 до 10";
-
-            if (request.Rooms < 1 || request.Rooms > 5)
-                return "Количество комнат должно быть от 1 до 5";
-
-            return null;
+                return Ok(results.Select(r => new
+                {
+                    Latitude = double.Parse(r.Lat, System.Globalization.CultureInfo.InvariantCulture),
+                    Longitude = double.Parse(r.Lon, System.Globalization.CultureInfo.InvariantCulture),
+                    r.Display_Name
+                }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении координат города: {City}", cityName);
+                return StatusCode(500, new { error = "Ошибка при получении координат" });
+            }
         }
     }
 }

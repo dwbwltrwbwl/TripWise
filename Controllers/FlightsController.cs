@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TripWise.Services;
 using TripWise.Models;
-using System.Text.Json;
-using System.Text;
+using TripWise.Services;
 using Microsoft.Extensions.Logging;
 
 namespace TripWise.Controllers
@@ -11,16 +9,12 @@ namespace TripWise.Controllers
     [Route("api/[controller]")]
     public class FlightsController : ControllerBase
     {
-        private readonly IAviasalesRealService _aviasalesService;
-        private readonly IConfiguration _configuration;
+        private readonly IFlightService _flightService;
         private readonly ILogger<FlightsController> _logger;
 
-        public FlightsController(IAviasalesRealService aviasalesService,
-                               IConfiguration configuration,
-                               ILogger<FlightsController> logger)
+        public FlightsController(IFlightService flightService, ILogger<FlightsController> logger)
         {
-            _aviasalesService = aviasalesService;
-            _configuration = configuration;
+            _flightService = flightService;
             _logger = logger;
         }
 
@@ -29,28 +23,14 @@ namespace TripWise.Controllers
         {
             try
             {
-                _logger.LogInformation("=== ПОИСК РЕЙСОВ ЧЕРЕЗ REAL API ===");
-                _logger.LogInformation("Откуда: {DepartureCity}", request.DepartureCity);
-                _logger.LogInformation("Куда: {ArrivalCity}", request.ArrivalCity);
-                _logger.LogInformation("Дата вылета: {DepartureDate}", request.DepartureDate);
-                _logger.LogInformation("Дата обратно: {ReturnDate}", request.ReturnDate);
-                _logger.LogInformation("Пассажиры: {Passengers}", request.Passengers);
+                _logger.LogInformation("=== ПОИСК РЕЙСОВ API ===");
+                _logger.LogInformation("Запрос получен: {@Request}", request);
 
-                // Проверяем токен API
-                var apiToken = _configuration["TravelPayouts:Token"];
-                if (string.IsNullOrEmpty(apiToken))
-                {
-                    _logger.LogWarning("TravelPayouts token не настроен!");
-                }
-                else
-                {
-                    _logger.LogInformation("API токен настроен (длина: {Length})", apiToken.Length);
-                }
-
-                // Валидация
+                // Валидация запроса
                 var validationError = ValidateFlightSearchRequest(request);
                 if (!string.IsNullOrEmpty(validationError))
                 {
+                    _logger.LogWarning("Ошибка валидации: {Error}", validationError);
                     return BadRequest(new FlightSearchResponse
                     {
                         Success = false,
@@ -58,32 +38,108 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Используем реальный сервис
-                _logger.LogInformation("Начинаем поиск рейсов через AviasalesRealService...");
-                var flights = await _aviasalesService.SearchFlightsAsync(request);
+                _logger.LogInformation("Параметры поиска:");
+                _logger.LogInformation("- Откуда: {DepartureCity}", request.DepartureCity);
+                _logger.LogInformation("- Куда: {ArrivalCity}", request.ArrivalCity);
+                _logger.LogInformation("- Дата вылета: {DepartureDate}", request.DepartureDate);
+                _logger.LogInformation("- Дата обратно: {ReturnDate}", request.ReturnDate);
+                _logger.LogInformation("- Пассажиры: {Passengers}", request.Passengers);
+                _logger.LogInformation("- Класс: {Class}", request.Class);
+                _logger.LogInformation("- Тип: {TripType}", request.TripType);
 
-                _logger.LogInformation("Поиск завершен. Найдено рейсов: {Count}", flights.Count);
-                _logger.LogInformation("Рейсы туда: {Count}", flights.Count(f => !f.IsReturn));
-                _logger.LogInformation("Рейсы обратно: {Count}", flights.Count(f => f.IsReturn));
+                // Выполняем поиск рейсов
+                var result = await _flightService.SearchFlightsAsync(request);
 
-                return Ok(new FlightSearchResponse
+                _logger.LogInformation("Результат поиска:");
+                _logger.LogInformation("- Успех: {Success}", result.Success);
+                _logger.LogInformation("- Найдено рейсов: {Count}", result.Flights?.Count ?? 0);
+                _logger.LogInformation("- ID поиска: {SearchId}", result.SearchId);
+
+                if (!string.IsNullOrEmpty(result.Error))
+                {
+                    _logger.LogError("Ошибка поиска: {Error}", result.Error);
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при поиске рейсов");
+                return StatusCode(500, new FlightSearchResponse
+                {
+                    Success = false,
+                    Error = "Внутренняя ошибка сервера",
+                    Message = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("cities")]
+        public async Task<ActionResult> SearchCities([FromQuery] string query)
+        {
+            try
+            {
+                _logger.LogInformation("Поиск городов: {Query}", query);
+
+                if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+                {
+                    return Ok(new
+                    {
+                        Success = true,
+                        Cities = new List<City>(),
+                        Message = "Введите минимум 2 символа"
+                    });
+                }
+
+                var cities = await _flightService.SearchCitiesAsync(query);
+
+                _logger.LogInformation("Найдено городов: {Count}", cities.Count);
+
+                return Ok(new
                 {
                     Success = true,
-                    Flights = flights,
-                    Message = flights.Count > 0 ? $"Найдено {flights.Count} рейсов" : "Рейсы не найдены"
+                    Cities = cities,
+                    Message = $"Найдено {cities.Count} городов"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ОШИБКА при поиске авиабилетов");
-                _logger.LogError("StackTrace: {StackTrace}", ex.StackTrace);
-
-                // Возвращаем более информативную ошибку
-                return StatusCode(500, new FlightSearchResponse
+                _logger.LogError(ex, "Ошибка при поиске городов");
+                return StatusCode(500, new
                 {
                     Success = false,
-                    Error = $"Внутренняя ошибка сервера: {ex.Message}",
-                    Message = "Пожалуйста, попробуйте позже"
+                    Error = "Ошибка при поиске городов",
+                    Message = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("popular-cities")]
+        public async Task<ActionResult> GetPopularCities()
+        {
+            try
+            {
+                _logger.LogInformation("Запрос популярных городов");
+
+                var cities = await _flightService.GetPopularCitiesAsync();
+
+                _logger.LogInformation("Отправлено популярных городов: {Count}", cities.Count);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Cities = cities,
+                    Message = "Популярные города для путешествий"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении популярных городов");
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Error = "Ошибка при получении городов",
+                    Message = ex.Message
                 });
             }
         }
@@ -93,36 +149,28 @@ namespace TripWise.Controllers
         {
             try
             {
-                _logger.LogInformation("=== ТЕСТ СЕРВИСА АВИАБИЛЕТОВ ===");
+                _logger.LogInformation("Тестирование сервиса авиабилетов");
 
-                // Проверяем конфигурацию
-                var apiToken = _configuration["TravelPayouts:Token"];
-                _logger.LogInformation("API Token настроен: {IsConfigured}", !string.IsNullOrEmpty(apiToken));
-
-                // Создаем тестовый запрос
                 var testRequest = new FlightSearchRequest
                 {
-                    DepartureCity = "Москва",
-                    ArrivalCity = "Санкт-Петербург",
+                    DepartureCity = "Москва (MOW)",
+                    ArrivalCity = "Санкт-Петербург (LED)",
                     DepartureDate = DateTime.Now.AddDays(7),
                     ReturnDate = DateTime.Now.AddDays(14),
-                    Passengers = 1,
+                    Passengers = 2,
                     Class = "economy",
                     TripType = "round"
                 };
 
-                _logger.LogInformation("Тестируем сервис с запросом: {Request}",
-                    JsonSerializer.Serialize(testRequest));
-
-                var flights = await _aviasalesService.SearchFlightsAsync(testRequest);
+                var result = await _flightService.SearchFlightsAsync(testRequest);
 
                 return Ok(new
                 {
-                    success = true,
-                    message = "Сервис работает",
-                    flightsCount = flights.Count,
-                    apiTokenConfigured = !string.IsNullOrEmpty(apiToken),
-                    apiTokenLength = apiToken?.Length ?? 0
+                    Success = true,
+                    Message = "Сервис авиабилетов работает корректно",
+                    FlightsCount = result.Flights?.Count ?? 0,
+                    SearchId = result.SearchId,
+                    TestRequest = testRequest
                 });
             }
             catch (Exception ex)
@@ -130,124 +178,270 @@ namespace TripWise.Controllers
                 _logger.LogError(ex, "Ошибка при тестировании сервиса");
                 return StatusCode(500, new
                 {
-                    success = false,
-                    error = ex.Message,
-                    stackTrace = ex.StackTrace
+                    Success = false,
+                    Error = ex.Message,
+                    Message = "Сервис авиабилетов временно недоступен"
                 });
             }
         }
 
-        [HttpGet("check-config")]
-        public ActionResult CheckConfig()
+        [HttpGet("test-search")]
+        public async Task<ActionResult> TestSearch()
         {
             try
             {
-                _logger.LogInformation("=== ПРОВЕРКА КОНФИГУРАЦИИ ===");
+                _logger.LogInformation("Тестовый поиск рейсов");
 
-                var apiToken = _configuration["TravelPayouts:Token"];
-                var hasToken = !string.IsNullOrEmpty(apiToken);
+                var testRequest = new FlightSearchRequest
+                {
+                    DepartureCity = "Москва (MOW)",
+                    ArrivalCity = "Санкт-Петербург (LED)",
+                    DepartureDate = DateTime.Now.AddDays(7),
+                    ReturnDate = DateTime.Now.AddDays(14),
+                    Passengers = 2,
+                    Class = "economy",
+                    TripType = "round"
+                };
 
-                _logger.LogInformation("TravelPayouts Token: {HasToken} (длина: {Length})",
-                    hasToken, apiToken?.Length ?? 0);
+                _logger.LogInformation("Тестовый запрос: {@Request}", testRequest);
+
+                var result = await _flightService.SearchFlightsAsync(testRequest);
 
                 return Ok(new
                 {
-                    hasToken,
-                    tokenLength = apiToken?.Length ?? 0,
-                    tokenPreview = hasToken ? apiToken.Substring(0, Math.Min(10, apiToken.Length)) + "..." : "не настроен",
-                    environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                    TestRequest = testRequest,
+                    SearchResult = result,
+                    ServerTime = DateTime.Now,
+                    Status = "OK"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при проверке конфигурации");
-                return StatusCode(500, new { error = ex.Message });
+                _logger.LogError(ex, "Ошибка тестового поиска");
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    StackTrace = ex.StackTrace,
+                    ServerTime = DateTime.Now,
+                    Status = "ERROR"
+                });
             }
         }
 
         [HttpGet("debug")]
-        public ActionResult DebugInfo()
+        public ActionResult Debug()
         {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            var location = assembly.Location;
-            var version = assembly.GetName().Version.ToString();
+            var endpointInfo = new
+            {
+                Timestamp = DateTime.Now,
+                Endpoint = "/api/flights/search",
+                Method = "POST",
+                RequiredHeaders = new
+                {
+                    ContentType = "application/json"
+                },
+                ExpectedModel = new
+                {
+                    DepartureCity = "string (например: 'Москва' или 'Москва (MOW)')",
+                    ArrivalCity = "string (например: 'Санкт-Петербург' или 'Санкт-Петербург (LED)')",
+                    DepartureDate = "string (формат: YYYY-MM-DD)",
+                    ReturnDate = "string (формат: YYYY-MM-DD) или null",
+                    Passengers = "integer (от 1 до 9)",
+                    Class = "string (economy, business, first)",
+                    TripType = "string (oneway или round)"
+                },
+                ExampleRequest = new
+                {
+                    DepartureCity = "Москва",
+                    ArrivalCity = "Санкт-Петербург",
+                    DepartureDate = "2024-12-20",
+                    ReturnDate = "2024-12-27",
+                    Passengers = 2,
+                    Class = "economy",
+                    TripType = "round"
+                }
+            };
 
             return Ok(new
             {
-                timestamp = DateTime.Now,
-                assemblyLocation = location,
-                assemblyVersion = version,
-                machineName = Environment.MachineName,
-                osVersion = Environment.OSVersion.ToString(),
-                is64Bit = Environment.Is64BitProcess,
-                configKeys = _configuration.AsEnumerable().Where(x => x.Key.Contains("TravelPayouts", StringComparison.OrdinalIgnoreCase)).ToList()
+                Success = true,
+                Message = "Информация о API авиабилетов",
+                ServerInfo = new
+                {
+                    ServerTime = DateTime.Now,
+                    Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
+                },
+                Endpoints = new[]
+                {
+                    new { Path = "/api/flights/search", Method = "POST", Description = "Поиск рейсов" },
+                    new { Path = "/api/flights/cities", Method = "GET", Description = "Поиск городов" },
+                    new { Path = "/api/flights/popular-cities", Method = "GET", Description = "Популярные города" },
+                    new { Path = "/api/flights/test", Method = "GET", Description = "Тест сервиса" },
+                    new { Path = "/api/flights/test-search", Method = "GET", Description = "Тестовый поиск" },
+                    new { Path = "/api/flights/debug", Method = "GET", Description = "Отладочная информация" }
+                },
+                Details = endpointInfo
             });
         }
 
-        [HttpGet("cities")]
-        public async Task<ActionResult<CitySearchResponse>> SearchCities([FromQuery] string query)
+        [HttpGet("health")]
+        public ActionResult HealthCheck()
+        {
+            return Ok(new
+            {
+                Status = "Healthy",
+                Timestamp = DateTime.Now,
+                Service = "Flights API",
+                Version = "1.0.0"
+            });
+        }
+
+        [HttpGet("route-info/{fromCity}/{toCity}")]
+        public async Task<ActionResult> GetRouteInfo(string fromCity, string toCity)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+                _logger.LogInformation("Получение информации о маршруте: {From} -> {To}", fromCity, toCity);
+
+                if (string.IsNullOrEmpty(fromCity) || string.IsNullOrEmpty(toCity))
                 {
-                    return Ok(new CitySearchResponse
+                    return BadRequest(new
                     {
-                        Success = true,
-                        Cities = new List<City>(),
-                        Message = "Введите минимум 2 символа для поиска"
+                        Success = false,
+                        Error = "Необходимо указать города отправления и назначения"
                     });
                 }
 
-                _logger.LogInformation("Поиск городов по запросу: '{Query}'", query);
+                var routeInfo = await _flightService.GetRouteInfoAsync(fromCity, toCity);
 
-                var cities = await _aviasalesService.SearchCitiesAsync(query);
-                var result = cities.Take(15).ToList();
-
-                _logger.LogInformation("Найдено городов: {Count}", result.Count);
-
-                return Ok(new CitySearchResponse
+                return Ok(new
                 {
                     Success = true,
-                    Cities = result,
-                    Message = result.Count > 0 ? $"Найдено {result.Count} городов" : "Городы не найдены"
+                    RouteInfo = routeInfo,
+                    Message = $"Информация о маршруте {fromCity} → {toCity}"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при поиске городов для запроса: {Query}", query);
-                return Ok(new CitySearchResponse
+                _logger.LogError(ex, "Ошибка при получении информации о маршруте");
+                return StatusCode(500, new
                 {
                     Success = false,
-                    Cities = new List<City>(),
-                    Error = "Ошибка при поиске городов"
+                    Error = "Ошибка при получении информации о маршруте",
+                    Message = ex.Message
                 });
             }
         }
 
-        // Вспомогательные методы
+        [HttpGet("sample-response")]
+        public ActionResult GetSampleResponse()
+        {
+            var sampleResponse = new FlightSearchResponse
+            {
+                Success = true,
+                Message = "Демонстрационные данные",
+                SearchId = Guid.NewGuid().ToString(),
+                Flights = new List<Flight>
+                {
+                    new Flight
+                    {
+                        Id = "SU-1234",
+                        Airline = "Аэрофлот",
+                        AirlineCode = "SU",
+                        FlightNumber = "SU 1234",
+                        DepartureCity = "Москва",
+                        ArrivalCity = "Санкт-Петербург",
+                        DepartureAirport = "SVO",
+                        ArrivalAirport = "LED",
+                        DepartureTime = DateTime.Now.AddDays(1).AddHours(8),
+                        ArrivalTime = DateTime.Now.AddDays(1).AddHours(10),
+                        Price = 4500,
+                        Currency = "RUB",
+                        Transfers = 0,
+                        Duration = 120,
+                        Aircraft = "Airbus A320",
+                        IsReturn = false,
+                        BookingUrl = "https://www.aviasales.ru/search",
+                        Details = new FlightDetails
+                        {
+                            IsRefundable = true,
+                            IsChangeable = true,
+                            Baggage = "1x23кг",
+                            HandLuggage = "1x10кг",
+                            Meal = "Завтрак"
+                        }
+                    },
+                    new Flight
+                    {
+                        Id = "S7-5678",
+                        Airline = "S7 Airlines",
+                        AirlineCode = "S7",
+                        FlightNumber = "S7 5678",
+                        DepartureCity = "Москва",
+                        ArrivalCity = "Санкт-Петербург",
+                        DepartureAirport = "DME",
+                        ArrivalAirport = "LED",
+                        DepartureTime = DateTime.Now.AddDays(1).AddHours(14),
+                        ArrivalTime = DateTime.Now.AddDays(1).AddHours(16),
+                        Price = 5200,
+                        Currency = "RUB",
+                        Transfers = 0,
+                        Duration = 120,
+                        Aircraft = "Boeing 737",
+                        IsReturn = false,
+                        BookingUrl = "https://www.aviasales.ru/search",
+                        Details = new FlightDetails
+                        {
+                            IsRefundable = false,
+                            IsChangeable = true,
+                            Baggage = "1x23кг",
+                            HandLuggage = "1x10кг",
+                            Meal = "Обед"
+                        }
+                    }
+                },
+                PartnerLinks = new PartnerLinks
+                {
+                    AviasalesUrl = "https://www.aviasales.ru/search",
+                    YandexTravelUrl = "https://travel.yandex.ru/avia",
+                    TutuUrl = "https://www.tutu.ru/avia",
+                    SkyscannerUrl = "https://www.skyscanner.ru"
+                }
+            };
+
+            return Ok(sampleResponse);
+        }
+
         private string ValidateFlightSearchRequest(FlightSearchRequest request)
         {
             if (request == null)
                 return "Запрос не может быть пустым";
 
-            if (string.IsNullOrEmpty(request.DepartureCity))
+            if (string.IsNullOrWhiteSpace(request.DepartureCity))
                 return "Город вылета обязателен";
 
-            if (string.IsNullOrEmpty(request.ArrivalCity))
+            if (string.IsNullOrWhiteSpace(request.ArrivalCity))
                 return "Город прилета обязателен";
+
+            if (request.DepartureDate == default)
+                return "Дата вылета обязательна";
 
             if (request.DepartureDate < DateTime.Today)
                 return "Дата вылета не может быть в прошлом";
 
-            if (request.ReturnDate.HasValue && request.ReturnDate < request.DepartureDate)
-                return "Дата возвращения не может быть раньше даты вылета";
+            if (request.ReturnDate.HasValue && request.ReturnDate.Value < request.DepartureDate)
+                return "Дата обратного вылета не может быть раньше даты вылета";
 
             if (request.Passengers < 1 || request.Passengers > 9)
                 return "Количество пассажиров должно быть от 1 до 9";
 
-            if (request.DepartureDate > DateTime.Today.AddYears(1))
-                return "Дата вылета не может быть более чем на год вперед";
+            if (!string.IsNullOrEmpty(request.Class) &&
+                !new[] { "economy", "business", "first" }.Contains(request.Class.ToLower()))
+                return "Класс должен быть: economy, business или first";
+
+            if (!string.IsNullOrEmpty(request.TripType) &&
+                !new[] { "oneway", "round" }.Contains(request.TripType.ToLower()))
+                return "Тип поездки должен быть: oneway или round";
 
             return null;
         }
