@@ -2,6 +2,9 @@
 using TripWise.Models;
 using TripWise.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace TripWise.Controllers
 {
@@ -10,12 +13,16 @@ namespace TripWise.Controllers
     public class FlightsController : ControllerBase
     {
         private readonly IFlightService _flightService;
+        private readonly IFlightOrderService _flightOrderService;
         private readonly ILogger<FlightsController> _logger;
+        private readonly TripWiseContext _context;
 
-        public FlightsController(IFlightService flightService, ILogger<FlightsController> logger)
+        public FlightsController(IFlightService flightService, IFlightOrderService flightOrderService, ILogger<FlightsController> logger, TripWiseContext context)
         {
             _flightService = flightService;
+            _flightOrderService = flightOrderService;
             _logger = logger;
+            _context = context;
         }
 
         [HttpPost("search")]
@@ -410,6 +417,220 @@ namespace TripWise.Controllers
             };
 
             return Ok(sampleResponse);
+        }
+
+        [HttpPost("book")]
+        public async Task<ActionResult<FlightOrderResponse>> BookFlight([FromBody] FlightOrderRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("=== БРОНИРОВАНИЕ РЕЙСА ===");
+                _logger.LogInformation("Запрос: {@Request}", request);
+
+                // Проверяем авторизацию (но не требуем её)
+                int? userId = null;
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int parsedUserId))
+                {
+                    userId = parsedUserId;
+                    _logger.LogInformation("Пользователь авторизован, ID: {UserId}", userId);
+                }
+                else
+                {
+                    _logger.LogInformation("Пользователь не авторизован, создаем заказ без привязки к аккаунту");
+                }
+
+                // Валидация
+                if (request == null)
+                    return BadRequest(new FlightOrderResponse { Success = false, Message = "Запрос не может быть пустым" });
+
+                if (request.Passengers == null || !request.Passengers.Any())
+                    return BadRequest(new FlightOrderResponse { Success = false, Message = "Добавьте хотя бы одного пассажира" });
+
+                if (request.Contact == null)
+                    return BadRequest(new FlightOrderResponse { Success = false, Message = "Укажите контактные данные" });
+
+                if (request.Payment == null)
+                    return BadRequest(new FlightOrderResponse { Success = false, Message = "Укажите данные для оплаты" });
+
+                // Если пользователь не авторизован, создаем временный ID
+                int tempUserId = userId ?? -1; // Используем -1 для неавторизованных пользователей
+
+                // Создаем заказ с демо-оплатой
+                var result = await _flightOrderService.ProcessDemoPaymentAsync(request, tempUserId);
+
+                _logger.LogInformation("Заказ создан: {@Result}", result);
+
+                // Имитируем отправку билета на email
+                await SendDemoEmailConfirmation(result, request.Contact.Email);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при бронировании рейса");
+                return StatusCode(500, new FlightOrderResponse
+                {
+                    Success = false,
+                    Message = "Ошибка при бронировании рейса",
+                    OrderId = null
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("my-orders")]
+        public async Task<ActionResult> GetMyOrders()
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "Требуется авторизация" });
+                }
+
+                var orders = await _flightOrderService.GetUserOrdersAsync(userId);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Orders = orders,
+                    Count = orders.Count,
+                    Message = "Ваши заказы"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении заказов");
+                return StatusCode(500, new { Success = false, Message = "Ошибка при получении заказов" });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("order/{orderId}")]
+        public async Task<ActionResult> GetOrder(string orderId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "Требуется авторизация" });
+                }
+
+                var order = await _flightOrderService.GetOrderByIdAsync(orderId);
+
+                if (order == null)
+                    return NotFound(new { Success = false, Message = "Заказ не найден" });
+
+                if (order.UserId != userId)
+                    return Forbid();
+
+                return Ok(new
+                {
+                    Success = true,
+                    Order = order,
+                    Message = "Информация о заказе"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении заказа");
+                return StatusCode(500, new { Success = false, Message = "Ошибка при получении заказа" });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("order/{orderId}/cancel")]
+        public async Task<ActionResult> CancelOrder(string orderId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Unauthorized(new { Success = false, Message = "Требуется авторизация" });
+                }
+
+                var success = await _flightOrderService.CancelOrderAsync(orderId, userId);
+
+                if (!success)
+                    return BadRequest(new { Success = false, Message = "Не удалось отменить заказ" });
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Заказ успешно отменен",
+                    RefundNote = "Средства будут возвращены в течение 3-5 рабочих дней"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отмене заказа");
+                return StatusCode(500, new { Success = false, Message = "Ошибка при отмене заказа" });
+            }
+        }
+
+        [HttpGet("ticket/{ticketNumber}")]
+        public async Task<ActionResult> GetTicketInfo(string ticketNumber)
+        {
+            try
+            {
+                var order = await _context.FlightOrders
+                    .Include(o => o.Passengers)
+                    .FirstOrDefaultAsync(o => o.TicketNumber == ticketNumber);
+
+                if (order == null)
+                    return NotFound(new { Success = false, Message = "Билет не найден" });
+
+                // Маскируем конфиденциальные данные для публичного просмотра
+                var maskedOrder = new
+                {
+                    order.Airline,
+                    order.FlightNumber,
+                    order.DepartureCity,
+                    order.ArrivalCity,
+                    order.DepartureAirport,
+                    order.ArrivalAirport,
+                    order.DepartureTime,
+                    order.ArrivalTime,
+                    order.Status,
+                    Passengers = order.Passengers.Select(p => new
+                    {
+                        p.FirstName,
+                        p.LastName,
+                        p.SeatNumber,
+                        p.Baggage
+                    }),
+                    BoardingTime = order.DepartureTime.AddHours(-2),
+                    Gate = "Демо-выход A1",
+                    Terminal = "T1"
+                };
+
+                return Ok(new
+                {
+                    Success = true,
+                    Ticket = maskedOrder,
+                    Message = "Информация о билете"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении информации о билете");
+                return StatusCode(500, new { Success = false, Message = "Ошибка при получении информации о билете" });
+            }
+        }
+
+        private async Task SendDemoEmailConfirmation(FlightOrderResponse order, string email)
+        {
+            // Имитация отправки email
+            _logger.LogInformation($"Демо-email отправлен на {email}");
+            _logger.LogInformation($"Тема: Подтверждение бронирования рейса #{order.OrderNumber}");
+            _logger.LogInformation($"Тело письма содержит информацию о заказе и билете");
+
+            // В реальном приложении здесь была бы интеграция с Email сервисом
+            await Task.Delay(100); // Имитация отправки
         }
 
         private string ValidateFlightSearchRequest(FlightSearchRequest request)

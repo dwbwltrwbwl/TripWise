@@ -49,6 +49,8 @@ public partial class TripWiseContext : DbContext
 
     public virtual DbSet<VotingSystem> VotingSystems { get; set; }
     public virtual DbSet<NewsletterSubscription> NewsletterSubscriptions { get; set; } = null!;
+    public DbSet<FlightOrder> FlightOrders { get; set; }
+    public DbSet<FlightPassenger> FlightPassengers { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -456,6 +458,25 @@ public partial class TripWiseContext : DbContext
             entity.HasOne(d => d.IdPointNavigation).WithMany(p => p.VotingSystems).HasForeignKey(d => d.IdPoint);
 
             entity.HasOne(d => d.IdTripNavigation).WithMany(p => p.VotingSystems).HasForeignKey(d => d.IdTrip);
+        });
+        modelBuilder.Entity<FlightOrder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Passengers)
+                .WithOne(e => e.Order)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Конфигурация для FlightPassenger
+        modelBuilder.Entity<FlightPassenger>(entity =>
+        {
+            entity.HasKey(e => e.Id);
         });
 
         OnModelCreatingPartial(modelBuilder);
