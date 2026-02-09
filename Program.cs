@@ -88,6 +88,61 @@ app.UseCors("AllowAll");
 app.UseSession();
 app.UseAuthorization();
 
+// В Program.cs, перед app.MapControllerRoute():
+// В Program.cs, перед app.MapControllerRoute():
+app.Use(async (context, next) =>
+{
+    // Проверяем, есть ли кука "Запомнить меня"
+    if (context.Session.GetInt32("UserId") == null)
+    {
+        var authToken = context.Request.Cookies["AuthToken"];
+        var rememberMe = context.Request.Cookies["RememberMe"];
+        var userEmail = context.Request.Cookies["UserEmail"];
+
+        if (rememberMe == "true" && !string.IsNullOrEmpty(authToken))
+        {
+            try
+            {
+                using var scope = context.RequestServices.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<TripWiseContext>();
+
+                // Находим токен в БД
+                var userToken = await dbContext.UserAuthTokens
+                    .Include(t => t.User)
+                    .ThenInclude(u => u.IdRoleNavigation)
+                    .FirstOrDefaultAsync(t =>
+                        t.Token == authToken &&
+                        t.ExpiresAt > DateTime.UtcNow);
+
+                if (userToken != null && userToken.User != null)
+                {
+                    // Восстанавливаем сессию
+                    context.Session.SetInt32("UserId", userToken.User.IdUser);
+                    context.Session.SetString("UserName", $"{userToken.User.LastName} {userToken.User.FirstName}");
+                    context.Session.SetString("UserEmail", userToken.User.Email);
+                    context.Session.SetInt32("UserRole", userToken.User.IdRole);
+
+                    // Также устанавливаем куку UserEmail на будущее
+                    context.Response.Cookies.Append("UserEmail", userToken.User.Email,
+                        new CookieOptions
+                        {
+                            Expires = DateTime.Now.AddDays(30),
+                            HttpOnly = true,
+                            IsEssential = true
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "Ошибка автоматического входа");
+            }
+        }
+    }
+
+    await next();
+});
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

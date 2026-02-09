@@ -86,22 +86,41 @@ namespace TripWise.Controllers
                     // Успешная авторизация
                     // Сохраняем информацию о пользователе в сессии
                     HttpContext.Session.SetInt32("UserId", user.IdUser);
-                    HttpContext.Session.SetString("UserName", user.Name);
+                    HttpContext.Session.SetString("UserName", $"{user.LastName} {user.FirstName}");
                     HttpContext.Session.SetString("UserEmail", user.Email);
                     HttpContext.Session.SetInt32("UserRole", user.IdRole);
 
-                    // Если нужно запомнить пользователя, можно установить куки
-                    bool remember = !string.IsNullOrEmpty(rememberMe) && rememberMe == "on";
+                    // РЕАЛЬНАЯ РАБОТА ЗАПОМНИТЬ МЕНЯ
+                    // Если пользователь отметил "Запомнить меня"
+                    bool remember = !string.IsNullOrEmpty(rememberMe) && rememberMe == "true";
+
                     if (remember)
                     {
-                        // Установка долгосрочных куки (например, на 30 дней)
+                        // Создаем токен
+                        var authToken = GenerateAuthToken(user.IdUser, user.Email);
+
+                        // Сохраняем в БД
+                        await SaveAuthToken(user.IdUser, authToken);
+
+                        // Устанавливаем куки
                         var cookieOptions = new CookieOptions
                         {
                             Expires = DateTime.Now.AddDays(30),
                             HttpOnly = true,
-                            IsEssential = true
+                            IsEssential = true,
+                            SameSite = SameSiteMode.Lax  // Добавьте это
                         };
-                        Response.Cookies.Append("UserEmail", user.Email, cookieOptions);
+
+                        Response.Cookies.Append("AuthToken", authToken, cookieOptions);
+                        Response.Cookies.Append("RememberMe", "true", cookieOptions);
+                        Response.Cookies.Append("UserEmail", user.Email, cookieOptions); // ← ЭТО ВАЖНО!
+                    }
+                    else
+                    {
+                        // Если не "запомнить", то только сессия
+                        // Удаляем старые куки если есть
+                        Response.Cookies.Delete("AuthToken");
+                        Response.Cookies.Delete("RememberMe");
                     }
 
                     // Редирект на главную страницу
@@ -115,23 +134,133 @@ namespace TripWise.Controllers
             }
             catch (Exception ex)
             {
-                // Логирование ошибки
-                Console.WriteLine($"Ошибка при авторизации: {ex.Message}");
+                _logger.LogError(ex, "Ошибка при авторизации пользователя {Email}", email);
                 ModelState.AddModelError("", "Произошла ошибка при авторизации. Попробуйте еще раз.");
                 return View();
             }
         }
+        private string GenerateAuthToken(int userId, string email)
+        {
+            // Используем GUID + timestamp для уникальности
+            var tokenData = $"{userId}|{email}|{DateTime.UtcNow.Ticks}|{Guid.NewGuid()}";
+            using (var sha256 = SHA256.Create())
+            {
+                var bytes = Encoding.UTF8.GetBytes(tokenData);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
+        }
+
+        private async Task SaveAuthToken(int userId, string token)
+        {
+            var authToken = new UserAuthToken
+            {
+                UserId = userId,
+                Token = token,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(30)
+            };
+
+            // Удаляем старые токены этого пользователя
+            var oldTokens = await _context.UserAuthTokens
+                .Where(t => t.UserId == userId && t.ExpiresAt < DateTime.UtcNow)
+                .ToListAsync();
+
+            if (oldTokens.Any())
+            {
+                _context.UserAuthTokens.RemoveRange(oldTokens);
+            }
+
+            _context.UserAuthTokens.Add(authToken);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<bool> ValidateAuthToken(int userId, string token)
+        {
+            // Ищем валидный токен в базе
+            var authToken = await _context.UserAuthTokens
+                .FirstOrDefaultAsync(t =>
+                    t.UserId == userId &&
+                    t.Token == token &&
+                    t.ExpiresAt > DateTime.UtcNow);
+
+            return authToken != null;
+        }
+        private async Task DeleteAuthToken(int userId, string token)
+        {
+            var authToken = await _context.UserAuthTokens
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.Token == token);
+
+            if (authToken != null)
+            {
+                _context.UserAuthTokens.Remove(authToken);
+                await _context.SaveChangesAsync();
+            }
+        }
 
         // GET: /Account/Logout
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var authToken = Request.Cookies["AuthToken"];
+
+            if (userId.HasValue && !string.IsNullOrEmpty(authToken))
+            {
+                // Удаляем токен из БД
+                var token = await _context.UserAuthTokens
+                    .FirstOrDefaultAsync(t => t.UserId == userId.Value && t.Token == authToken);
+                if (token != null)
+                {
+                    _context.UserAuthTokens.Remove(token);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             // Очищаем сессию
             HttpContext.Session.Clear();
 
-            // Удаляем куки
-            Response.Cookies.Delete("UserEmail");
+            // Удаляем ВСЕ куки
+            var cookieOptions = new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-1),
+                HttpOnly = true
+            };
+
+            Response.Cookies.Append("AuthToken", "", cookieOptions);
+            Response.Cookies.Append("RememberMe", "", cookieOptions);
+            Response.Cookies.Append("UserEmail", "", cookieOptions);
 
             return RedirectToAction("Index", "Home");
+        }
+        [HttpGet]
+        [Route("Account/CleanupExpiredTokens")]
+        public async Task<IActionResult> CleanupExpiredTokens()
+        {
+            var expiredTokens = await _context.UserAuthTokens
+                .Where(t => t.ExpiresAt < DateTime.UtcNow)
+                .ToListAsync();
+
+            _context.UserAuthTokens.RemoveRange(expiredTokens);
+            await _context.SaveChangesAsync();
+
+            return Content($"Удалено {expiredTokens.Count} устаревших токенов");
+        }
+        [HttpGet]
+        public async Task<IActionResult> DebugAuth()
+        {
+            var result = new
+            {
+                SessionUserId = HttpContext.Session.GetInt32("UserId"),
+                Cookies = new
+                {
+                    AuthToken = Request.Cookies["AuthToken"],
+                    RememberMe = Request.Cookies["RememberMe"],
+                    UserEmail = Request.Cookies["UserEmail"]
+                },
+                DatabaseTokens = await _context.UserAuthTokens.ToListAsync()
+            };
+
+            return Json(result);
         }
 
         // GET: /Account/Register
@@ -143,20 +272,22 @@ namespace TripWise.Controllers
 
         // POST: /Account/Register
         [HttpPost]
-        public async Task<IActionResult> Register(string fullName, string email, string password, string confirmPassword, string agreeTerms)
+        public async Task<IActionResult> Register(string lastName, string firstName, string middleName, string email, string password, string confirmPassword, string agreeTerms)
         {
-            // Сохраняем ВСЕ введенные значения для повторного отображения (ТОЛЬКО при ошибках)
-            ViewData["FullName"] = fullName;
+            ViewData["LastName"] = lastName;    
+            ViewData["FirstName"] = firstName; 
+            ViewData["MiddleName"] = middleName;
             ViewData["Email"] = email;
             ViewData["Password"] = password;
             ViewData["ConfirmPassword"] = confirmPassword;
             ViewData["AgreeTerms"] = agreeTerms;
 
             // Валидация
-            if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email) ||
-                string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
+            if (string.IsNullOrEmpty(lastName) || string.IsNullOrEmpty(firstName) ||
+        string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) ||
+        string.IsNullOrEmpty(confirmPassword))
             {
-                ModelState.AddModelError("", "Все поля обязательны для заполнения");
+                ModelState.AddModelError("", "Все поля, кроме отчества, обязательны для заполнения");
                 return View();
             }
 
@@ -201,7 +332,9 @@ namespace TripWise.Controllers
                 // Создание нового пользователя
                 var user = new User
                 {
-                    Name = fullName,
+                    LastName = lastName,      // ← изменено
+                    FirstName = firstName,    // ← добавлено
+                    MiddleName = middleName,  // ← добавлено (может быть null)
                     Email = email,
                     PasswordHash = HashPassword(password),
                     Age = null,
@@ -212,9 +345,11 @@ namespace TripWise.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // УСПЕШНАЯ РЕГИСТРАЦИЯ - очищаем поля и показываем сообщение
+                // УСПЕШНАЯ РЕГИСТРАЦИЯ - очищаем поля
                 ViewData["SuccessMessage"] = "Регистрация прошла успешно! Теперь вы можете войти в систему.";
-                ViewData["FullName"] = "";
+                ViewData["LastName"] = "";      // ← очистка
+                ViewData["FirstName"] = "";     // ← очистка
+                ViewData["MiddleName"] = "";    // ← очистка
                 ViewData["Email"] = "";
                 ViewData["Password"] = "";
                 ViewData["ConfirmPassword"] = "";
@@ -245,7 +380,9 @@ namespace TripWise.Controllers
 
             var model = new EditProfileViewModel
             {
-                Name = user.Name,
+                LastName = user.LastName,
+                FirstName = user.FirstName,
+                MiddleName = user.MiddleName,
                 Email = user.Email,
                 Age = user.Age
             };
@@ -269,7 +406,9 @@ namespace TripWise.Controllers
             if (user == null)
                 return RedirectToAction("Login");
 
-            user.Name = model.Name;
+            user.LastName = model.LastName;
+            user.FirstName = model.FirstName;
+            user.MiddleName = model.MiddleName;
             user.Email = model.Email;
             user.Age = model.Age;
 

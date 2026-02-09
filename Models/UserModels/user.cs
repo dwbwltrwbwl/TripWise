@@ -7,7 +7,9 @@ public partial class User
 {
     public int IdUser { get; set; }
 
-    public string Name { get; set; } = null!;
+    public string LastName { get; set; } = null!;      // ← вместо Name
+    public string FirstName { get; set; } = null!;     // ← новое
+    public string? MiddleName { get; set; }
 
     public string Email { get; set; } = null!;
 

@@ -12,33 +12,66 @@
 <table class="table">
     <thead>
         <tr>
+            <!-- Фамилия -->
             <th>
-                @Html.DisplayNameFor(model => model.Name)
+                @Html.DisplayNameFor(model => model.LastName)
             </th>
+
+            <!-- Имя -->
+            <th>
+                @Html.DisplayNameFor(model => model.FirstName)
+            </th>
+
+            <!-- Отчество -->
+            <th>
+                @Html.DisplayNameFor(model => model.MiddleName)
+            </th>
+
+            <!-- Email -->
             <th>
                 @Html.DisplayNameFor(model => model.Email)
             </th>
+
+            <!-- Пароль (может быть скрыт или показывать метку) -->
             <th>
-                @Html.DisplayNameFor(model => model.PasswordHash)
+                Пароль
             </th>
+
+            <!-- Возраст -->
             <th>
                 @Html.DisplayNameFor(model => model.Age)
             </th>
+
+            <!-- Дата создания -->
             <th>
                 @Html.DisplayNameFor(model => model.CreatedAt)
             </th>
+
+            <!-- Роль -->
             <th>
-                @Html.DisplayNameFor(model => model.IdRoleNavigation)
+                Роль
             </th>
-            <th></th>
+
+            <th>Действия</th>
         </tr>
     </thead>
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
+                <!-- Фамилия -->
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastName)
+                </td>
+
+                <!-- Имя -->
+                <td>
+                    @Html.DisplayFor(modelItem => item.FirstName)
+                </td>
+
+                <!-- Отчество -->
+                <td>
+                    @Html.DisplayFor(modelItem => item.MiddleName)
+                </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Email)
             </td>

@@ -51,6 +51,7 @@ public partial class TripWiseContext : DbContext
     public virtual DbSet<NewsletterSubscription> NewsletterSubscriptions { get; set; } = null!;
     public DbSet<FlightOrder> FlightOrders { get; set; }
     public DbSet<FlightPassenger> FlightPassengers { get; set; }
+    public DbSet<UserAuthToken> UserAuthTokens { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -387,9 +388,23 @@ public partial class TripWiseContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("email");
             entity.Property(e => e.IdRole).HasColumnName("idRole");
-            entity.Property(e => e.Name)
-                .HasMaxLength(100)
-                .HasColumnName("name");
+
+            // Заменяем Name на три поля
+            entity.Property(e => e.LastName)           // ← добавлено
+                .HasMaxLength(50)
+                .HasColumnName("last_name")
+                .IsRequired();
+
+            entity.Property(e => e.FirstName)          // ← добавлено
+                .HasMaxLength(50)
+                .HasColumnName("first_name")
+                .IsRequired();
+
+            entity.Property(e => e.MiddleName)         // ← добавлено
+                .HasMaxLength(50)
+                .HasColumnName("middle_name")
+                .IsRequired(false); // Отчество может быть null
+
             entity.Property(e => e.PasswordHash).HasColumnName("passwordHash");
 
             entity.HasOne(d => d.IdRoleNavigation).WithMany(p => p.Users).HasForeignKey(d => d.IdRole);
@@ -477,6 +492,21 @@ public partial class TripWiseContext : DbContext
         modelBuilder.Entity<FlightPassenger>(entity =>
         {
             entity.HasKey(e => e.Id);
+        });
+        modelBuilder.Entity<UserAuthToken>().ToTable("UserAuthTokens", t => t.ExcludeFromMigrations());
+        modelBuilder.Entity<UserAuthToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Token).IsUnique();
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ExpiresAt).IsRequired();
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         OnModelCreatingPartial(modelBuilder);

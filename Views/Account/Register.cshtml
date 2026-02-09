@@ -140,12 +140,27 @@
                     }
 
                     <form method="post" asp-action="Register">
-                        <div class="mb-3">
-                            <label for="fullName" class="form-label">Полное имя</label>
-                            <input type="text" class="form-control form-control-lg" id="fullName" name="fullName"
-                                   placeholder="Иван Иванов"
-                                   value="@ViewData["FullName"]"
-                                   required>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="lastName" class="form-label">Фамилия</label>
+                                <input type="text" class="form-control form-control-lg" id="lastName" name="lastName"
+                                       placeholder="Иванов"
+                                       value="@ViewData["LastName"]"
+                                       required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="firstName" class="form-label">Имя</label>
+                                <input type="text" class="form-control form-control-lg" id="firstName" name="firstName"
+                                       placeholder="Иван"
+                                       value="@ViewData["FirstName"]"
+                                       required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="middleName" class="form-label">Отчество</label>
+                                <input type="text" class="form-control form-control-lg" id="middleName" name="middleName"
+                                       placeholder="Иванович"
+                                       value="@ViewData["MiddleName"]">
+                            </div>
                         </div>
 
                         <div class="mb-3">
