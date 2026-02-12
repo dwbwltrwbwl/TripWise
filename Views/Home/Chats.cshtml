@@ -429,6 +429,10 @@
 </style>
 
 <script>
+    console.log('Chats script loaded');
+    console.log('Current path:', window.location.pathname);
+    console.log('Window width:', window.innerWidth);
+    console.log('Is mobile:', window.innerWidth < 768);
     // Глобальные переменные
     let currentUserId = @Json.Serialize(userId);
     let currentChatId = null;
@@ -436,33 +440,76 @@
     let messagesRefreshInterval = null;
 
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded');
+        console.log('Current User ID:', currentUserId);
+
         if (currentUserId) {
+            console.log('Loading user chats...');
             loadUserChats();
+        } else {
+            console.log('User not logged in');
         }
     });
 
     // ==================== ЧАТЫ ====================
 
-    // Загрузка чатов пользователя
+        // Загрузка чатов пользователя
     async function loadUserChats() {
         try {
+            console.log('Загрузка чатов...');
             const response = await fetch('/Chats/GetUserChats');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
+            console.log('Ответ от сервера:', data);
 
             if (data.success) {
-                renderChatsList(data.chats);
+                renderChatsList(data.data || []);
             } else {
                 console.error('Ошибка загрузки чатов:', data.message);
+                showNotification(data.message || 'Не удалось загрузить чаты', 'danger');
+
+                // Показываем пустой список
+                const chatsList = document.getElementById('chatsList');
+                chatsList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">У вас пока нет чатов</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openNewChatModal()">
+                            <i class="fas fa-plus me-1"></i>Создать чат
+                        </button>
+                    </div>
+                `;
             }
         } catch (error) {
             console.error('Ошибка при загрузке чатов:', error);
-            showNotification('Не удалось загрузить чаты', 'danger');
+            showNotification('Не удалось загрузить чаты: ' + error.message, 'danger');
+
+            // Показываем сообщение об ошибке
+            const chatsList = document.getElementById('chatsList');
+            chatsList.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <p class="text-danger">Ошибка загрузки чатов</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadUserChats()">
+                        <i class="fas fa-sync me-1"></i>Повторить
+                    </button>
+                </div>
+            `;
         }
     }
 
-    // Отображение списка чатов
+        // Отображение списка чатов
     function renderChatsList(chats) {
         const chatsList = document.getElementById('chatsList');
+
+        if (!chatsList) {
+            console.error('Элемент chatsList не найден');
+            return;
+        }
 
         if (!chats || chats.length === 0) {
             chatsList.innerHTML = `
@@ -479,13 +526,21 @@
 
         let html = '';
         chats.forEach(chat => {
-            const lastMessage = chat.lastMessage || { text: 'Нет сообщений', sentAt: '' };
-            formatMessageTime(lastMessage.sentAt)
+            if (!chat) return;
+
+            const lastMessage = chat.lastMessage || {
+                text: 'Нет сообщений',
+                sentAt: null,
+                senderName: ''
+            };
+
             const unreadCount = chat.unreadCount || 0;
             const isActive = currentChatId === chat.id;
+            const chatName = chat.name || 'Чат';
+            const lastMessageTime = lastMessage.sentAt ? formatMessageTime(lastMessage.sentAt) : '';
 
             html += `
-                <div class="chat-item ${isActive ? 'active' : ''}" onclick="selectChat(${chat.id}, this)">
+                <div class="chat-item ${isActive ? 'active' : ''}" onclick="selectChat(${chat.id}, this)" data-chat-id="${chat.id}">
                     <div class="d-flex align-items-center">
                         <div class="chat-avatar me-3">
                             <div class="avatar-circle" style="background-color: ${getChatColor(chat.type)};">
@@ -493,17 +548,20 @@
                             </div>
                         </div>
                         <div class="flex-grow-1" style="min-width: 0;">
-                            <div class="d-flex justify-content-between">
-                                <h6 class="mb-1 text-truncate" style="max-width: 140px;">${escapeHtml(chat.name)}</h6>
-                                <small class="text-muted flex-shrink-0 ms-2">${formatMessageTime(lastMessage.createdAt)}</small>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-1 text-truncate" style="max-width: 140px;">${escapeHtml(chatName)}</h6>
+                                <small class="text-muted flex-shrink-0 ms-2">${lastMessageTime}</small>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
                                 <p class="small text-muted mb-0 text-truncate" style="max-width: 160px;">
                                     ${lastMessage.senderName ? `<span class="fw-bold">${escapeHtml(lastMessage.senderName)}:</span> ` : ''}
                                     ${escapeHtml(lastMessage.text || 'Нет сообщений')}
                                 </p>
-                                ${unreadCount > 0 ? `<span class="badge bg-primary rounded-pill">${unreadCount}</span>` : ''}
+                                ${unreadCount > 0 ? `<span class="badge bg-primary rounded-pill ms-2">${unreadCount}</span>` : ''}
                             </div>
+                            <small class="text-muted">
+                                <i class="fas fa-users me-1"></i>${chat.memberCount || 0}
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -511,6 +569,30 @@
         });
 
         chatsList.innerHTML = html;
+    }
+
+        // Обертка для fetch запросов
+    async function fetchWithErrorHandling(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken(),
+                    ...options.headers
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error(`Fetch error for ${url}:`, error);
+            throw error;
+        }
     }
 
     // Выбор чата
@@ -757,14 +839,11 @@
     // ==================== ПОИСК ДРУЗЕЙ ====================
 
     // Поиск пользователей
-    async function searchFriends(event) {
+        async function searchFriends(event) {
         if (event) {
             if (event.key === 'Escape') {
                 document.getElementById('friendSearch').value = '';
                 clearSearchResults();
-                return;
-            }
-            if (event.key !== 'Enter' && event.key !== 'Backspace' && event.key !== 'Delete') {
                 return;
             }
         }
@@ -777,14 +856,17 @@
         }
 
         try {
-            const response = await fetch(`/Chats/SearchUsers?term=${encodeURIComponent(searchTerm)}`);
-            const data = await response.json();
+            showNotification('Поиск...', 'info');
+            const data = await fetchWithErrorHandling(`/Chats/SearchUsers?term=${encodeURIComponent(searchTerm)}`);
 
             if (data.success) {
-                displaySearchResults(data.users);
+                displaySearchResults(data.data || []);
+            } else {
+                showNotification(data.message || 'Ошибка поиска', 'danger');
             }
         } catch (error) {
             console.error('Ошибка поиска пользователей:', error);
+            showNotification('Не удалось выполнить поиск', 'danger');
         }
     }
 

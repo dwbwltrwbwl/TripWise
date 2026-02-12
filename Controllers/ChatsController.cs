@@ -54,26 +54,19 @@ namespace TripWise.Controllers
                             .ThenInclude(m => m.Sender)
                     .Include(cm => cm.Chat)
                         .ThenInclude(c => c.Members)
+                    .Include(cm => cm.Chat)
+                        .ThenInclude(c => c.Creator)
                     .OrderByDescending(cm => cm.Chat.LastMessageAt ?? cm.Chat.CreatedAt)
                     .ToListAsync();
 
-                var chats = chatMembers.Select(cm => new ChatDto
+                var chats = new List<ChatDto>();
+
+                foreach (var cm in chatMembers)
                 {
-                    Id = cm.Chat.Id,
-                    Name = cm.Chat.Name,
-                    Description = cm.Chat.Description,
-                    Type = cm.Chat.Type,
-                    TripId = cm.Chat.TripId,
-                    CreatedAt = cm.Chat.CreatedAt,
-                    CreatedById = cm.Chat.CreatedById,
-                    CreatedByName = cm.Chat.Creator != null
-                        ? $"{cm.Chat.Creator.LastName} {cm.Chat.Creator.FirstName}"
-                        : "",
-                    LastMessageAt = cm.Chat.LastMessageAt,
-                    MemberCount = cm.Chat.Members.Count,
-                    UnreadCount = cm.Chat.Messages?
-                        .Count(m => m.SentAt > (cm.LastReadAt ?? DateTime.MinValue)) ?? 0,
-                    LastMessage = cm.Chat.Messages?
+                    var chat = cm.Chat;
+                    if (chat == null) continue;
+
+                    var lastMessage = chat.Messages?
                         .OrderByDescending(m => m.SentAt)
                         .Select(m => new LastMessageDto
                         {
@@ -86,8 +79,27 @@ namespace TripWise.Controllers
                             SentAt = m.SentAt,
                             AttachmentType = m.AttachmentType
                         })
-                        .FirstOrDefault()
-                }).ToList();
+                        .FirstOrDefault();
+
+                    chats.Add(new ChatDto
+                    {
+                        Id = chat.Id,
+                        Name = chat.Name ?? "Без названия",
+                        Description = chat.Description,
+                        Type = chat.Type ?? "private",
+                        TripId = chat.TripId,
+                        CreatedAt = chat.CreatedAt,
+                        CreatedById = chat.CreatedById,
+                        CreatedByName = chat.Creator != null
+                            ? $"{chat.Creator.LastName} {chat.Creator.FirstName}"
+                            : "",
+                        LastMessageAt = chat.LastMessageAt,
+                        MemberCount = chat.Members?.Count ?? 0,
+                        UnreadCount = chat.Messages?
+                            .Count(m => m.SentAt > (cm.LastReadAt ?? DateTime.MinValue)) ?? 0,
+                        LastMessage = lastMessage
+                    });
+                }
 
                 return Json(new ApiResponse<List<ChatDto>>
                 {
@@ -101,7 +113,7 @@ namespace TripWise.Controllers
                 return Json(new ApiResponse<List<ChatDto>>
                 {
                     Success = false,
-                    Message = "Ошибка при загрузке чатов"
+                    Message = "Ошибка при загрузке чатов: " + ex.Message
                 });
             }
         }
