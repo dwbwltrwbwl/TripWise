@@ -91,7 +91,7 @@ namespace TripWise.Controllers
                     // Успешная авторизация
                     // Сохраняем информацию о пользователе в сессии
                     HttpContext.Session.SetInt32("UserId", user.IdUser);
-                    HttpContext.Session.SetString("UserName", $"{user.LastName} {user.FirstName}");
+                    HttpContext.Session.SetString("UserName", GetFullUserName(user)); // Используем метод
                     HttpContext.Session.SetString("UserEmail", user.Email);
                     HttpContext.Session.SetInt32("UserRole", user.IdRole);
 
@@ -130,11 +130,13 @@ namespace TripWise.Controllers
                     // ⬇️⬇️⬇️ ВСТАВЬТЕ ЭТОТ КОД ЗДЕСЬ ⬇️⬇️⬇️
                     // Добавляем стандартную аутентификацию ASP.NET Core
                     var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, user.IdUser.ToString()),
-        new Claim(ClaimTypes.Name, user.Email),
-        new Claim(ClaimTypes.Role, user.IdRole.ToString())
-    };
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, user.IdUser.ToString()),
+                            new Claim(ClaimTypes.Name, user.Email),
+                            new Claim(ClaimTypes.Email, user.Email),
+                            new Claim(ClaimTypes.GivenName, GetFullUserName(user)), // ВАЖНО: полное ФИО
+                            new Claim(ClaimTypes.Role, user.IdRole.ToString())
+                        };
 
                     var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                     var authProperties = new AuthenticationProperties
@@ -147,7 +149,7 @@ namespace TripWise.Controllers
                         CookieAuthenticationDefaults.AuthenticationScheme,
                         new ClaimsPrincipal(claimsIdentity),
                         authProperties);
-                    // ⬆️⬆️⬆️ КОНЕЦ ВСТАВКИ ⬆️⬆️⬆️
+                    // ⚠️⚠️⚠️ КОНЕЦ ИСПРАВЛЕННОГО КОДА ⚠️⚠️⚠️
 
                     // Редирект на главную страницу
                     return RedirectToAction("Index", "Home");
@@ -164,6 +166,23 @@ namespace TripWise.Controllers
                 ModelState.AddModelError("", "Произошла ошибка при авторизации. Попробуйте еще раз.");
                 return View();
             }
+        }
+        private string GetFullUserName(User user)
+        {
+            if (user == null) return "Пользователь";
+
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(user.LastName))
+                parts.Add(user.LastName);
+
+            if (!string.IsNullOrWhiteSpace(user.FirstName))
+                parts.Add(user.FirstName);
+
+            if (!string.IsNullOrWhiteSpace(user.MiddleName))
+                parts.Add(user.MiddleName);
+
+            return parts.Count > 0 ? string.Join(" ", parts) : user.Email?.Split('@')[0] ?? "Пользователь";
         }
         private string GenerateAuthToken(int userId, string email)
         {
@@ -225,6 +244,7 @@ namespace TripWise.Controllers
         }
 
         // GET: /Account/Logout
+        // GET: /Account/Logout
         public async Task<IActionResult> Logout()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -252,9 +272,12 @@ namespace TripWise.Controllers
                 HttpOnly = true
             };
 
-            Response.Cookies.Append("AuthToken", "", cookieOptions);
-            Response.Cookies.Append("RememberMe", "", cookieOptions);
-            Response.Cookies.Append("UserEmail", "", cookieOptions);
+            Response.Cookies.Delete("AuthToken");
+            Response.Cookies.Delete("RememberMe");
+            Response.Cookies.Delete("UserEmail");
+
+            // ⚠️⚠️⚠️ ДОБАВЬТЕ ВЫХОД ИЗ COOKIE АУТЕНТИФИКАЦИИ ⚠️⚠️⚠️
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             return RedirectToAction("Index", "Home");
         }
@@ -355,13 +378,13 @@ namespace TripWise.Controllers
 
             try
             {
-                // Создание нового пользователя
+                // ⚠️⚠️⚠️ ИСПРАВЛЕНО: Теперь сохраняем FirstName и LastName ⚠️⚠️⚠️
                 var user = new User
                 {
-                    LastName = lastName,      // ← изменено
-                    FirstName = firstName,    // ← добавлено
-                    MiddleName = middleName,  // ← добавлено (может быть null)
-                    Email = email,
+                    LastName = lastName?.Trim() ?? "",      // Фамилия
+                    FirstName = firstName?.Trim() ?? "",     // Имя
+                    MiddleName = string.IsNullOrWhiteSpace(middleName) ? null : middleName.Trim(), // Отчество (может быть null)
+                    Email = email.Trim().ToLower(),
                     PasswordHash = HashPassword(password),
                     Age = null,
                     CreatedAt = DateTime.UtcNow,
@@ -373,13 +396,17 @@ namespace TripWise.Controllers
 
                 // УСПЕШНАЯ РЕГИСТРАЦИЯ - очищаем поля
                 ViewData["SuccessMessage"] = "Регистрация прошла успешно! Теперь вы можете войти в систему.";
-                ViewData["LastName"] = "";      // ← очистка
-                ViewData["FirstName"] = "";     // ← очистка
-                ViewData["MiddleName"] = "";    // ← очистка
+                ViewData["LastName"] = "";
+                ViewData["FirstName"] = "";
+                ViewData["MiddleName"] = "";
                 ViewData["Email"] = "";
                 ViewData["Password"] = "";
                 ViewData["ConfirmPassword"] = "";
                 ViewData["AgreeTerms"] = "";
+
+                // Добавляем TempData для отображения успеха на странице логина
+                TempData["RegistrationSuccess"] = true;
+                TempData["RegisteredEmail"] = email;
 
                 return View();
             }
@@ -432,14 +459,20 @@ namespace TripWise.Controllers
             if (user == null)
                 return RedirectToAction("Login");
 
-            user.LastName = model.LastName;
-            user.FirstName = model.FirstName;
-            user.MiddleName = model.MiddleName;
-            user.Email = model.Email;
+            // Обновляем данные
+            user.LastName = model.LastName?.Trim() ?? user.LastName;
+            user.FirstName = model.FirstName?.Trim() ?? user.FirstName;
+            user.MiddleName = string.IsNullOrWhiteSpace(model.MiddleName) ? null : model.MiddleName.Trim();
+            user.Email = model.Email?.Trim().ToLower() ?? user.Email;
             user.Age = model.Age;
 
             await _context.SaveChangesAsync();
 
+            // Обновляем сессию
+            HttpContext.Session.SetString("UserName", $"{user.LastName} {user.FirstName} {user.MiddleName}".Trim());
+            HttpContext.Session.SetString("UserEmail", user.Email);
+
+            TempData["SuccessMessage"] = "Профиль успешно обновлен";
             return RedirectToAction("Profile");
         }
 
@@ -703,14 +736,6 @@ namespace TripWise.Controllers
             {
                 result.IsValid = false;
                 result.ErrorMessage = "Пароль должен содержать минимум 6 символов";
-                return result;
-            }
-
-            // Проверка на наличие цифр
-            if (!Regex.IsMatch(password, @"\d"))
-            {
-                result.IsValid = false;
-                result.ErrorMessage = "Пароль должен содержать хотя бы одну цифру";
                 return result;
             }
 
