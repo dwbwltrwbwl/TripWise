@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 using TripWise.Models.ViewModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
 
 namespace TripWise.Controllers
 {
@@ -17,6 +20,8 @@ namespace TripWise.Controllers
         private readonly ILogger<AccountController> _logger;
         private readonly IMemoryCache _cache;
         private const string DELETE_CODE_PREFIX = "DeleteCode_";
+        private const string PASSWORD_CHANGE_CODE_PREFIX = "PasswordChangeCode_";
+        private const string PASSWORD_CHANGE_DATA_PREFIX = "PasswordChangeData_";
 
         public AccountController(TripWiseContext context, EmailService emailService,
             ILogger<AccountController> logger, IMemoryCache memoryCache)
@@ -122,6 +127,27 @@ namespace TripWise.Controllers
                         Response.Cookies.Delete("AuthToken");
                         Response.Cookies.Delete("RememberMe");
                     }
+                    // ⬇️⬇️⬇️ ВСТАВЬТЕ ЭТОТ КОД ЗДЕСЬ ⬇️⬇️⬇️
+                    // Добавляем стандартную аутентификацию ASP.NET Core
+                    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.IdUser.ToString()),
+        new Claim(ClaimTypes.Name, user.Email),
+        new Claim(ClaimTypes.Role, user.IdRole.ToString())
+    };
+
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = remember,
+                        ExpiresUtc = remember ? DateTimeOffset.UtcNow.AddDays(30) : (DateTimeOffset?)null
+                    };
+
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
+                    // ⬆️⬆️⬆️ КОНЕЦ ВСТАВКИ ⬆️⬆️⬆️
 
                     // Редирект на главную страницу
                     return RedirectToAction("Index", "Home");
@@ -480,6 +506,37 @@ namespace TripWise.Controllers
                 .OrderByDescending(e => e.CreatedAt)
                 .Take(5)
                 .ToListAsync();
+            // В методе Profile добавьте:
+            ViewBag.DocumentCount = await _context.UserDocuments
+                .Where(d => d.UserId == userId)
+                .CountAsync();
+
+            ViewBag.FolderCount = await _context.DocumentFolders
+                .Where(f => f.UserId == userId)
+                .CountAsync();
+
+            ViewBag.RecentDocuments = await _context.UserDocuments
+                .Where(d => d.UserId == userId)
+                .Include(d => d.Folder)
+                .OrderByDescending(d => d.CreatedAt)
+                .Take(3)
+                .Select(d => new {
+                    d.Name,
+                    d.FileType,
+                    d.FileSize,
+                    d.CreatedAt,
+                    FolderName = d.Folder != null ? d.Folder.Name : null
+                })
+                .ToListAsync();
+
+            ViewBag.UserFolders = await _context.DocumentFolders
+                .Where(f => f.UserId == userId)
+                .OrderBy(f => f.Name)
+                .Select(f => new {
+                    f.IdFolder,
+                    f.Name
+                })
+                .ToListAsync();
 
             return View(user);
         }
@@ -708,7 +765,200 @@ namespace TripWise.Controllers
                 return false;
             }
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyCurrentPassword([FromBody] VerifyCurrentPasswordRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Json(new { success = false, message = "Сессия истекла" });
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                // Проверяем текущий пароль
+                var hashedPassword = HashPassword(request.CurrentPassword);
+                if (user.PasswordHash != hashedPassword)
+                    return Json(new { success = false, message = "Неверный текущий пароль" });
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке текущего пароля");
+                return Json(new { success = false, message = "Произошла ошибка" });
+            }
+        }
+
+        // POST: /Account/SendPasswordChangeCode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendPasswordChangeCode([FromBody] PasswordChangeRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Json(new { success = false, message = "Сессия истекла" });
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                // Проверяем новый пароль
+                var passwordValidation = ValidatePassword(request.NewPassword);
+                if (!passwordValidation.IsValid)
+                    return Json(new { success = false, message = passwordValidation.ErrorMessage });
+
+                // Генерируем 6-значный код
+                var random = new Random();
+                var code = random.Next(100000, 999999).ToString();
+
+                // Сохраняем код в кэш на 15 минут
+                var codeCacheKey = PASSWORD_CHANGE_CODE_PREFIX + userId;
+                _cache.Set(codeCacheKey, code, TimeSpan.FromMinutes(15));
+
+                // Сохраняем данные для смены пароля (новый пароль) на 15 минут
+                var dataCacheKey = PASSWORD_CHANGE_DATA_PREFIX + userId;
+                var passwordData = new PasswordChangeData
+                {
+                    NewPassword = request.NewPassword,
+                    Timestamp = DateTime.UtcNow
+                };
+                _cache.Set(dataCacheKey, passwordData, TimeSpan.FromMinutes(15));
+
+                // Отправляем код на email
+                await _emailService.SendPasswordChangeCodeAsync(user.Email, code);
+
+                _logger.LogInformation($"Код подтверждения смены пароля отправлен пользователю {user.Email}");
+
+                return Json(new { success = true, message = "Код подтверждения отправлен на ваш email" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке кода подтверждения смены пароля");
+                return Json(new { success = false, message = "Ошибка при отправке кода" });
+            }
+        }
+        // GET: /Account/MyDocuments
+        [Route("Account/MyDocuments")]
+        public IActionResult MyDocuments()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login");
+
+            return View(); // Ищет Views/Account/MyDocuments.cshtml
+        }
+
+        // POST: /Account/ChangePasswordWithVerification
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePasswordWithVerification([FromBody] VerifyPasswordChangeRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Json(new { success = false, message = "Сессия истекла" });
+
+                // Убираем все нецифровые символы
+                var code = new string(request.VerificationCode.Where(char.IsDigit).ToArray());
+
+                if (code.Length != 6)
+                    return Json(new { success = false, message = "Код должен содержать 6 цифр" });
+
+                // Проверяем код из кэша
+                var codeCacheKey = PASSWORD_CHANGE_CODE_PREFIX + userId;
+                if (!_cache.TryGetValue(codeCacheKey, out string cachedCode))
+                    return Json(new { success = false, message = "Код истек или не был отправлен" });
+
+                if (cachedCode != code)
+                    return Json(new { success = false, message = "Неверный код подтверждения" });
+
+                // Получаем данные для смены пароля
+                var dataCacheKey = PASSWORD_CHANGE_DATA_PREFIX + userId;
+                if (!_cache.TryGetValue(dataCacheKey, out PasswordChangeData passwordData))
+                    return Json(new { success = false, message = "Данные для смены пароля устарели" });
+
+                // Находим пользователя
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                // Обновляем пароль
+                user.PasswordHash = HashPassword(passwordData.NewPassword);
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                // Очищаем кэш
+                _cache.Remove(codeCacheKey);
+                _cache.Remove(dataCacheKey);
+
+                // Отправляем уведомление об успешной смене пароля
+                await SendPasswordChangeSuccessEmail(user.Email);
+
+                _logger.LogInformation($"Пароль пользователя {user.Email} успешно изменен");
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Пароль успешно изменен",
+                    redirectUrl = Url.Action("Profile", "Account")
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при смене пароля");
+                return Json(new { success = false, message = "Произошла ошибка при смене пароля" });
+            }
+        }
+        private async Task SendPasswordChangeSuccessEmail(string toEmail)
+        {
+            var subject = "Пароль успешно изменен - Вместе В Путь";
+            var body = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <div style='background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+                    <h2 style='color: #155724; margin-top: 0;'>
+                        <i class='fas fa-check-circle'></i> Пароль успешно изменен
+                    </h2>
+                    <p style='color: #155724;'>
+                        Пароль для вашего аккаунта в <strong>Вместе В Путь</strong> был успешно изменен.
+                    </p>
+                </div>
+                
+                <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                    <p style='margin: 0; color: #856404;'>
+                        <strong><i class='fas fa-exclamation-triangle'></i> Важно!</strong><br>
+                        Если вы не меняли пароль, немедленно свяжитесь с нашей службой поддержки.
+                    </p>
+                </div>
+                
+                <div style='border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;'>
+                    <p style='color: #888; font-size: 14px;'>
+                        Для дополнительной безопасности рекомендуется:<br>
+                        1. Использовать уникальный пароль для каждого сервиса<br>
+                        2. Включить двухфакторную аутентификацию (если доступно)<br>
+                        3. Регулярно обновлять пароль
+                    </p>
+                </div>
+                
+                <div style='text-align: center; margin-top: 30px;'>
+                    <p style='color: #aaa; font-size: 12px;'>
+                        С уважением, команда <strong>Вместе В Путь</strong><br>
+                        {DateTime.Now.Year} © Все права защищены
+                    </p>
+                </div>
+            </div>";
+
+            await _emailService.SendAsync(toEmail, subject, body);
+        
     }
+}
 
     // Вспомогательный класс для результата проверки пароля
     public class PasswordValidationResult
@@ -716,4 +966,26 @@ namespace TripWise.Controllers
         public bool IsValid { get; set; }
         public string ErrorMessage { get; set; } = string.Empty;
     }
+    public class VerifyCurrentPasswordRequest
+    {
+        public string CurrentPassword { get; set; }
+    }
+
+    public class PasswordChangeRequest
+    {
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
+    }
+
+    public class VerifyPasswordChangeRequest
+    {
+        public string VerificationCode { get; set; }
+    }
+
+    public class PasswordChangeData
+    {
+        public string NewPassword { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
 }

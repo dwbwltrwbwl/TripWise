@@ -34,7 +34,7 @@
                         <div class="sidebar-item-desc">История и планирование</div>
                     </div>
                 </a>
-                <a class="sidebar-item" asp-controller="Home" asp-action="Groups">
+                @* <a class="sidebar-item" asp-controller="Home" asp-action="Groups">
                     <div class="sidebar-icon">
                         <i class="fas fa-users"></i>
                     </div>
@@ -42,7 +42,7 @@
                         <div class="sidebar-item-title">Группы</div>
                         <div class="sidebar-item-desc">Совместные путешествия</div>
                     </div>
-                </a>
+                </a> *@
                 <a class="sidebar-item" asp-controller="Home" asp-action="Budget">
                     <div class="sidebar-icon">
                         <i class="fas fa-wallet"></i>
@@ -590,8 +590,26 @@
 
         #newsletterMessage .alert {
             font-size: 0.9rem;
-            padding: 0.5rem 0.75rem;
-            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 10px;
+            animation: slideIn 0.3s ease;
+        }
+        @@keyframes slideIn {
+            from
+                {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+        }
+
+        #subscribeBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
     </style>
 
@@ -847,7 +865,6 @@
                     navbarContent.style.zIndex = '';
                 }
             } else {
-                // На мобильных применяем стили если меню открыто
                 if (navbarContent && navbarContent.classList.contains('show')) {
                     navbarContent.style.position = 'fixed';
                     navbarContent.style.top = '70px';

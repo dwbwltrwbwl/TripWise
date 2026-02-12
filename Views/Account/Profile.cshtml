@@ -78,6 +78,120 @@
         </div>
     </div>
 
+    <!-- Документы -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+            <h5 class="section-subtitle mb-0">
+                <i class="fas fa-folder text-primary me-2"></i>
+                Мои документы
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <p class="text-muted mb-3">
+                        Храните важные документы для поездок: паспорта, билеты, страховки, бронирования
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a asp-action="MyDocuments" class="btn btn-primary">
+                            <i class="fas fa-folder-open me-2"></i>Перейти к документам
+                        </a>
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quickUploadModal">
+                            <i class="fas fa-upload me-2"></i>Быстрая загрузка
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="documents-stats mb-3">
+                            <div class="value">@(ViewBag.DocumentCount ?? 0)</div>
+                            <div class="label">Документов</div>
+                        </div>
+                        <div class="documents-stats">
+                            <div class="value">@(ViewBag.FolderCount ?? 0)</div>
+                            <div class="label">Папок</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последние документы -->
+            @if (ViewBag.RecentDocuments != null && ViewBag.RecentDocuments.Count > 0)
+            {
+                <div class="mt-4">
+                    <h6 class="mb-3">Недавно добавленные:</h6>
+                    <div class="row">
+                        @foreach (var doc in ViewBag.RecentDocuments)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="document-item">
+                                    <div class="document-icon">
+                                        <i class="fas fa-file-@(doc.FileType?.ToLower() == "pdf" ? "pdf" :
+                                                          doc.FileType?.ToLower() == "doc" || doc.FileType?.ToLower() == "docx" ? "word" :
+                                                          doc.FileType?.ToLower() == "jpg" || doc.FileType?.ToLower() == "png" || doc.FileType?.ToLower() == "jpeg" ? "image" :
+                                                          "alt") text-primary"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">@doc.Name</div>
+                                        <div class="document-meta">@(doc.FileSize / 1024) КБ • @doc.CreatedAt.ToString("dd.MM.yyyy")</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Документов пока нет</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Модальное окно быстрой загрузки -->
+    <div class="modal fade" id="quickUploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Быстрая загрузка документа</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickUploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Название документа</label>
+                            <input type="text" class="form-control" name="documentName" placeholder="Паспорт, Билет, Страховка и т.д." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Выберите файл</label>
+                            <input type="file" class="form-control" name="documentFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Папка (опционально)</label>
+                            <select class="form-select" name="folderId">
+                                <option value="">Без папки</option>
+                                @if (ViewBag.UserFolders != null)
+                                {
+                                    foreach (var folder in ViewBag.UserFolders)
+                                    {
+                                        <option value="@folder.IdFolder">@folder.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="quickUploadDocument()">Загрузить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Финансы -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-0">

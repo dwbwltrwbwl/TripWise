@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 
 namespace TripWise.Controllers
 {
+    [Route("Newsletter")]
     public class NewsletterController : Controller
     {
         private readonly TripWiseContext _context;
@@ -22,8 +24,9 @@ namespace TripWise.Controllers
 
         // POST: /Newsletter/Subscribe
         [HttpPost]
+        [Route("Subscribe")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Subscribe(string email)
+        public async Task<IActionResult> Subscribe([FromForm] string email)
         {
             try
             {
@@ -36,33 +39,78 @@ namespace TripWise.Controllers
                     return Json(new { success = false, message = "Введите email адрес" });
                 }
 
+                email = email.Trim().ToLower();
+
                 if (!IsValidEmail(email))
                 {
                     _logger.LogWarning($"Invalid email format: {email}");
                     return Json(new { success = false, message = "Введите корректный email" });
                 }
 
-                // ПРОСТОЕ РЕШЕНИЕ: Пока сохраняем только в лог
-                // Позже добавим в БД
-                _logger.LogInformation($"NEW SUBSCRIPTION: {email}");
+                // Проверка, подписан ли уже пользователь
+                var existingSubscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
 
-                // Отправляем приветственное письмо
-                try
+                if (existingSubscription != null)
                 {
-                    await SendWelcomeEmail(email);
-                    _logger.LogInformation($"Welcome email sent to: {email}");
-                }
-                catch (Exception emailEx)
-                {
-                    _logger.LogError(emailEx, $"Failed to send welcome email to: {email}");
-                    // Не прерываем подписку из-за ошибки email
-                }
+                    if (existingSubscription.IsActive)
+                    {
+                        _logger.LogInformation($"Email {email} is already subscribed");
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Этот email уже подписан на рассылку",
+                            alreadySubscribed = true
+                        });
+                    }
+                    else
+                    {
+                        // Возобновляем подписку
+                        existingSubscription.IsActive = true;
+                        existingSubscription.UnsubscribedAt = null;
+                        existingSubscription.SubscribedAt = DateTime.UtcNow;
+                        existingSubscription.Source = "footer";
 
-                return Json(new
+                        _context.NewsletterSubscriptions.Update(existingSubscription);
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation($"Reactivated subscription for: {email}");
+
+                        // Отправляем приветственное письмо
+                        await SendWelcomeEmail(email, true);
+
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Вы снова подписаны на рассылку! Проверьте ваш email."
+                        });
+                    }
+                }
+                else
                 {
-                    success = true,
-                    message = "Вы успешно подписались на рассылку! Проверьте ваш email."
-                });
+                    // Создаем новую подписку
+                    var subscription = new NewsletterSubscription
+                    {
+                        Email = email,
+                        SubscribedAt = DateTime.UtcNow,
+                        IsActive = true,
+                        Source = "footer"
+                    };
+
+                    _context.NewsletterSubscriptions.Add(subscription);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation($"New subscription created for: {email}");
+
+                    // Отправляем приветственное письмо
+                    await SendWelcomeEmail(email, false);
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Вы успешно подписались на рассылку! Проверьте ваш email."
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -70,39 +118,205 @@ namespace TripWise.Controllers
                 return Json(new
                 {
                     success = false,
-                    message = $"Произошла ошибка при подписке: {ex.Message}"
+                    message = "Произошла ошибка при подписке. Попробуйте позже."
                 });
             }
         }
 
-        private async Task SendWelcomeEmail(string email)
+        // GET: /Newsletter/CheckSubscription
+        [HttpGet]
+        [Route("CheckSubscription")]
+        public async Task<IActionResult> CheckSubscription([FromQuery] string email)
         {
-            var subject = "Добро пожаловать в рассылку Вместе В Путь! 🎉";
-            var body = $@"
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
-                <div style='text-align: center; margin-bottom: 30px;'>
-                    <h2 style='color: #0379D9;'>Спасибо за подписку!</h2>
-                </div>
-                
-                <div style='background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
-                    <h3 style='color: #333; margin-top: 0;'>Что вас ждет?</h3>
-                    <ul style='color: #555; line-height: 1.6; padding-left: 20px;'>
-                        <li>🔥 Лучшие предложения на авиабилеты и отели</li>
-                        <li>📅 Уведомления о скидках и акциях</li>
-                        <li>🗺️ Полезные советы для путешественников</li>
-                        <li>👥 Идеи для групповых поездок</li>
-                    </ul>
-                </div>
-                
-                <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
-                    <p style='color: #888; font-size: 12px;'>
-                        С уважением, команда <strong>Вместе В Путь</strong><br>
-                        {DateTime.Now.Year} © Все права защищены
-                    </p>
-                </div>
-            </div>";
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return Json(new { error = "Email не указан" });
+                }
 
-            await _emailService.SendAsync(email, subject, body);
+                email = email.Trim().ToLower();
+
+                var subscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
+
+                return Json(new
+                {
+                    email = email,
+                    isSubscribed = subscription?.IsActive ?? false,
+                    subscribedAt = subscription?.SubscribedAt.ToString("yyyy-MM-dd HH:mm"),
+                    source = subscription?.Source
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке подписки");
+                return Json(new { error = "Произошла ошибка при проверке подписки" });
+            }
+        }
+
+        // POST: /Newsletter/Unsubscribe
+        [HttpPost]
+        [Route("Unsubscribe")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unsubscribe([FromForm] string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return Json(new { success = false, message = "Email не указан" });
+                }
+
+                email = email.Trim().ToLower();
+
+                var subscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
+
+                if (subscription == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Email не найден в списке подписчиков"
+                    });
+                }
+
+                if (!subscription.IsActive)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Вы уже отписаны от рассылки"
+                    });
+                }
+
+                // Отписываем
+                subscription.IsActive = false;
+                subscription.UnsubscribedAt = DateTime.UtcNow;
+
+                _context.NewsletterSubscriptions.Update(subscription);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"User {email} unsubscribed from newsletter");
+
+                // Отправляем письмо об отписке
+                await SendUnsubscribeEmail(email);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Вы успешно отписались от рассылки"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отписке от рассылки");
+                return Json(new
+                {
+                    success = false,
+                    message = "Произошла ошибка при отписке"
+                });
+            }
+        }
+
+        private async Task SendWelcomeEmail(string email, bool isReactivation = false)
+        {
+            try
+            {
+                var subject = isReactivation
+                    ? "С возвращением в рассылку Вместе В Путь! 🎉"
+                    : "Добро пожаловать в рассылку Вместе В Путь! 🎉";
+
+                var body = $@"
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='text-align: center; margin-bottom: 30px;'>
+                <h2 style='color: #0379D9;'>
+                    {(isReactivation ? "С возвращением!" : "Спасибо за подписку!")}
+                </h2>
+            </div>
+            
+            <div style='background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
+                <h3 style='color: #333; margin-top: 0;'>Что вас ждет?</h3>
+                <ul style='color: #555; line-height: 1.6; padding-left: 20px;'>
+                    <li>🔥 Лучшие предложения на авиабилеты и отели</li>
+                    <li>📅 Уведомления о скидках и акциях</li>
+                    <li>🗺️ Полезные советы для путешественников</li>
+                    <li>👥 Идеи для групповых поездок</li>
+                </ul>
+            </div>
+            
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{Url.Action("Index", "Home", null, "https")}' 
+                   style='display: inline-block; background: #0379D9; color: white; 
+                          padding: 12px 30px; border-radius: 8px; text-decoration: none; 
+                          font-weight: bold;'>
+                    Начать планирование
+                </a>
+            </div>
+            
+            <div style='border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;'>
+                <p style='color: #888; font-size: 12px; text-align: center;'>
+                    <strong>Важно:</strong> Если вы не хотите получать рассылку, 
+                    <a href='{Url.Action("Unsubscribe", "Newsletter", new { email = email }, "https")}' 
+                       style='color: #0379D9;'>отпишитесь здесь</a>.
+                </p>
+            </div>
+            
+            <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
+                <p style='color: #aaa; font-size: 12px;'>
+                    С уважением, команда <strong>Вместе В Путь</strong><br>
+                    {DateTime.Now.Year} © Все права защищены
+                </p>
+            </div>
+        </div>";
+
+                await _emailService.SendAsync(email, subject, body);
+                _logger.LogInformation($"Welcome email sent to: {email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send welcome email to: {email}");
+            }
+        }
+
+        private async Task SendUnsubscribeEmail(string email)
+        {
+            try
+            {
+                var subject = "Вы отписались от рассылки Вместе В Путь";
+                var body = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <div style='text-align: center; margin-bottom: 30px;'>
+                        <h2 style='color: #666;'>Мы сожалеем, что вы уходите</h2>
+                    </div>
+                    
+                    <div style='background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
+                        <p style='color: #555; text-align: center;'>
+                            Вы успешно отписались от рассылки <strong>Вместе В Путь</strong>.
+                        </p>
+                        <p style='color: #555; text-align: center;'>
+                            Если это произошло по ошибке, вы можете 
+                            <a href='{Url.Action("Index", "Home", null, "https")}' 
+                               style='color: #0379D9;'>снова подписаться</a> в любое время.
+                        </p>
+                    </div>
+                    
+                    <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
+                        <p style='color: #aaa; font-size: 12px;'>
+                            С уважением, команда <strong>Вместе В Путь</strong><br>
+                            {DateTime.Now.Year} © Все права защищены
+                        </p>
+                    </div>
+                </div>";
+
+                await _emailService.SendAsync(email, subject, body);
+                _logger.LogInformation($"Unsubscribe email sent to: {email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send unsubscribe email to: {email}");
+            }
         }
 
         private bool IsValidEmail(string email)

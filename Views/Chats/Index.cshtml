@@ -1,0 +1,57 @@
+﻿@{
+    ViewData["Title"] = "Чаты";
+    var userId = Context.Session.GetInt32("UserId");
+}
+
+<div class="container mt-4">
+    @if (userId == null)
+    {
+        <div class="alert alert-info">
+            <h5>Войдите в аккаунт</h5>
+            <p>Чтобы использовать чаты, войдите в свой аккаунт.</p>
+            <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Войти</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Список чатов -->
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Мои чаты</h5>
+                    </div>
+                    <div class="card-body p-0" id="chatsList">
+                        <div class="text-center p-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Окно чата -->
+            <div class="col-md-8">
+                <div class="card shadow-sm" id="chatContainer" style="display: none;">
+                    <div class="card-header bg-light" id="chatHeader">
+                        <!-- Заголовок чата будет загружен динамически -->
+                    </div>
+                    <div class="card-body" id="messagesContainer" style="height: 500px; overflow-y: auto;">
+                        <!-- Сообщения будут здесь -->
+                    </div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Введите сообщение...">
+                            <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="noChatSelected" class="text-center p-5">
+                    <h4>Выберите чат</h4>
+                    <p class="text-muted">Начните общение с попутчиками</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>

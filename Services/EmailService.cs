@@ -163,7 +163,65 @@ public class EmailService
 
         await SendAsync(toEmail, subject, body);
     }
+    public async Task SendPasswordChangeCodeAsync(string toEmail, string code)
+    {
+        var subject = "Код подтверждения смены пароля - Вместе В Путь";
+        var body = $@"
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #e8f4fe; border: 1px solid #b6d4fe; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+            <h2 style='color: #0379D9; margin-top: 0;'>
+                <i class='fas fa-key'></i> Подтверждение смены пароля
+            </h2>
+            <p style='color: #0379D9;'>
+                Вы запросили смену пароля для вашего аккаунта в <strong>Вместе В Путь</strong>.
+            </p>
+        </div>
+        
+        <div style='text-align: center; margin: 30px 0;'>
+            <h3 style='color: #333;'>Ваш код подтверждения:</h3>
+            <div style='background: #f8f9fa; padding: 25px; border-radius: 12px; border: 3px dashed #0379D9; 
+                        display: inline-block; margin: 20px 0;'>
+                <h1 style='color: #0379D9; margin: 0; letter-spacing: 15px; font-size: 36px; font-weight: bold;'>
+                    {code}
+                </h1>
+            </div>
+            <p style='color: #666;'>
+                Введите этот 6-значный код для подтверждения смены пароля.
+            </p>
+        </div>
+        
+        <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <p style='margin: 0; color: #856404;'>
+                <strong><i class='fas fa-shield-alt'></i> В целях безопасности</strong><br>
+                Никогда никому не сообщайте этот код, даже сотрудникам поддержки.
+            </p>
+        </div>
+        
+        <div style='background: #e8f4fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <p style='margin: 0; color: #0379D9;'>
+                <strong><i class='fas fa-clock'></i> Код действителен 15 минут</strong>
+            </p>
+        </div>
+        
+        <div style='border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;'>
+            <p style='color: #888; font-size: 14px;'>
+                <strong>Если вы не запрашивали смену пароля:</strong><br>
+                Проигнорируйте это письмо, ваш текущий пароль остается действительным.
+                Если вы подозреваете несанкционированный доступ, 
+                <a href='mailto:support@tripwise.ru' style='color: #0379D9;'>свяжитесь со службой поддержки</a>.
+            </p>
+        </div>
+        
+        <div style='text-align: center; margin-top: 30px;'>
+            <p style='color: #aaa; font-size: 12px;'>
+                С уважением, команда <strong>Вместе В Путь</strong><br>
+                {DateTime.Now.Year} © Все права защищены
+            </p>
+        </div>
+    </div>";
 
+        await SendAsync(toEmail, subject, body);
+    }
     // Простой метод для теста
     public async Task<bool> TestConnection()
     {

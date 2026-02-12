@@ -57,8 +57,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
     });
+
 
 // API ЯЕПБХЯШ
 builder.Services.AddScoped<RzdApiService>();
@@ -81,7 +85,6 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-// CORS middleware - днкфмн ашрэ оняке UseRouting Х дн UseAuthorization
 app.UseCors("AllowAll");
 
 

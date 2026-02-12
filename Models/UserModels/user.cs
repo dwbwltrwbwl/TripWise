@@ -24,6 +24,8 @@ public partial class User
     public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
 
     public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
+    public virtual ICollection<DocumentFolder> DocumentFolders { get; set; }
+    public virtual ICollection<UserDocument> UserDocuments { get; set; }
 
     public virtual ICollection<ExpenseShare> ExpenseShares { get; set; } = new List<ExpenseShare>();
 
@@ -41,4 +43,8 @@ public partial class User
 
     public virtual ICollection<VotingSystem> VotingSystems { get; set; } = new List<VotingSystem>();
     public virtual ICollection<FavoriteFlight> FavoriteFlights { get; set; } = new List<FavoriteFlight>();
+    public virtual ICollection<Chat> CreatedChats { get; set; } = new List<Chat>();
+    public virtual ICollection<ChatMember> ChatMemberships { get; set; } = new List<ChatMember>();
+
+    public virtual ICollection<ChatMessageRead> MessageReads { get; set; } = new List<ChatMessageRead>();
 }

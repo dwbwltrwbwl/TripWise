@@ -52,6 +52,11 @@ public partial class TripWiseContext : DbContext
     public DbSet<FlightOrder> FlightOrders { get; set; }
     public DbSet<FlightPassenger> FlightPassengers { get; set; }
     public DbSet<UserAuthToken> UserAuthTokens { get; set; }
+    public DbSet<DocumentFolder> DocumentFolders { get; set; }
+    public DbSet<UserDocument> UserDocuments { get; set; }
+    public virtual DbSet<Chat> Chats { get; set; }
+    public virtual DbSet<ChatMember> ChatMembers { get; set; }
+    public virtual DbSet<ChatMessageRead> ChatMessageReads { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -125,28 +130,234 @@ public partial class TripWiseContext : DbContext
                 .IsUnique();
         });
 
+        modelBuilder.Entity<Chat>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("idChat");
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("name");
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .HasColumnName("description");
+
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("type")
+                .HasDefaultValue("private");
+
+            entity.Property(e => e.TripId)
+                .HasColumnName("idTrip");
+
+            entity.Property(e => e.CreatedById)
+                .IsRequired()
+                .HasColumnName("createdById");
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasColumnName("createdAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.LastMessageAt)
+                .HasColumnName("lastMessageAt");
+
+            entity.HasOne(d => d.Trip)
+                .WithMany()
+                .HasForeignKey(d => d.TripId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(d => d.Creator)
+                .WithMany(p => p.CreatedChats)
+                .HasForeignKey(d => d.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.TripId).HasDatabaseName("IX_Chats_idTrip");
+            entity.HasIndex(e => e.CreatedById).HasDatabaseName("IX_Chats_createdById");
+            entity.HasIndex(e => e.LastMessageAt).HasDatabaseName("IX_Chats_lastMessageAt");
+        });
+
+        // Конфигурация ChatMember
+        modelBuilder.Entity<ChatMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("idChatMember");
+
+            entity.Property(e => e.ChatId)
+                .IsRequired()
+                .HasColumnName("idChat");
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasColumnName("idUser");
+
+            entity.Property(e => e.JoinedAt)
+                .IsRequired()
+                .HasColumnName("joinedAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.LastReadAt)
+                .HasColumnName("lastReadAt");
+
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("role")
+                .HasDefaultValue("member");
+
+            entity.HasOne(d => d.Chat)
+                .WithMany(p => p.Members)
+                .HasForeignKey(d => d.ChatId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.ChatMemberships)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.ChatId, e.UserId })
+                .IsUnique()
+                .HasDatabaseName("IX_ChatMembers_ChatId_UserId");
+
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_ChatMembers_idUser");
+        });
+
         modelBuilder.Entity<ChatMessage>(entity =>
         {
             entity.HasKey(e => e.IdMessage);
+            entity.Property(e => e.IdMessage)
+                .HasColumnName("idMessage")
+                .ValueGeneratedOnAdd();
 
-            entity.HasIndex(e => e.IdPoint, "IX_ChatMessages_idPoint");
+            entity.Property(e => e.ChatId)
+                .IsRequired()
+                .HasColumnName("idChat");
 
-            entity.HasIndex(e => e.IdTrip, "IX_ChatMessages_idTrip");
+            entity.Property(e => e.SenderId)
+                .IsRequired()
+                .HasColumnName("idUser");
 
-            entity.HasIndex(e => e.IdUser, "IX_ChatMessages_idUser");
+            entity.Property(e => e.Message)
+                .IsRequired()
+                .HasColumnName("message");
 
-            entity.Property(e => e.IdMessage).HasColumnName("idMessage");
-            entity.Property(e => e.IdPoint).HasColumnName("idPoint");
-            entity.Property(e => e.IdTrip).HasColumnName("idTrip");
-            entity.Property(e => e.IdUser).HasColumnName("idUser");
-            entity.Property(e => e.Message).HasColumnName("message");
-            entity.Property(e => e.SentAt).HasColumnName("sentAt");
+            entity.Property(e => e.SentAt)
+                .IsRequired()
+                .HasColumnName("sentAt")
+                .HasDefaultValueSql("GETUTCDATE()");
 
-            entity.HasOne(d => d.IdPointNavigation).WithMany(p => p.ChatMessages).HasForeignKey(d => d.IdPoint);
+            entity.Property(e => e.EditedAt)
+                .HasColumnName("editedAt");
 
-            entity.HasOne(d => d.IdTripNavigation).WithMany(p => p.ChatMessages).HasForeignKey(d => d.IdTrip);
+            entity.Property(e => e.ReplyToId)
+                .HasColumnName("replyToId");
 
-            entity.HasOne(d => d.IdUserNavigation).WithMany(p => p.ChatMessages).HasForeignKey(d => d.IdUser);
+            entity.Property(e => e.AttachmentType)
+                .HasMaxLength(50)
+                .HasColumnName("attachmentType");
+
+            entity.Property(e => e.AttachmentUrl)
+                .HasMaxLength(500)
+                .HasColumnName("attachmentUrl");
+
+            entity.Property(e => e.AttachmentName)
+                .HasMaxLength(255)
+                .HasColumnName("attachmentName");
+
+            entity.Property(e => e.AttachmentSize)
+                .HasColumnName("attachmentSize");
+
+            // Обратная совместимость
+            entity.Property(e => e.IdTrip)
+                .HasColumnName("idTrip");
+
+            entity.Property(e => e.IdPoint)
+                .HasColumnName("idPoint");
+
+            // Связи - ТОЛЬКО ОДИН РАЗ для каждого foreign key
+            entity.HasOne(d => d.Chat)
+                .WithMany(p => p.Messages)
+                .HasForeignKey(d => d.ChatId)
+                .HasConstraintName("FK_ChatMessages_Chats")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ОДИН РАЗ для пользователя
+            entity.HasOne(d => d.Sender)
+    .WithMany(p => p.ChatMessages)  // ИСПРАВЛЕНО: SentMessages -> ChatMessages
+    .HasForeignKey(d => d.SenderId)
+    .HasConstraintName("FK_ChatMessages_Users")
+    .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.ReplyTo)
+                .WithMany(p => p.Replies)
+                .HasForeignKey(d => d.ReplyToId)
+                .HasConstraintName("FK_ChatMessages_ReplyTo")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Связи для обратной совместимости
+            entity.HasOne(d => d.Trip)
+                .WithMany()
+                .HasForeignKey(d => d.IdTrip)
+                .HasConstraintName("FK_ChatMessages_Trips")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(d => d.Point)
+                .WithMany()
+                .HasForeignKey(d => d.IdPoint)
+                .HasConstraintName("FK_ChatMessages_Points")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(d => d.Reads)
+                .WithOne(p => p.Message)
+                .HasForeignKey(p => p.MessageId)
+                .HasConstraintName("FK_ChatMessageReads_Messages")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Индексы
+            entity.HasIndex(e => e.ChatId).HasDatabaseName("IX_ChatMessages_idChat");
+            entity.HasIndex(e => e.SentAt).HasDatabaseName("IX_ChatMessages_sentAt");
+            entity.HasIndex(e => e.ReplyToId).HasDatabaseName("IX_ChatMessages_replyToId");
+            entity.HasIndex(e => e.IdTrip).HasDatabaseName("IX_ChatMessages_idTrip");
+        });
+
+        modelBuilder.Entity<ChatMessageRead>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("idChatMessageRead");
+
+            entity.Property(e => e.MessageId)
+                .IsRequired()
+                .HasColumnName("idMessage");
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasColumnName("idUser");
+
+            entity.Property(e => e.ReadAt)
+                .IsRequired()
+                .HasColumnName("readAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(d => d.Message)
+                .WithMany(p => p.Reads)
+                .HasForeignKey(d => d.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.MessageReads)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.MessageId, e.UserId })
+                .IsUnique()
+                .HasDatabaseName("IX_ChatMessageReads_MessageId_UserId");
+
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_ChatMessageReads_idUser");
         });
 
         modelBuilder.Entity<Document>(entity =>
@@ -507,6 +718,42 @@ public partial class TripWiseContext : DbContext
                 .WithMany()
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<DocumentFolder>(entity =>
+        {
+            entity.HasKey(e => e.IdFolder);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Color).HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.DocumentFolders)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Настройка UserDocuments
+        modelBuilder.Entity<UserDocument>(entity =>
+        {
+            entity.HasKey(e => e.IdDocument);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.FileType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.FilePath).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.DocumentType).HasMaxLength(100);
+            entity.Property(e => e.DocumentNumber).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(d => d.Folder)
+                .WithMany(p => p.Documents)
+                .HasForeignKey(d => d.FolderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserDocuments)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // ВАЖНО: NoAction вместо Cascade!
         });
 
         OnModelCreatingPartial(modelBuilder);

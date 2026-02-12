@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TripWise.Models;
 
@@ -11,9 +12,11 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    partial class TripWiseContextModelSnapshot : ModelSnapshot
+    [Migration("20260210190352_AddNewsletterSubscriptionsTable")]
+    partial class AddNewsletterSubscriptionsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,113 +24,6 @@ namespace TripWise.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("TripWise.Models.Chat", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idChat");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("createdAt")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int")
-                        .HasColumnName("createdById");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
-
-                    b.Property<DateTime?>("LastMessageAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("lastMessageAt");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("name");
-
-                    b.Property<int?>("TripId")
-                        .HasColumnType("int")
-                        .HasColumnName("idTrip");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("private")
-                        .HasColumnName("type");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById")
-                        .HasDatabaseName("IX_Chats_createdById");
-
-                    b.HasIndex("LastMessageAt")
-                        .HasDatabaseName("IX_Chats_lastMessageAt");
-
-                    b.HasIndex("TripId")
-                        .HasDatabaseName("IX_Chats_idTrip");
-
-                    b.ToTable("Chats");
-                });
-
-            modelBuilder.Entity("TripWise.Models.ChatMember", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idChatMember");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ChatId")
-                        .HasColumnType("int")
-                        .HasColumnName("idChat");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("joinedAt")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<DateTime?>("LastReadAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("lastReadAt");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("member")
-                        .HasColumnName("role");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("idUser");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_ChatMembers_idUser");
-
-                    b.HasIndex("ChatId", "UserId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ChatMembers_ChatId_UserId");
-
-                    b.ToTable("ChatMembers");
-                });
 
             modelBuilder.Entity("TripWise.Models.ChatMessage", b =>
                 {
@@ -138,124 +34,36 @@ namespace TripWise.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMessage"));
 
-                    b.Property<string>("AttachmentName")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("attachmentName");
-
-                    b.Property<long?>("AttachmentSize")
-                        .HasColumnType("bigint")
-                        .HasColumnName("attachmentSize");
-
-                    b.Property<string>("AttachmentType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("attachmentType");
-
-                    b.Property<string>("AttachmentUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("attachmentUrl");
-
-                    b.Property<int>("ChatId")
-                        .HasColumnType("int")
-                        .HasColumnName("idChat");
-
-                    b.Property<DateTime?>("EditedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("editedAt");
-
                     b.Property<int?>("IdPoint")
                         .HasColumnType("int")
                         .HasColumnName("idPoint");
 
-                    b.Property<int?>("IdTrip")
+                    b.Property<int>("IdTrip")
                         .HasColumnType("int")
                         .HasColumnName("idTrip");
+
+                    b.Property<int>("IdUser")
+                        .HasColumnType("int")
+                        .HasColumnName("idUser");
 
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("message");
 
-                    b.Property<int?>("PointsOfInterestIdPoint")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReplyToId")
-                        .HasColumnType("int")
-                        .HasColumnName("replyToId");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int")
-                        .HasColumnName("idUser");
-
                     b.Property<DateTime>("SentAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasColumnName("sentAt")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int?>("TripIdTrip")
-                        .HasColumnType("int");
+                        .HasColumnName("sentAt");
 
                     b.HasKey("IdMessage");
 
-                    b.HasIndex("ChatId")
-                        .HasDatabaseName("IX_ChatMessages_idChat");
+                    b.HasIndex(new[] { "IdPoint" }, "IX_ChatMessages_idPoint");
 
-                    b.HasIndex("IdPoint");
+                    b.HasIndex(new[] { "IdTrip" }, "IX_ChatMessages_idTrip");
 
-                    b.HasIndex("IdTrip")
-                        .HasDatabaseName("IX_ChatMessages_idTrip");
-
-                    b.HasIndex("PointsOfInterestIdPoint");
-
-                    b.HasIndex("ReplyToId")
-                        .HasDatabaseName("IX_ChatMessages_replyToId");
-
-                    b.HasIndex("SenderId");
-
-                    b.HasIndex("SentAt")
-                        .HasDatabaseName("IX_ChatMessages_sentAt");
-
-                    b.HasIndex("TripIdTrip");
+                    b.HasIndex(new[] { "IdUser" }, "IX_ChatMessages_idUser");
 
                     b.ToTable("ChatMessages");
-                });
-
-            modelBuilder.Entity("TripWise.Models.ChatMessageRead", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idChatMessageRead");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MessageId")
-                        .HasColumnType("int")
-                        .HasColumnName("idMessage");
-
-                    b.Property<DateTime>("ReadAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("readAt")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("idUser");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_ChatMessageReads_idUser");
-
-                    b.HasIndex("MessageId", "UserId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ChatMessageReads_MessageId_UserId");
-
-                    b.ToTable("ChatMessageReads");
                 });
 
             modelBuilder.Entity("TripWise.Models.Document", b =>
@@ -311,44 +119,6 @@ namespace TripWise.Migrations
                     b.HasIndex(new[] { "UploadedById" }, "IX_Documents_uploadedById");
 
                     b.ToTable("Documents");
-                });
-
-            modelBuilder.Entity("TripWise.Models.DocumentFolder", b =>
-                {
-                    b.Property<int>("IdFolder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFolder"));
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("IdFolder");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("DocumentFolders");
                 });
 
             modelBuilder.Entity("TripWise.Models.Expense", b =>
@@ -1110,70 +880,6 @@ namespace TripWise.Migrations
                         });
                 });
 
-            modelBuilder.Entity("TripWise.Models.UserDocument", b =>
-                {
-                    b.Property<int>("IdDocument")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDocument"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("DocumentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DocumentNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("FileType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("FolderId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("IdDocument");
-
-                    b.HasIndex("FolderId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserDocuments");
-                });
-
             modelBuilder.Entity("TripWise.Models.UserVote", b =>
                 {
                     b.Property<int>("IdUserVote")
@@ -1275,114 +981,29 @@ namespace TripWise.Migrations
                     b.ToTable("votingSystems", (string)null);
                 });
 
-            modelBuilder.Entity("TripWise.Models.Chat", b =>
-                {
-                    b.HasOne("TripWise.Models.User", "Creator")
-                        .WithMany("CreatedChats")
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TripWise.Models.Trip", "Trip")
-                        .WithMany()
-                        .HasForeignKey("TripId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Creator");
-
-                    b.Navigation("Trip");
-                });
-
-            modelBuilder.Entity("TripWise.Models.ChatMember", b =>
-                {
-                    b.HasOne("TripWise.Models.Chat", "Chat")
-                        .WithMany("Members")
-                        .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TripWise.Models.User", "User")
-                        .WithMany("ChatMemberships")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Chat");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("TripWise.Models.ChatMessage", b =>
                 {
-                    b.HasOne("TripWise.Models.Chat", "Chat")
-                        .WithMany("Messages")
-                        .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ChatMessages_Chats");
+                    b.HasOne("TripWise.Models.PointsOfInterest", "IdPointNavigation")
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("IdPoint");
 
-                    b.HasOne("TripWise.Models.PointsOfInterest", "Point")
-                        .WithMany()
-                        .HasForeignKey("IdPoint")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Points");
-
-                    b.HasOne("TripWise.Models.Trip", "Trip")
-                        .WithMany()
+                    b.HasOne("TripWise.Models.Trip", "IdTripNavigation")
+                        .WithMany("ChatMessages")
                         .HasForeignKey("IdTrip")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Trips");
-
-                    b.HasOne("TripWise.Models.PointsOfInterest", null)
-                        .WithMany("ChatMessages")
-                        .HasForeignKey("PointsOfInterestIdPoint");
-
-                    b.HasOne("TripWise.Models.ChatMessage", "ReplyTo")
-                        .WithMany("Replies")
-                        .HasForeignKey("ReplyToId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("FK_ChatMessages_ReplyTo");
-
-                    b.HasOne("TripWise.Models.User", "Sender")
-                        .WithMany("ChatMessages")
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_ChatMessages_Users");
-
-                    b.HasOne("TripWise.Models.Trip", null)
-                        .WithMany("ChatMessages")
-                        .HasForeignKey("TripIdTrip");
-
-                    b.Navigation("Chat");
-
-                    b.Navigation("Point");
-
-                    b.Navigation("ReplyTo");
-
-                    b.Navigation("Sender");
-
-                    b.Navigation("Trip");
-                });
-
-            modelBuilder.Entity("TripWise.Models.ChatMessageRead", b =>
-                {
-                    b.HasOne("TripWise.Models.ChatMessage", "Message")
-                        .WithMany("Reads")
-                        .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_ChatMessageReads_Messages");
-
-                    b.HasOne("TripWise.Models.User", "User")
-                        .WithMany("MessageReads")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Message");
+                    b.HasOne("TripWise.Models.User", "IdUserNavigation")
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("IdPointNavigation");
+
+                    b.Navigation("IdTripNavigation");
+
+                    b.Navigation("IdUserNavigation");
                 });
 
             modelBuilder.Entity("TripWise.Models.Document", b =>
@@ -1401,17 +1022,6 @@ namespace TripWise.Migrations
                     b.Navigation("IdTripNavigation");
 
                     b.Navigation("UploadedBy");
-                });
-
-            modelBuilder.Entity("TripWise.Models.DocumentFolder", b =>
-                {
-                    b.HasOne("TripWise.Models.User", "User")
-                        .WithMany("DocumentFolders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TripWise.Models.Expense", b =>
@@ -1580,24 +1190,6 @@ namespace TripWise.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TripWise.Models.UserDocument", b =>
-                {
-                    b.HasOne("TripWise.Models.DocumentFolder", "Folder")
-                        .WithMany("Documents")
-                        .HasForeignKey("FolderId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("TripWise.Models.User", "User")
-                        .WithMany("UserDocuments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Folder");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("TripWise.Models.UserVote", b =>
                 {
                     b.HasOne("TripWise.Models.User", "IdUserNavigation")
@@ -1649,25 +1241,6 @@ namespace TripWise.Migrations
                     b.Navigation("IdPointNavigation");
 
                     b.Navigation("IdTripNavigation");
-                });
-
-            modelBuilder.Entity("TripWise.Models.Chat", b =>
-                {
-                    b.Navigation("Members");
-
-                    b.Navigation("Messages");
-                });
-
-            modelBuilder.Entity("TripWise.Models.ChatMessage", b =>
-                {
-                    b.Navigation("Reads");
-
-                    b.Navigation("Replies");
-                });
-
-            modelBuilder.Entity("TripWise.Models.DocumentFolder", b =>
-                {
-                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("TripWise.Models.Expense", b =>
@@ -1726,13 +1299,7 @@ namespace TripWise.Migrations
 
             modelBuilder.Entity("TripWise.Models.User", b =>
                 {
-                    b.Navigation("ChatMemberships");
-
                     b.Navigation("ChatMessages");
-
-                    b.Navigation("CreatedChats");
-
-                    b.Navigation("DocumentFolders");
 
                     b.Navigation("Documents");
 
@@ -1742,15 +1309,11 @@ namespace TripWise.Migrations
 
                     b.Navigation("FavoriteFlights");
 
-                    b.Navigation("MessageReads");
-
                     b.Navigation("PointsOfInterests");
 
                     b.Navigation("TripParticipants");
 
                     b.Navigation("Trips");
-
-                    b.Navigation("UserDocuments");
 
                     b.Navigation("UserVotes");
 
