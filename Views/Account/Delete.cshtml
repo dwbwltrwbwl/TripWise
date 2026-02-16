@@ -5,110 +5,167 @@
 
 <div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <!-- Заголовок -->
-            <div class="text-center mb-4">
-                <div class="mb-3">
-                    <i class="fas fa-exclamation-triangle text-danger fa-4x"></i>
+        <div class="col-lg-8">
+            <!-- Заголовок страницы -->
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon bg-danger">
+                    <i class="fas fa-exclamation-triangle text-white"></i>
                 </div>
-                <h1 class="h2 fw-bold text-danger">Удаление аккаунта</h1>
-                <p class="text-muted">Это действие невозможно отменить</p>
+                <div>
+                    <h1 class="page-title text-danger">
+                        Удаление аккаунта
+                    </h1>
+                    <p class="page-subtitle">Это действие невозможно отменить</p>
+                </div>
             </div>
 
-            <!-- Карточка с формой -->
-            <div class="card border-danger shadow-sm">
+            <!-- Шаг 1: Предупреждение -->
+            <div id="step1" class="card border-0 shadow-sm mb-4 @(Model.CodeSent ? "d-none" : "")">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Шаг 1: Подтверждение
+                    </h3>
+                </div>
                 <div class="card-body p-4">
-                    <!-- Шаг 1: Предупреждение -->
-                    <div id="stepWarning" class="@(Model.CodeSent ? "d-none" : "")">
-                        <div class="alert alert-danger" role="alert">
-                            <h5 class="alert-heading"><i class="fas fa-exclamation-circle"></i> Внимание!</h5>
-                            <p class="mb-2">Вы собираетесь <strong>полностью удалить свой аккаунт</strong>.</p>
-                            <hr>
-                            <p class="mb-0">
-                                Будут удалены все ваши данные:
+                    <!-- Предупреждение -->
+                    <div class="alert alert-danger border-0 rounded-lg mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-exclamation-circle fa-2x text-danger me-3 mt-1"></i>
+                            <div>
+                                <h5 class="alert-heading mb-3">Внимание! Вы собираетесь удалить аккаунт</h5>
+                                <p class="mb-2">Будут безвозвратно удалены:</p>
                                 <ul class="mb-0">
-                                    <li>Профиль и настройки</li>
-                                    <li>История поездок</li>
-                                    <li>Финансовые данные</li>
-                                    <li>Участие в группах</li>
+                                    <li>Личная информация и настройки профиля</li>
+                                    <li>История всех поездок и бронирований</li>
+                                    <li>Финансовые данные и история расходов</li>
+                                    <li>Участие в группах и чатах</li>
+                                    <li>Все загруженные документы и файлы</li>
                                 </ul>
-                            </p>
-                        </div>
-
-                        <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="confirmCheckbox">
-                            <label class="form-check-label text-danger fw-semibold" for="confirmCheckbox">
-                                Я понимаю последствия и хочу продолжить
-                            </label>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="button" id="sendCodeBtn" class="btn btn-danger" disabled>
-                                <i class="fas fa-envelope me-2"></i>Получить код подтверждения
-                            </button>
-                            <a asp-action="Profile" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Отмена
-                            </a>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Шаг 2: Ввод кода -->
-                    <div id="stepCode" class="@(Model.CodeSent ? "" : "d-none")">
-                        <div class="alert alert-info" role="alert">
-                            <h5 class="alert-heading"><i class="fas fa-envelope"></i> Код отправлен</h5>
-                            <p class="mb-0">
-                                Мы отправили 6-значный код на email:
-                                <strong>@Model.Email</strong>
-                            </p>
-                            <p class="small mb-0 mt-1">
-                                <i class="fas fa-clock"></i> Код действителен 15 минут
-                            </p>
+                    <!-- Чекбокс подтверждения -->
+                    <div class="mb-4 p-3 bg-light rounded-lg">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmCheckbox">
+                            <label class="form-check-label fw-semibold text-danger" for="confirmCheckbox">
+                                Я понимаю последствия и подтверждаю удаление аккаунта
+                            </label>
                         </div>
+                    </div>
 
-                        <form id="deleteForm" method="post">
-                            @Html.AntiForgeryToken()
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a asp-action="Profile" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>Отмена
+                        </a>
+                        <button type="button" class="btn btn-danger btn-lg" id="sendCodeBtn" disabled>
+                            <i class="fas fa-envelope me-2"></i>Получить код подтверждения
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                            <div class="mb-4">
-                                <label for="code" class="form-label fw-semibold">
-                                    Введите код из письма
-                                </label>
-                                <input type="text"
-                                       id="code"
-                                       name="code"
-                                       class="form-control form-control-lg text-center"
-                                       maxlength="6"
-                                       placeholder="123456"
-                                       style="letter-spacing: 10px; font-size: 24px; font-weight: 600;">
-                                <div class="form-text">
-                                    Введите 6 цифр, которые пришли на ваш email
+            <!-- Шаг 2: Ввод кода подтверждения -->
+            <div id="step2" class="card border-0 shadow-sm @(Model.CodeSent ? "" : "d-none")">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-shield-alt text-danger me-2"></i>
+                        Шаг 2: Подтверждение по email
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Информация о письме -->
+                    <div class="alert alert-info border-0 rounded-lg mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-paper-plane fa-2x text-info me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-2">Код отправлен на ваш email</h6>
+                                <p class="mb-0 small">
+                                    <strong>@Model.Email</strong><br>
+                                    Проверьте папку "Входящие" или "Спам"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Форма ввода кода -->
+                    <form id="deleteForm">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Поле для кода -->
+                        <div class="mb-4">
+                            <label for="verificationCode" class="form-label fw-semibold">
+                                <i class="fas fa-key me-2"></i>Код подтверждения
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-lg text-center"
+                                   id="verificationCode"
+                                   maxlength="6"
+                                   placeholder="000000"
+                                   style="font-size: 28px; font-weight: bold; letter-spacing: 10px;"
+                                   autocomplete="off">
+
+                            <!-- Таймеры и статус -->
+                            <div class="mt-3 d-flex justify-content-between align-items-center">
+                                <small id="codeTimer" class="text-muted">
+                                    <i class="far fa-clock me-1"></i>Код действителен:
+                                    <span id="timer" class="text-danger fw-bold">15:00</span>
+                                </small>
+                                <div>
+                                    <button type="button" class="btn btn-link p-0" id="resendCodeBtn" disabled>
+                                        Отправить код повторно (<span id="resendTimer">60</span>)
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <button type="button" id="confirmDeleteBtn" class="btn btn-danger btn-lg">
-                                    <i class="fas fa-trash-alt me-2"></i>Удалить аккаунт
-                                </button>
-                                <button type="button" id="resendCodeBtn" class="btn btn-outline-secondary">
-                                    <i class="fas fa-redo me-2"></i>Отправить код повторно
-                                </button>
-                                <a asp-action="Profile" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times me-2"></i>Отмена
-                                </a>
+                            <!-- Ошибка -->
+                            <div id="codeError" class="text-danger d-none mt-2">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                <span id="codeErrorMessage"></span>
                             </div>
-                        </form>
-                    </div>
+                        </div>
 
-                    <!-- Сообщения -->
-                    <div id="messageContainer" class="mt-3"></div>
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="backToStep1Btn">
+                                <i class="fas fa-arrow-left me-2"></i>Назад
+                            </button>
+                            <button type="submit" class="btn btn-danger btn-lg" id="confirmDeleteBtn" disabled>
+                                <i class="fas fa-trash-alt me-2"></i>Удалить аккаунт
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <!-- Информация -->
+            <!-- Шаг 3: Успех -->
+            <div id="step3" class="card border-0 shadow-sm d-none">
+                <div class="card-body p-5 text-center">
+                    <div class="display-1 text-success mb-4">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="h3 mb-3">Аккаунт успешно удален</h2>
+                    <p class="text-muted mb-4">
+                        Мы сожалеем, что вы покидаете нас. Ваши данные полностью удалены из системы.
+                    </p>
+                    <a asp-action="Index" asp-controller="Home" class="btn btn-primary btn-lg">
+                        <i class="fas fa-home me-2"></i>На главную
+                    </a>
+                </div>
+            </div>
+
+            <!-- Сообщения -->
+            <div id="messageContainer" class="mt-3"></div>
+
+            <!-- Информация о поддержке -->
             <div class="text-center mt-4">
                 <p class="text-muted small">
                     <i class="fas fa-info-circle me-1"></i>
                     Если у вас возникли проблемы, свяжитесь с поддержкой:
-                    <a href="mailto:support@tripwise.ru">support@tripwise.ru</a>
+                    <a href="mailto:support@tripwise.ru" class="text-decoration-none">support@tripwise.ru</a>
                 </p>
             </div>
         </div>
@@ -117,180 +174,200 @@
 
 @section Styles {
     <style>
+        /* Стили из страницы смены пароля */
+        .page-header-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .page-header-section::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 6px;
+                height: 100%;
+                background: linear-gradient(to bottom, #dc3545, #ff6b6b);
+            }
+
+        .page-header-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #dc3545, #ff6b6b);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: #dc3545;
+            margin: 0 0 8px 0;
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin: 0;
+            max-width: 600px;
+        }
+
+        .section-subtitle {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #334155;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
         .card {
             border-radius: 16px;
-            border-width: 2px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
 
         .form-control-lg {
-            height: 60px;
-            border-radius: 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 14px 18px;
+            font-family: 'Nunito', sans-serif;
         }
 
-        #code {
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-        }
+            .form-control-lg:focus {
+                border-color: #dc3545;
+                box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+            }
 
-        .alert ul {
-            padding-left: 20px;
-            margin-bottom: 0;
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Nunito', sans-serif;
         }
 
         .btn-danger {
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
+            background: #dc3545;
+            border: none;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+            padding: 14px 30px;
+            font-size: 1.1rem;
         }
 
+            .btn-danger:hover {
+                background: #bb2d3b;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 18px rgba(220, 53, 69, 0.3);
+            }
+
+            .btn-danger:disabled {
+                background: #e2e8f0;
+                border: 1px solid #cbd5e0;
+                color: #94a3b8;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
         .btn-outline-secondary {
-            padding: 12px 24px;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
+        }
+
+            .btn-outline-secondary:hover {
+                background: #f8fafc;
+                border-color: #94a3b8;
+                color: #334155;
+            }
+
+        #verificationCode {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+            #verificationCode:focus {
+                background: #ffffff;
+                border-color: #dc3545;
+            }
+
+        #timer {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        #resendTimer {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .alert {
             border-radius: 12px;
+        }
+
+        .bg-light {
+            background-color: #f8fafc !important;
+        }
+
+        .rounded-lg {
+            border-radius: 12px;
+        }
+
+        @@media (max-width: 768px) {
+            .page-header-section {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px;
+                gap: 15px;
+            }
+
+                .page-header-section::before {
+                    width: 100%;
+                    height: 6px;
+                    top: 0;
+                    left: 0;
+                    background: linear-gradient(to right, #dc3545, #ff6b6b);
+                }
+
+            .page-header-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.75rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .section-subtitle {
+                font-size: 1.2rem;
+            }
+
+            #verificationCode {
+                font-size: 24px;
+                letter-spacing: 8px;
+            }
         }
     </style>
 }
 
 @section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Включение кнопки отправки кода
-            $('#confirmCheckbox').change(function() {
-                $('#sendCodeBtn').prop('disabled', !$(this).is(':checked'));
-            });
-
-            // Автоматический переход к следующему полю при вводе кода
-            $('#code').on('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value.length === 6) {
-                    $('#confirmDeleteBtn').focus();
-                }
-            });
-
-            // Отправка кода подтверждения - ИСПРАВЛЕННАЯ ВЕРСИЯ
-            $('#sendCodeBtn').click(function() {
-                $(this).html('<span class="spinner-border spinner-border-sm me-2"></span>Отправка...');
-                $(this).prop('disabled', true);
-
-                // Получаем токен
-                var token = $('input[name="__RequestVerificationToken"]').val();
-
-                // Отправляем простой POST с токеном в data
-                $.post('@Url.Action("SendDeleteCode")',
-                    { __RequestVerificationToken: token })
-                .done(function(response) {
-                    if (response.success) {
-                        showMessage('success', response.message);
-                        $('#stepWarning').addClass('d-none');
-                        $('#stepCode').removeClass('d-none');
-                        $('#code').focus();
-                    } else {
-                        showMessage('danger', response.message);
-                    }
-                })
-                .fail(function(xhr) {
-                    showMessage('danger', 'Ошибка сервера: ' + xhr.statusText);
-                })
-                .always(function() {
-                    $('#sendCodeBtn').html('<i class="fas fa-envelope me-2"></i>Получить код подтверждения');
-                    $('#sendCodeBtn').prop('disabled', false);
-                });
-            });
-
-            // Повторная отправка кода
-            $('#resendCodeBtn').click(function() {
-                $(this).html('<span class="spinner-border spinner-border-sm me-2"></span>Отправка...');
-                $(this).prop('disabled', true);
-
-                var token = $('input[name="__RequestVerificationToken"]').val();
-
-                $.post('@Url.Action("SendDeleteCode")',
-                    { __RequestVerificationToken: token })
-                .done(function(response) {
-                    if (response.success) {
-                        showMessage('success', 'Новый код отправлен на ваш email');
-                    } else {
-                        showMessage('danger', response.message);
-                    }
-                })
-                .fail(function(xhr) {
-                    showMessage('danger', 'Ошибка: ' + xhr.statusText);
-                })
-                .always(function() {
-                    $('#resendCodeBtn').html('<i class="fas fa-redo me-2"></i>Отправить код повторно');
-                    $('#resendCodeBtn').prop('disabled', false);
-                });
-            });
-
-            // Подтверждение удаления - ИСПРАВЛЕННАЯ ВЕРСИЯ
-            $('#confirmDeleteBtn').click(function() {
-                var code = $('#code').val().trim();
-
-                // Проверка на клиенте
-                if (code.length !== 6 || !/^\d+$/.test(code)) {
-                    showMessage('warning', 'Введите 6 цифр');
-                    return;
-                }
-
-                if (!confirm('Вы уверены, что хотите окончательно удалить аккаунт? Это действие невозможно отменить.')) {
-                    return;
-                }
-
-                $(this).html('<span class="spinner-border spinner-border-sm me-2"></span>Удаление...');
-                $(this).prop('disabled', true);
-
-                var token = $('input[name="__RequestVerificationToken"]').val();
-
-                $.ajax({
-                    url: '@Url.Action("ConfirmDelete")',
-                    type: 'POST',
-                    data: {
-                        __RequestVerificationToken: token,
-                        code: code
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            showMessage('success', response.message);
-                            setTimeout(function() {
-                                if (response.redirectUrl) {
-                                    window.location.href = response.redirectUrl;
-                                } else {
-                                    window.location.href = '@Url.Action("Index", "Home")';
-                                }
-                            }, 2000);
-                        } else {
-                            showMessage('danger', response.message);
-                            $('#confirmDeleteBtn').html('<i class="fas fa-trash-alt me-2"></i>Удалить аккаунт');
-                            $('#confirmDeleteBtn').prop('disabled', false);
-                        }
-                    },
-                    error: function(xhr) {
-                        showMessage('danger', 'Ошибка сервера: ' + xhr.statusText);
-                        $('#confirmDeleteBtn').html('<i class="fas fa-trash-alt me-2"></i>Удалить аккаунт');
-                        $('#confirmDeleteBtn').prop('disabled', false);
-                    }
-                });
-            });
-
-            // Функция отображения сообщений
-            function showMessage(type, text) {
-                var alertClass = 'alert-' + type;
-                var icon = type === 'success' ? 'fa-check-circle' :
-                          type === 'warning' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle';
-
-                var html = `
-                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                        <i class="fas ${icon} me-2"></i>${text}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>`;
-
-                $('#messageContainer').html(html);
-
-                setTimeout(function() {
-                    $('#messageContainer .alert').alert('close');
-                }, 5000);
-            }
-
-            console.log('Script loaded successfully');
-        });
-    </script>
+    <script src="~/js/account-delete.js"></script>
 }

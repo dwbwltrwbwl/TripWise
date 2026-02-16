@@ -22,6 +22,8 @@ namespace TripWise.Controllers
         private const string DELETE_CODE_PREFIX = "DeleteCode_";
         private const string PASSWORD_CHANGE_CODE_PREFIX = "PasswordChangeCode_";
         private const string PASSWORD_CHANGE_DATA_PREFIX = "PasswordChangeData_";
+        private const string FORGOT_PASSWORD_CODE_PREFIX = "ForgotPasswordCode_";
+        private const string FORGOT_PASSWORD_DATA_PREFIX = "ForgotPasswordData_";
 
         public AccountController(TripWiseContext context, EmailService emailService,
             ILogger<AccountController> logger, IMemoryCache memoryCache)
@@ -613,7 +615,7 @@ namespace TripWise.Controllers
                 var code = random.Next(100000, 999999).ToString();
 
                 // Сохраняем код в кэш на 15 минут
-                var cacheKey = DELETE_CODE_PREFIX + userId;
+                var cacheKey = "DeleteCode_" + userId;
                 _cache.Set(cacheKey, code, TimeSpan.FromMinutes(15));
 
                 // Отправляем код на email
@@ -633,100 +635,167 @@ namespace TripWise.Controllers
         // POST: /Account/ConfirmDelete
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmDelete(string code)
+        public async Task<IActionResult> ConfirmDelete([FromBody] ConfirmDeleteRequest request)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
-                return Json(new { success = false, message = "Сессия истекла" });
+                return Json(new { success = false, message = "Сессия истекла. Пожалуйста, войдите снова." });
 
             try
-            {// Более гибкая проверка кода
-                if (string.IsNullOrWhiteSpace(code))
-                    return Json(new { success = false, message = "Введите код" });
+            {
+                // Проверяем наличие запроса и кода
+                if (request == null)
+                    return Json(new { success = false, message = "Неверный формат запроса" });
 
-                // Убираем все нецифровые символы
-                code = new string(code.Where(char.IsDigit).ToArray());
+                if (string.IsNullOrWhiteSpace(request.Code))
+                    return Json(new { success = false, message = "Введите код подтверждения" });
 
-                if (code.Length != 6)
+                // Очищаем код от всех нецифровых символов
+                var cleanedCode = new string(request.Code.Where(char.IsDigit).ToArray());
+
+                // Проверяем длину кода
+                if (cleanedCode.Length != 6)
                     return Json(new { success = false, message = "Код должен содержать 6 цифр" });
 
-                // Проверяем код из кэша
+                // Получаем код из кэша
                 var cacheKey = DELETE_CODE_PREFIX + userId;
                 if (!_cache.TryGetValue(cacheKey, out string cachedCode))
-                    return Json(new { success = false, message = "Код истек или не был отправлен" });
+                {
+                    _logger.LogWarning($"Попытка подтверждения удаления с истекшим кодом для пользователя {userId}");
+                    return Json(new { success = false, message = "Код подтверждения истек. Запросите новый код." });
+                }
 
-                if (cachedCode != code)
+                // Сравниваем коды
+                if (cachedCode != cleanedCode)
+                {
+                    _logger.LogWarning($"Неверный код подтверждения для пользователя {userId}");
                     return Json(new { success = false, message = "Неверный код подтверждения" });
+                }
 
-                // Находим пользователя
+                // Находим пользователя со всеми связанными данными
                 var user = await _context.Users
                     .Include(u => u.Expenses)
                     .Include(u => u.ExpenseShares)
                     .Include(u => u.TripParticipants)
+                    .Include(u => u.UserDocuments)
+                        .ThenInclude(d => d.Folder)
+                    .Include(u => u.DocumentFolders)
                     .FirstOrDefaultAsync(u => u.IdUser == userId);
 
                 if (user == null)
+                {
+                    _logger.LogError($"Пользователь {userId} не найден при попытке удаления");
                     return Json(new { success = false, message = "Пользователь не найден" });
+                }
 
-                // Начинаем транзакцию для безопасного удаления
+                // Сохраняем email для логов перед удалением
+                var userEmail = user.Email;
+
+                // Начинаем транзакцию для безопасного удаления всех связанных данных
                 using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
-                        // 1. Удаляем доли расходов
-                        _context.ExpenseShares.RemoveRange(user.ExpenseShares);
+                        _logger.LogInformation($"Начало удаления аккаунта пользователя {userEmail} (ID: {userId})");
+                        
 
-                        // 2. Удаляем участие в поездках
-                        _context.TripParticipants.RemoveRange(user.TripParticipants);
+                        // 2. Удаляем доли расходов пользователя
+                        if (user.ExpenseShares != null && user.ExpenseShares.Any())
+                        {
+                            _context.ExpenseShares.RemoveRange(user.ExpenseShares);
+                            _logger.LogDebug($"Удалено {user.ExpenseShares.Count} долей расходов");
+                        }
 
-                        // 3. Для расходов, которые оплатил пользователь, очищаем PaidById
+                        // 3. Удаляем участие в поездках
+                        if (user.TripParticipants != null && user.TripParticipants.Any())
+                        {
+                            _context.TripParticipants.RemoveRange(user.TripParticipants);
+                            _logger.LogDebug($"Удалено {user.TripParticipants.Count} записей об участии в поездках");
+                        }
+
+                        // 4. Для расходов, которые оплатил пользователь, устанавливаем PaidById = null
                         var userExpenses = await _context.Expenses
                             .Where(e => e.PaidById == userId)
                             .ToListAsync();
 
-                        foreach (var expense in userExpenses)
+                        if (userExpenses.Any())
                         {
-                            expense.PaidById = null;
-                            _context.Expenses.Update(expense);
+                            foreach (var expense in userExpenses)
+                            {
+                                expense.PaidById = null;
+                                _context.Expenses.Update(expense);
+                            }
+                            _logger.LogDebug($"Очищено {userExpenses.Count} расходов, оплаченных пользователем");
                         }
 
-                        // 4. Удаляем самого пользователя
+                        // 5. Удаляем документы пользователя
+                        if (user.UserDocuments != null && user.UserDocuments.Any())
+                        {
+                            // Здесь можно добавить удаление физических файлов, если они хранятся на диске
+                            _context.UserDocuments.RemoveRange(user.UserDocuments);
+                            _logger.LogDebug($"Удалено {user.UserDocuments.Count} документов");
+                        }
+
+                        // 6. Удаляем папки с документами
+                        if (user.DocumentFolders != null && user.DocumentFolders.Any())
+                        {
+                            _context.DocumentFolders.RemoveRange(user.DocumentFolders);
+                            _logger.LogDebug($"Удалено {user.DocumentFolders.Count} папок с документами");
+                        }
+
+                        // 7. Удаляем самого пользователя
                         _context.Users.Remove(user);
 
-                        // 5. Сохраняем изменения
+                        // 8. Сохраняем все изменения
                         await _context.SaveChangesAsync();
+
+                        // 9. Подтверждаем транзакцию
                         await transaction.CommitAsync();
 
-                        // 6. Очищаем сессию и кэш
-                        HttpContext.Session.Clear();
-                        Response.Cookies.Delete("UserEmail");
+                        // 10. Удаляем код из кэша
                         _cache.Remove(cacheKey);
 
-                        _logger.LogInformation($"Аккаунт пользователя {user.Email} успешно удален");
+                        // 11. Очищаем сессию
+                        HttpContext.Session.Clear();
+
+                        // 12. Удаляем все куки
+                        foreach (var cookie in Request.Cookies.Keys)
+                        {
+                            Response.Cookies.Delete(cookie);
+                        }
+
+                        // 13. Выходим из cookie аутентификации
+                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+                        _logger.LogInformation($"Аккаунт пользователя {userEmail} успешно удален");
 
                         return Json(new
                         {
                             success = true,
-                            message = "Аккаунт успешно удален",
+                            message = "Аккаунт успешно удален. Вы будете перенаправлены на главную страницу.",
                             redirectUrl = Url.Action("Index", "Home")
                         });
                     }
                     catch (Exception ex)
                     {
+                        // Откатываем транзакцию в случае ошибки
                         await transaction.RollbackAsync();
-                        _logger.LogError(ex, "Ошибка при удалении аккаунта");
-                        return Json(new { success = false, message = "Ошибка при удалении аккаунта" });
+                        _logger.LogError(ex, $"Ошибка при удалении аккаунта пользователя {userEmail}");
+                        throw; // Пробрасываем исключение для обработки во внешнем catch
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при подтверждении удаления");
-                return Json(new { success = false, message = "Произошла ошибка" });
+                _logger.LogError(ex, "Критическая ошибка при подтверждении удаления аккаунта");
+                return Json(new
+                {
+                    success = false,
+                    message = "Произошла ошибка при удалении аккаунта. Пожалуйста, попробуйте позже или обратитесь в поддержку."
+                });
             }
         }
 
-        // Метод для проверки сложности пароля
         private PasswordValidationResult ValidatePassword(string password)
         {
             var result = new PasswordValidationResult { IsValid = true };
@@ -942,6 +1011,254 @@ namespace TripWise.Controllers
                 return Json(new { success = false, message = "Произошла ошибка при смене пароля" });
             }
         }
+        // GET: /Account/ForgotPassword
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        // POST: /Account/SendResetCode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendResetCode([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Email))
+                    return Json(new { success = false, message = "Введите email" });
+
+                if (!IsValidEmail(request.Email))
+                    return Json(new { success = false, message = "Введите корректный email" });
+
+                var email = request.Email.Trim().ToLower();
+
+                // Ищем пользователя
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                if (user == null)
+                {
+                    // Для безопасности не говорим, что email не найден
+                    return Json(new { success = true, message = "Если email зарегистрирован, код будет отправлен" });
+                }
+
+                // Генерируем 6-значный код
+                var random = new Random();
+                var code = random.Next(100000, 999999).ToString();
+
+                // Сохраняем код в кэш на 15 минут
+                var codeCacheKey = FORGOT_PASSWORD_CODE_PREFIX + email;
+                _cache.Set(codeCacheKey, code, TimeSpan.FromMinutes(15));
+
+                // Сохраняем данные для сброса пароля
+                var dataCacheKey = FORGOT_PASSWORD_DATA_PREFIX + email;
+                var resetData = new ForgotPasswordData
+                {
+                    Email = email,
+                    UserId = user.IdUser,
+                    Timestamp = DateTime.UtcNow
+                };
+                _cache.Set(dataCacheKey, resetData, TimeSpan.FromMinutes(15));
+
+                // Отправляем код на email
+                await SendPasswordResetCodeAsync(email, code);
+
+                _logger.LogInformation($"Код сброса пароля отправлен на email {email}");
+
+                return Json(new { success = true, message = "Код подтверждения отправлен на ваш email" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке кода сброса пароля");
+                return Json(new { success = false, message = "Ошибка при отправке кода" });
+            }
+        }
+
+        // POST: /Account/VerifyResetCode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeRequest request)
+        {
+            try
+            {
+                var email = request.Email?.Trim().ToLower();
+                if (string.IsNullOrEmpty(email))
+                    return Json(new { success = false, message = "Email не указан" });
+
+                // Очищаем код от нецифровых символов
+                var code = new string(request.Code.Where(char.IsDigit).ToArray());
+
+                if (code.Length != 6)
+                    return Json(new { success = false, message = "Код должен содержать 6 цифр" });
+
+                // Проверяем код из кэша
+                var codeCacheKey = FORGOT_PASSWORD_CODE_PREFIX + email;
+                if (!_cache.TryGetValue(codeCacheKey, out string cachedCode))
+                    return Json(new { success = false, message = "Код истек или не был отправлен" });
+
+                if (cachedCode != code)
+                    return Json(new { success = false, message = "Неверный код подтверждения" });
+
+                // Получаем данные из кэша
+                var dataCacheKey = FORGOT_PASSWORD_DATA_PREFIX + email;
+                if (!_cache.TryGetValue(dataCacheKey, out ForgotPasswordData resetData))
+                    return Json(new { success = false, message = "Данные для сброса пароля устарели" });
+
+                return Json(new { success = true, message = "Код подтвержден" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке кода");
+                return Json(new { success = false, message = "Ошибка при проверке кода" });
+            }
+        }
+
+        // POST: /Account/ResetPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                var email = request.Email?.Trim().ToLower();
+                if (string.IsNullOrEmpty(email))
+                    return Json(new { success = false, message = "Email не указан" });
+
+                // Проверяем новый пароль
+                var passwordValidation = ValidatePassword(request.NewPassword);
+                if (!passwordValidation.IsValid)
+                    return Json(new { success = false, message = passwordValidation.ErrorMessage });
+
+                // Проверяем данные в кэше
+                var dataCacheKey = FORGOT_PASSWORD_DATA_PREFIX + email;
+                if (!_cache.TryGetValue(dataCacheKey, out ForgotPasswordData resetData))
+                    return Json(new { success = false, message = "Сессия сброса пароля истекла" });
+
+                // Находим пользователя
+                var user = await _context.Users.FindAsync(resetData.UserId);
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                // Обновляем пароль
+                user.PasswordHash = HashPassword(request.NewPassword);
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                // Очищаем кэш
+                _cache.Remove(FORGOT_PASSWORD_CODE_PREFIX + email);
+                _cache.Remove(FORGOT_PASSWORD_DATA_PREFIX + email);
+
+                // Отправляем уведомление об успешной смене пароля
+                await SendPasswordResetSuccessEmail(user.Email);
+
+                _logger.LogInformation($"Пароль для пользователя {user.Email} успешно сброшен");
+
+                return Json(new { success = true, message = "Пароль успешно изменен" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при сбросе пароля");
+                return Json(new { success = false, message = "Ошибка при сбросе пароля" });
+            }
+        }
+
+        private async Task SendPasswordResetCodeAsync(string toEmail, string code)
+        {
+            var subject = "Восстановление пароля - Вместе В Путь";
+            var body = $@"
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #e8f4fe; border: 1px solid #b6d4fe; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+            <h2 style='color: #0379D9; margin-top: 0;'>
+                <i class='fas fa-key'></i> Восстановление пароля
+            </h2>
+            <p style='color: #0379D9;'>
+                Вы запросили восстановление пароля для вашего аккаунта в <strong>Вместе В Путь</strong>.
+            </p>
+        </div>
+        
+        <div style='text-align: center; margin: 30px 0;'>
+            <h3 style='color: #333;'>Ваш код подтверждения:</h3>
+            <div style='background: #f8f9fa; padding: 25px; border-radius: 12px; border: 3px dashed #0379D9; 
+                        display: inline-block; margin: 20px 0;'>
+                <h1 style='color: #0379D9; margin: 0; letter-spacing: 15px; font-size: 36px; font-weight: bold;'>
+                    {code}
+                </h1>
+            </div>
+            <p style='color: #666;'>
+                Введите этот 6-значный код для восстановления доступа к аккаунту.
+            </p>
+        </div>
+        
+        <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <p style='margin: 0; color: #856404;'>
+                <strong><i class='fas fa-shield-alt'></i> В целях безопасности</strong><br>
+                Никогда никому не сообщайте этот код. Сотрудники поддержки никогда не запрашивают коды подтверждения.
+            </p>
+        </div>
+        
+        <div style='background: #e8f4fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <p style='margin: 0; color: #0379D9;'>
+                <strong><i class='fas fa-clock'></i> Код действителен 15 минут</strong>
+            </p>
+        </div>
+        
+        <div style='border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;'>
+            <p style='color: #888; font-size: 14px;'>
+                <strong>Если вы не запрашивали восстановление пароля:</strong><br>
+                Просто проигнорируйте это письмо. Ваш текущий пароль остается действительным.
+            </p>
+        </div>
+        
+        <div style='text-align: center; margin-top: 30px;'>
+            <p style='color: #aaa; font-size: 12px;'>
+                С уважением, команда <strong>Вместе В Путь</strong><br>
+                {DateTime.Now.Year} © Все права защищены
+            </p>
+        </div>
+    </div>";
+
+            await _emailService.SendAsync(toEmail, subject, body);
+        }
+
+        private async Task SendPasswordResetSuccessEmail(string toEmail)
+        {
+            var subject = "Пароль успешно изменен - Вместе В Путь";
+            var body = $@"
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+            <h2 style='color: #155724; margin-top: 0;'>
+                <i class='fas fa-check-circle'></i> Пароль успешно изменен
+            </h2>
+            <p style='color: #155724;'>
+                Пароль для вашего аккаунта в <strong>Вместе В Путь</strong> был успешно изменен.
+            </p>
+        </div>
+        
+        <div style='background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <p style='margin: 0; color: #856404;'>
+                <strong><i class='fas fa-exclamation-triangle'></i> Важно!</strong><br>
+                Если вы не меняли пароль, немедленно свяжитесь с нашей службой поддержки.
+            </p>
+        </div>
+        
+        <div style='text-align: center; margin: 30px 0;'>
+            <a href='{Url.Action("Login", "Account", null, "https")}' 
+               style='display: inline-block; background: #0379D9; color: white; 
+                      padding: 12px 30px; border-radius: 8px; text-decoration: none; 
+                      font-weight: bold;'>
+                Войти в аккаунт
+            </a>
+        </div>
+        
+        <div style='text-align: center; margin-top: 30px;'>
+            <p style='color: #aaa; font-size: 12px;'>
+                С уважением, команда <strong>Вместе В Путь</strong><br>
+                {DateTime.Now.Year} © Все права защищены
+            </p>
+        </div>
+    </div>";
+
+            await _emailService.SendAsync(toEmail, subject, body);
+        }
         private async Task SendPasswordChangeSuccessEmail(string toEmail)
         {
             var subject = "Пароль успешно изменен - Вместе В Путь";
@@ -982,8 +1299,9 @@ namespace TripWise.Controllers
 
             await _emailService.SendAsync(toEmail, subject, body);
         
-    }
-}
+            }
+        }
+
 
     // Вспомогательный класс для результата проверки пароля
     public class PasswordValidationResult
@@ -1012,5 +1330,32 @@ namespace TripWise.Controllers
         public string NewPassword { get; set; }
         public DateTime Timestamp { get; set; }
     }
+    // Вспомогательные классы
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; }
+    }
 
+    public class VerifyResetCodeRequest
+    {
+        public string Email { get; set; }
+        public string Code { get; set; }
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; }
+        public string NewPassword { get; set; }
+    }
+
+    public class ForgotPasswordData
+    {
+        public string Email { get; set; }
+        public int UserId { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+    public class ConfirmDeleteRequest
+    {
+        public string Code { get; set; }
+    }
 }

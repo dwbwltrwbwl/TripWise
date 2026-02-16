@@ -19,7 +19,7 @@ public partial class Trip
 
     public DateTime CreatedAt { get; set; }
 
-    public int CreatedById { get; set; }
+    public int? CreatedById { get; set; }
 
     public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
 

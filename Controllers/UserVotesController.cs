@@ -21,8 +21,10 @@ namespace TripWise.Controllers
         // GET: UserVotes
         public async Task<IActionResult> Index()
         {
-            var tripWiseContext = _context.UserVotes.Include(u => u.IdUserNavigation).Include(u => u.IdVoteOptionNavigation);
-            return View(await tripWiseContext.ToListAsync());
+            var userVotes = _context.UserVotes
+                .Include(u => u.IdUserNavigation)
+                .Include(u => u.IdVoteOptionNavigation);
+            return View(await userVotes.ToListAsync());
         }
 
         // GET: UserVotes/Details/5
@@ -37,6 +39,7 @@ namespace TripWise.Controllers
                 .Include(u => u.IdUserNavigation)
                 .Include(u => u.IdVoteOptionNavigation)
                 .FirstOrDefaultAsync(m => m.IdUserVote == id);
+
             if (userVote == null)
             {
                 return NotFound();
@@ -48,26 +51,37 @@ namespace TripWise.Controllers
         // GET: UserVotes/Create
         public IActionResult Create()
         {
-            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "IdUser");
-            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "IdVoteOption");
+            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "Email");
+            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "OptionText");
             return View();
         }
 
         // POST: UserVotes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdUserVote,IdVoteOption,IdUser,VotedAt")] UserVote userVote)
         {
+            if (userVote.VotedAt == default)
+            {
+                userVote.VotedAt = DateTime.UtcNow;
+            }
+
             if (ModelState.IsValid)
             {
-                _context.Add(userVote);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _context.Add(userVote);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Ошибка при сохранении: " + ex.Message);
+                }
             }
-            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "IdUser", userVote.IdUser);
-            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "IdVoteOption", userVote.IdVoteOption);
+
+            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "Email", userVote.IdUser);
+            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "OptionText", userVote.IdVoteOption);
             return View(userVote);
         }
 
@@ -84,14 +98,13 @@ namespace TripWise.Controllers
             {
                 return NotFound();
             }
-            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "IdUser", userVote.IdUser);
-            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "IdVoteOption", userVote.IdVoteOption);
+
+            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "Email", userVote.IdUser);
+            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "OptionText", userVote.IdVoteOption);
             return View(userVote);
         }
 
         // POST: UserVotes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdUserVote,IdVoteOption,IdUser,VotedAt")] UserVote userVote)
@@ -119,10 +132,18 @@ namespace TripWise.Controllers
                         throw;
                     }
                 }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Ошибка при обновлении: " + ex.Message);
+                    ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "Email", userVote.IdUser);
+                    ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "OptionText", userVote.IdVoteOption);
+                    return View(userVote);
+                }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "IdUser", userVote.IdUser);
-            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "IdVoteOption", userVote.IdVoteOption);
+
+            ViewData["IdUser"] = new SelectList(_context.Users, "IdUser", "Email", userVote.IdUser);
+            ViewData["IdVoteOption"] = new SelectList(_context.VoteOptions, "IdVoteOption", "OptionText", userVote.IdVoteOption);
             return View(userVote);
         }
 
@@ -138,6 +159,7 @@ namespace TripWise.Controllers
                 .Include(u => u.IdUserNavigation)
                 .Include(u => u.IdVoteOptionNavigation)
                 .FirstOrDefaultAsync(m => m.IdUserVote == id);
+
             if (userVote == null)
             {
                 return NotFound();
@@ -155,9 +177,9 @@ namespace TripWise.Controllers
             if (userVote != null)
             {
                 _context.UserVotes.Remove(userVote);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

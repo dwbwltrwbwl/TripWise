@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace TripWise.Controllers
 {
@@ -12,14 +13,16 @@ namespace TripWise.Controllers
         private readonly TripWiseContext _context;
         private readonly ILogger<NewsletterController> _logger;
         private readonly EmailService _emailService;
+        private readonly IConfiguration _configuration;
 
         public NewsletterController(TripWiseContext context,
             ILogger<NewsletterController> logger,
-            EmailService emailService)
+            EmailService emailService, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         // POST: /Newsletter/Subscribe
@@ -154,6 +157,146 @@ namespace TripWise.Controllers
                 return Json(new { error = "Произошла ошибка при проверке подписки" });
             }
         }
+        // GET: /Newsletter/Unsubscribe
+        [HttpGet]
+        [Route("Unsubscribe")]
+        public async Task<IActionResult> Unsubscribe(string email, string token)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
+                {
+                    ViewBag.Error = "Некорректная ссылка для отписки";
+                    return View();
+                }
+
+                email = email.Trim().ToLower();
+
+                // Декодируем email из URL
+                email = Uri.UnescapeDataString(email);
+
+                // Проверяем токен (простая валидация)
+                var expectedToken = GenerateUnsubscribeToken(email);
+                if (token != expectedToken)
+                {
+                    ViewBag.Error = "Недействительная ссылка для отписки";
+                    return View();
+                }
+
+                var subscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
+
+                if (subscription == null)
+                {
+                    ViewBag.Error = "Email не найден в списке подписчиков";
+                    return View();
+                }
+
+                if (!subscription.IsActive)
+                {
+                    ViewBag.Success = true;
+                    ViewBag.Message = "Вы уже отписаны от рассылки.";
+                    return View();
+                }
+
+                ViewBag.Email = email;
+                ViewBag.Token = token;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при открытии страницы отписки");
+                ViewBag.Error = "Произошла ошибка. Пожалуйста, попробуйте позже.";
+                return View();
+            }
+        }
+
+        // POST: /Newsletter/UnsubscribeConfirm
+        [HttpPost]
+        [Route("UnsubscribeConfirm")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnsubscribeConfirm(string email, string token)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
+                {
+                    ViewBag.Error = "Некорректные данные для отписки";
+                    return View("Unsubscribe");
+                }
+
+                email = email.Trim().ToLower();
+
+                // Проверяем токен
+                var expectedToken = GenerateUnsubscribeToken(email);
+                if (token != expectedToken)
+                {
+                    ViewBag.Error = "Недействительная ссылка для отписки";
+                    return View("Unsubscribe");
+                }
+
+                var subscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
+
+                if (subscription == null)
+                {
+                    ViewBag.Error = "Email не найден в списке подписчиков";
+                    return View("Unsubscribe");
+                }
+
+                if (!subscription.IsActive)
+                {
+                    ViewBag.Success = true;
+                    ViewBag.Message = "Вы уже отписаны от рассылки.";
+                    return View("Unsubscribe");
+                }
+
+                // Отписываем
+                subscription.IsActive = false;
+                subscription.UnsubscribedAt = DateTime.UtcNow;
+
+                _context.NewsletterSubscriptions.Update(subscription);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"User {email} unsubscribed from newsletter via link");
+
+                // Отправляем письмо об отписке
+                await SendUnsubscribeEmail(email);
+
+                ViewBag.Success = true;
+                ViewBag.Message = "Вы успешно отписались от рассылки. Мы будем рады видеть вас снова!";
+
+                return View("Unsubscribe");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отписке от рассылки");
+                ViewBag.Error = "Произошла ошибка при отписке. Пожалуйста, попробуйте позже.";
+                return View("Unsubscribe");
+            }
+        }
+
+        private string GenerateUnsubscribeToken(string email)
+        {
+            var salt = _configuration["NewsletterSettings:UnsubscribeSalt"] ?? "DefaultSecretSalt123!";
+            var input = email + salt;
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash)
+                .Replace("/", "_")
+                .Replace("+", "-")
+                .Replace("=", "");
+        }
+
+        // GET: /Newsletter/UnsubscribePage
+        [HttpGet]
+        [Route("UnsubscribePage")]
+        public IActionResult UnsubscribePage()
+        {
+            return View("Unsubscribe");
+        }
 
         // POST: /Newsletter/Unsubscribe
         [HttpPost]
@@ -228,6 +371,12 @@ namespace TripWise.Controllers
                     ? "С возвращением в рассылку Вместе В Путь! 🎉"
                     : "Добро пожаловать в рассылку Вместе В Путь! 🎉";
 
+                // Генерируем токен для отписки
+                var unsubscribeToken = GenerateUnsubscribeToken(email);
+                var encodedEmail = Uri.EscapeDataString(email);
+                var unsubscribeLink = Url.Action("Unsubscribe", "Newsletter",
+                    new { email = encodedEmail, token = unsubscribeToken }, "https");
+
                 var body = $@"
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
             <div style='text-align: center; margin-bottom: 30px;'>
@@ -258,8 +407,8 @@ namespace TripWise.Controllers
             <div style='border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;'>
                 <p style='color: #888; font-size: 12px; text-align: center;'>
                     <strong>Важно:</strong> Если вы не хотите получать рассылку, 
-                    <a href='{Url.Action("Unsubscribe", "Newsletter", new { email = email }, "https")}' 
-                       style='color: #0379D9;'>отпишитесь здесь</a>.
+                    <a href='{unsubscribeLink}' 
+                       style='color: #0379D9; text-decoration: underline;'>отпишитесь здесь</a>.
                 </p>
             </div>
             
@@ -285,30 +434,34 @@ namespace TripWise.Controllers
             try
             {
                 var subject = "Вы отписались от рассылки Вместе В Путь";
+
+                // Генерируем ссылку для повторной подписки (опционально)
+                var resubscribeLink = Url.Action("Index", "Home", null, "https");
+
                 var body = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
-                    <div style='text-align: center; margin-bottom: 30px;'>
-                        <h2 style='color: #666;'>Мы сожалеем, что вы уходите</h2>
-                    </div>
-                    
-                    <div style='background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
-                        <p style='color: #555; text-align: center;'>
-                            Вы успешно отписались от рассылки <strong>Вместе В Путь</strong>.
-                        </p>
-                        <p style='color: #555; text-align: center;'>
-                            Если это произошло по ошибке, вы можете 
-                            <a href='{Url.Action("Index", "Home", null, "https")}' 
-                               style='color: #0379D9;'>снова подписаться</a> в любое время.
-                        </p>
-                    </div>
-                    
-                    <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
-                        <p style='color: #aaa; font-size: 12px;'>
-                            С уважением, команда <strong>Вместе В Путь</strong><br>
-                            {DateTime.Now.Year} © Все права защищены
-                        </p>
-                    </div>
-                </div>";
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='text-align: center; margin-bottom: 30px;'>
+                <h2 style='color: #666;'>Мы сожалеем, что вы уходите</h2>
+            </div>
+            
+            <div style='background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
+                <p style='color: #555; text-align: center;'>
+                    Вы успешно отписались от рассылки <strong>Вместе В Путь</strong>.
+                </p>
+                <p style='color: #555; text-align: center;'>
+                    Если это произошло по ошибке, вы можете 
+                    <a href='{resubscribeLink}' 
+                       style='color: #0379D9;'>снова подписаться</a> в любое время.
+                </p>
+            </div>
+            
+            <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
+                <p style='color: #aaa; font-size: 12px;'>
+                    С уважением, команда <strong>Вместе В Путь</strong><br>
+                    {DateTime.Now.Year} © Все права защищены
+                </p>
+            </div>
+        </div>";
 
                 await _emailService.SendAsync(email, subject, body);
                 _logger.LogInformation($"Unsubscribe email sent to: {email}");

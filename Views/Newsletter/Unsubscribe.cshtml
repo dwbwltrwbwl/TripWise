@@ -1,44 +1,93 @@
 ﻿@{
-    ViewData["Title"] = "Отписка от рассылки";
-    Layout = "_Layout";
+    ViewData["Title"] = "Управление подпиской";
 }
 
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center p-4">
-                    @if (ViewBag.Success == true)
-                    {
-                        <div class="mb-4">
-                            <i class="fas fa-check-circle text-success fa-4x"></i>
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-primary mb-3">
+                            <i class="fas fa-envelope-open-text"></i>
                         </div>
-                        <h3 class="card-title mb-3">Вы отписались от рассылки</h3>
-                        <p class="text-muted mb-4">
-                            Email: <strong>@ViewBag.Email</strong> больше не будет получать уведомления.
+                        <h2 class="h4">Управление рассылкой</h2>
+                        <p class="text-muted">
+                            Введите ваш email, чтобы управлять подпиской
                         </p>
-                        <p class="small text-muted">
-                            Если это произошло по ошибке, вы можете подписаться снова в футере сайта.
-                        </p>
-                        <a href="@Url.Action("Index", "Home")" class="btn btn-primary mt-3">
-                            Вернуться на главную
-                        </a>
-                    }
-                    else
-                    {
-                        <div class="mb-4">
-                            <i class="fas fa-exclamation-triangle text-warning fa-4x"></i>
+                    </div>
+
+                    <!-- Форма для ввода email -->
+                    <div id="emailForm">
+                        <div class="mb-3">
+                            <label for="emailInput" class="form-label">Ваш email</label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="emailInput" 
+                                   placeholder="example@mail.ru"
+                                   required>
                         </div>
-                        <h3 class="card-title mb-3">Ошибка</h3>
-                        <p class="text-muted mb-4">
-                            @(ViewBag.Message ?? "Не удалось отписать от рассылки")
-                        </p>
-                        <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary mt-3">
-                            Вернуться на главную
-                        </a>
-                    }
+                        <button type="button" class="btn btn-primary w-100" id="checkSubscriptionBtn">
+                            <i class="fas fa-search me-2"></i>Проверить подписку
+                        </button>
+                    </div>
+
+                    <!-- Результат проверки (изначально скрыт) -->
+                    <div id="subscriptionResult" style="display: none;">
+                        <div class="alert" id="statusAlert" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="statusMessage"></span>
+                        </div>
+
+                        <div id="subscriptionDetails" class="mt-4">
+                            <div class="bg-light p-4 rounded">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-user-circle fa-2x text-secondary me-3"></i>
+                                    <div>
+                                        <h5 class="mb-1" id="displayEmail"></h5>
+                                        <p class="text-muted mb-0 small" id="subscribedDate"></p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-danger" id="unsubscribeBtn">
+                                        <i class="fas fa-bell-slash me-2"></i>Отписаться от рассылки
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="backBtn">
+                                        <i class="fas fa-arrow-left me-2"></i>Назад
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Сообщение об успехе (изначально скрыто) -->
+                    <div id="successMessage" style="display: none;">
+                        <div class="text-center">
+                            <div class="display-1 text-success mb-3">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 class="h5 mb-3" id="successText"></h3>
+                            <p class="text-muted mb-4" id="successDetails"></p>
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i>На главную
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Индикатор загрузки -->
+                    <div id="loadingSpinner" style="display: none;" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Проверяем подписку...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/newsletter-unsubscribe.js"></script>
+}
