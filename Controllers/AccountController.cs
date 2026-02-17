@@ -600,199 +600,159 @@ namespace TripWise.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendDeleteCode()
         {
-            var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return Json(new { success = false, message = "Сессия истекла" });
-
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return Json(new { success = false, message = "Пользователь не найден" });
-
             try
             {
-                // Генерируем 6-значный код
+                var userId = HttpContext.Session.GetInt32("UserId");
+                Console.WriteLine($"SendDeleteCode called. UserId from session: {userId}"); // Отладка
+
+                if (userId == null)
+                    return Json(new { success = false, message = "Сессия истекла" });
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return Json(new { success = false, message = "Пользователь не найден" });
+
+                Console.WriteLine($"User found: {user.Email}"); // Отладка
+
                 var random = new Random();
                 var code = random.Next(100000, 999999).ToString();
 
-                // Сохраняем код в кэш на 15 минут
-                var cacheKey = "DeleteCode_" + userId;
+                // ВАЖНО: используем тот же префикс, что и в ConfirmDelete
+                var cacheKey = DELETE_CODE_PREFIX + userId; // Используем константу
                 _cache.Set(cacheKey, code, TimeSpan.FromMinutes(15));
 
-                // Отправляем код на email
-                await _emailService.SendConfirmationCodeAsync(user.Email, code);
+                Console.WriteLine($"Code generated: {code}, Cache key: {cacheKey}"); // Отладка
 
-                _logger.LogInformation($"Код подтверждения отправлен пользователю {user.Email}");
+                await _emailService.SendConfirmationCodeAsync(user.Email, code);
 
                 return Json(new { success = true, message = "Код подтверждения отправлен на ваш email" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при отправке кода подтверждения");
-                return Json(new { success = false, message = "Ошибка при отправке кода" });
+                Console.WriteLine($"Error in SendDeleteCode: {ex.Message}"); // Отладка
+                return Json(new { success = false, message = "Ошибка при отправке кода: " + ex.Message });
             }
         }
 
         // POST: /Account/ConfirmDelete
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmDelete([FromBody] ConfirmDeleteRequest request)
+        public async Task<IActionResult> ConfirmDelete(string code)
         {
-            var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return Json(new { success = false, message = "Сессия истекла. Пожалуйста, войдите снова." });
-
             try
             {
-                // Проверяем наличие запроса и кода
-                if (request == null)
-                    return Json(new { success = false, message = "Неверный формат запроса" });
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Json(new { success = false, message = "Сессия истекла" });
 
-                if (string.IsNullOrWhiteSpace(request.Code))
-                    return Json(new { success = false, message = "Введите код подтверждения" });
+                if (string.IsNullOrWhiteSpace(code))
+                    return Json(new { success = false, message = "Введите код" });
 
-                // Очищаем код от всех нецифровых символов
-                var cleanedCode = new string(request.Code.Where(char.IsDigit).ToArray());
-
-                // Проверяем длину кода
-                if (cleanedCode.Length != 6)
+                code = new string(code.Where(char.IsDigit).ToArray());
+                if (code.Length != 6)
                     return Json(new { success = false, message = "Код должен содержать 6 цифр" });
 
-                // Получаем код из кэша
                 var cacheKey = DELETE_CODE_PREFIX + userId;
                 if (!_cache.TryGetValue(cacheKey, out string cachedCode))
-                {
-                    _logger.LogWarning($"Попытка подтверждения удаления с истекшим кодом для пользователя {userId}");
-                    return Json(new { success = false, message = "Код подтверждения истек. Запросите новый код." });
-                }
+                    return Json(new { success = false, message = "Код истек или не был отправлен" });
 
-                // Сравниваем коды
-                if (cachedCode != cleanedCode)
-                {
-                    _logger.LogWarning($"Неверный код подтверждения для пользователя {userId}");
+                if (cachedCode != code)
                     return Json(new { success = false, message = "Неверный код подтверждения" });
-                }
 
-                // Находим пользователя со всеми связанными данными
-                var user = await _context.Users
-                    .Include(u => u.Expenses)
-                    .Include(u => u.ExpenseShares)
-                    .Include(u => u.TripParticipants)
-                    .Include(u => u.UserDocuments)
-                        .ThenInclude(d => d.Folder)
-                    .Include(u => u.DocumentFolders)
-                    .FirstOrDefaultAsync(u => u.IdUser == userId);
-
-                if (user == null)
-                {
-                    _logger.LogError($"Пользователь {userId} не найден при попытке удаления");
-                    return Json(new { success = false, message = "Пользователь не найден" });
-                }
-
-                // Сохраняем email для логов перед удалением
-                var userEmail = user.Email;
-
-                // Начинаем транзакцию для безопасного удаления всех связанных данных
                 using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
-                        _logger.LogInformation($"Начало удаления аккаунта пользователя {userEmail} (ID: {userId})");
-                        
+                        // 1. Сначала удаляем чаты, созданные пользователем (вместо обновления)
+                        await _context.Chats
+                            .Where(c => c.CreatedById == userId)
+                            .ExecuteDeleteAsync();
 
-                        // 2. Удаляем доли расходов пользователя
-                        if (user.ExpenseShares != null && user.ExpenseShares.Any())
-                        {
-                            _context.ExpenseShares.RemoveRange(user.ExpenseShares);
-                            _logger.LogDebug($"Удалено {user.ExpenseShares.Count} долей расходов");
-                        }
+                        // 2. Удаляем остальные связанные записи
+                        await _context.UserAuthTokens
+                            .Where(t => t.UserId == userId)
+                            .ExecuteDeleteAsync();
 
-                        // 3. Удаляем участие в поездках
-                        if (user.TripParticipants != null && user.TripParticipants.Any())
-                        {
-                            _context.TripParticipants.RemoveRange(user.TripParticipants);
-                            _logger.LogDebug($"Удалено {user.TripParticipants.Count} записей об участии в поездках");
-                        }
+                        await _context.ExpenseShares
+                            .Where(es => es.IdUser == userId)
+                            .ExecuteDeleteAsync();
 
-                        // 4. Для расходов, которые оплатил пользователь, устанавливаем PaidById = null
-                        var userExpenses = await _context.Expenses
+                        await _context.TripParticipants
+                            .Where(tp => tp.IdUser == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.UserDocuments
+                            .Where(ud => ud.UserId == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.DocumentFolders
+                            .Where(df => df.UserId == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.UserVotes
+                            .Where(uv => uv.IdUser == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.ChatMessageReads
+                            .Where(cmr => cmr.UserId == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.ChatMembers
+                            .Where(cm => cm.UserId == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.ChatMessages
+                            .Where(cm => cm.SenderId == userId)
+                            .ExecuteDeleteAsync();
+
+                        await _context.Documents
+                            .Where(d => d.UploadedById == userId)
+                            .ExecuteDeleteAsync();
+
+                        // 3. Обновляем записи, где пользователь указан как внешний ключ
+                        await _context.Expenses
                             .Where(e => e.PaidById == userId)
-                            .ToListAsync();
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.PaidById, (int?)null));
 
-                        if (userExpenses.Any())
-                        {
-                            foreach (var expense in userExpenses)
-                            {
-                                expense.PaidById = null;
-                                _context.Expenses.Update(expense);
-                            }
-                            _logger.LogDebug($"Очищено {userExpenses.Count} расходов, оплаченных пользователем");
-                        }
+                        await _context.PointsOfInterests
+                            .Where(p => p.AddedById == userId)
+                            .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.AddedById, (int?)null));
 
-                        // 5. Удаляем документы пользователя
-                        if (user.UserDocuments != null && user.UserDocuments.Any())
-                        {
-                            // Здесь можно добавить удаление физических файлов, если они хранятся на диске
-                            _context.UserDocuments.RemoveRange(user.UserDocuments);
-                            _logger.LogDebug($"Удалено {user.UserDocuments.Count} документов");
-                        }
+                        // 4. Удаляем пользователя
+                        await _context.Users
+                            .Where(u => u.IdUser == userId)
+                            .ExecuteDeleteAsync();
 
-                        // 6. Удаляем папки с документами
-                        if (user.DocumentFolders != null && user.DocumentFolders.Any())
-                        {
-                            _context.DocumentFolders.RemoveRange(user.DocumentFolders);
-                            _logger.LogDebug($"Удалено {user.DocumentFolders.Count} папок с документами");
-                        }
-
-                        // 7. Удаляем самого пользователя
-                        _context.Users.Remove(user);
-
-                        // 8. Сохраняем все изменения
-                        await _context.SaveChangesAsync();
-
-                        // 9. Подтверждаем транзакцию
                         await transaction.CommitAsync();
 
-                        // 10. Удаляем код из кэша
-                        _cache.Remove(cacheKey);
-
-                        // 11. Очищаем сессию
+                        // 5. Очищаем сессию и куки
                         HttpContext.Session.Clear();
+                        Response.Cookies.Delete("AuthToken");
+                        Response.Cookies.Delete("RememberMe");
+                        Response.Cookies.Delete("UserEmail");
 
-                        // 12. Удаляем все куки
-                        foreach (var cookie in Request.Cookies.Keys)
-                        {
-                            Response.Cookies.Delete(cookie);
-                        }
-
-                        // 13. Выходим из cookie аутентификации
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-                        _logger.LogInformation($"Аккаунт пользователя {userEmail} успешно удален");
+                        _cache.Remove(cacheKey);
 
                         return Json(new
                         {
                             success = true,
-                            message = "Аккаунт успешно удален. Вы будете перенаправлены на главную страницу.",
+                            message = "Аккаунт успешно удален",
                             redirectUrl = Url.Action("Index", "Home")
                         });
                     }
                     catch (Exception ex)
                     {
-                        // Откатываем транзакцию в случае ошибки
                         await transaction.RollbackAsync();
-                        _logger.LogError(ex, $"Ошибка при удалении аккаунта пользователя {userEmail}");
-                        throw; // Пробрасываем исключение для обработки во внешнем catch
+                        _logger.LogError(ex, "Ошибка при удалении аккаунта в транзакции");
+                        return Json(new { success = false, message = "Ошибка при удалении аккаунта: " + ex.Message });
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Критическая ошибка при подтверждении удаления аккаунта");
-                return Json(new
-                {
-                    success = false,
-                    message = "Произошла ошибка при удалении аккаунта. Пожалуйста, попробуйте позже или обратитесь в поддержку."
-                });
+                _logger.LogError(ex, "Критическая ошибка при подтверждении удаления");
+                return Json(new { success = false, message = "Произошла ошибка: " + ex.Message });
             }
         }
 

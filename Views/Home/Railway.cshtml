@@ -1446,7 +1446,7 @@
     }
 
     // Функция для генерации секции поезда
-    function generateTrainSection(train, title, date, color) {
+        function generateTrainSection(train, title, date, color) {
         return `
             <div class="train-section mb-3 p-3 border-start border-${color} border-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1465,6 +1465,9 @@
                     <div class="col-4 text-center">
                         <div class="train-time fw-bold fs-5">${formatTime(train.departureTime)}</div>
                         <div class="text-muted small">${getStationName(train.departureStation)}</div>
+                        <!-- Добавляем скрытые данные для передачи -->
+                        <input type="hidden" class="train-departure-date" value="${train.departureDate || date}">
+                        <input type="hidden" class="train-arrival-date" value="${train.arrivalDate || date}">
                     </div>
                     <div class="col-4 text-center">
                         <div class="train-duration text-${color} fw-bold">
@@ -1538,14 +1541,116 @@
         // Здесь можно открыть модальное окно с подробной информацией
     }
 
-    function bookTickets(group) {
+        function bookTickets(group) {
         console.log('Бронирование билетов для группы:', group);
 
-        if (group.isRoundTrip) {
-            alert(`Бронирование билетов:\nТуда: №${group.forwardTrain.trainNumber}\nОбратно: №${group.returnTrain.trainNumber}\nОбщая цена: ${group.totalPrice.toLocaleString('ru-RU')} ₽`);
-        } else {
-            alert(`Бронирование билета:\nПоезд: №${group.forwardTrain.trainNumber}\nЦена: ${group.totalPrice.toLocaleString('ru-RU')} ₽`);
+        // Получаем данные из формы поиска
+        const passengers = document.getElementById('railwayPassengers').value;
+
+        // Формируем URL для перехода на оформление
+        let url = '/TrainBooking/Book?';
+
+        // Добавляем параметры поезда туда
+        const params = new URLSearchParams({
+            trainNumber: group.forwardTrain.trainNumber,
+            departureStationId: group.forwardTrain.departureStation,
+            departureStationName: getStationName(group.forwardTrain.departureStation),
+            arrivalStationId: group.forwardTrain.arrivalStation,
+            arrivalStationName: getStationName(group.forwardTrain.arrivalStation),
+            departureDateTime: formatDateTime(group.forwardTrain.departureDate, group.forwardTrain.departureTime),
+            arrivalDateTime: formatDateTime(group.forwardTrain.arrivalDate, group.forwardTrain.arrivalTime),
+            price: getMinPriceForGroup(group),
+            passengers: passengers,
+            carType: getDefaultCarType(group),
+            carClass: getDefaultCarClass(group),
+            duration: parseDuration(group.forwardTrain.travelTime),
+            isRoundTrip: group.isRoundTrip
+        });
+
+        // Если есть обратный билет
+        if (group.isRoundTrip && group.returnTrain) {
+            params.append('returnTrainNumber', group.returnTrain.trainNumber);
+            params.append('returnDepartureDateTime', formatDateTime(group.returnTrain.departureDate, group.returnTrain.departureTime));
+            params.append('returnArrivalDateTime', formatDateTime(group.returnTrain.arrivalDate, group.returnTrain.arrivalTime));
+            params.append('returnDuration', parseDuration(group.returnTrain.travelTime));
         }
+
+        url += params.toString();
+        console.log('Переход на оформление:', url);
+
+        // Перенаправляем пользователя
+        window.location.href = url;
+    }
+        // Вспомогательная функция для форматирования даты и времени
+    function formatDateTime(dateString, timeString) {
+        if (!dateString) return '';
+
+        try {
+            // Если dateString уже в формате ISO
+            if (dateString.includes('-')) {
+                return `${dateString}T${timeString || '00:00'}`;
+            }
+
+            // Если dateString в формате DD.MM.YYYY
+            const parts = dateString.split('.');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}T${timeString || '00:00'}`;
+            }
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error);
+        }
+
+        return '';
+    }
+
+    // Получение минимальной цены для группы
+    function getMinPriceForGroup(group) {
+        if (group.isRoundTrip && group.returnTrain) {
+            // Для туда-обратно берем сумму минимальных цен
+            const forwardMin = group.forwardTrain.categories?.length > 0
+                ? Math.min(...group.forwardTrain.categories.map(c => c.price))
+                : 0;
+            const returnMin = group.returnTrain.categories?.length > 0
+                ? Math.min(...group.returnTrain.categories.map(c => c.price))
+                : 0;
+            return forwardMin + returnMin;
+        } else {
+            // Для одной стороны
+            return group.forwardTrain.categories?.length > 0
+                ? Math.min(...group.forwardTrain.categories.map(c => c.price))
+                : 0;
+        }
+    }
+
+    // Получение типа вагона по умолчанию
+    function getDefaultCarType(group) {
+        if (group.forwardTrain.categories?.length > 0) {
+            return group.forwardTrain.categories[0].type || 'plazcard';
+        }
+        return 'plazcard';
+    }
+
+    // Получение класса вагона по умолчанию
+    function getDefaultCarClass(group) {
+        const type = getDefaultCarType(group);
+        switch(type) {
+            case 'plazcard': return '3Б';
+            case 'coupe': return '2К';
+            case 'lux': return '1А';
+            case 'sedentary': return 'С';
+            default: return '2К';
+        }
+    }
+
+    // Парсинг длительности из строки (например "09:05" -> 545 минут)
+    function parseDuration(durationString) {
+        if (!durationString) return 0;
+
+        const parts = durationString.split(':');
+        if (parts.length === 2) {
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+        return 0;
     }
 
     // Вспомогательные функции

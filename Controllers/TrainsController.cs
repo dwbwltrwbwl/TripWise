@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TripWise.Models;
+using TripWise.Models.ViewModels;
 using TripWise.Services;
 
 namespace TripWise.Controllers
@@ -164,7 +165,39 @@ namespace TripWise.Controllers
 
             return Ok(stations);
         }
+        // GET: /Railway/Book
+        [HttpGet]
+        public IActionResult Book(string trainNumber, string departureStationId, string departureStationName,
+                                 string arrivalStationId, string arrivalStationName, DateTime departureDateTime,
+                                 DateTime? arrivalDateTime, decimal price, int passengers, string carType,
+                                 string carClass, int duration, bool isRoundTrip, string? returnTrainNumber = null,
+                                 DateTime? returnDepartureDateTime = null, DateTime? returnArrivalDateTime = null,
+                                 int? returnDuration = null)
+        {
+            var model = new TrainBookingViewModel
+            {
+                TrainNumber = trainNumber,
+                ReturnTrainNumber = returnTrainNumber,
+                DepartureStationId = departureStationId,
+                DepartureStationName = departureStationName,
+                ArrivalStationId = arrivalStationId,
+                ArrivalStationName = arrivalStationName,
+                DepartureDateTime = departureDateTime,
+                ArrivalDateTime = arrivalDateTime,
+                ReturnDepartureDateTime = returnDepartureDateTime,
+                ReturnArrivalDateTime = returnArrivalDateTime,
+                Price = price,
+                Passengers = passengers,
+                CarType = carType,
+                CarClass = carClass,
+                Duration = duration,
+                ReturnDuration = returnDuration,
+                IsRoundTrip = isRoundTrip
+            };
 
+            // Перенаправляем на Book в Home контроллере
+            return RedirectToAction("Book", "Home", model);
+        }
         private List<Station> GetAllStationsData()
         {
             return new List<Station>

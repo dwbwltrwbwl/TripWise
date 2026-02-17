@@ -58,6 +58,8 @@ public partial class TripWiseContext : DbContext
     public virtual DbSet<ChatMember> ChatMembers { get; set; }
     public virtual DbSet<ChatMessageRead> ChatMessageReads { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public virtual DbSet<TrainOrder> TrainOrders { get; set; }
+    public virtual DbSet<TrainPassenger> TrainPassengers { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -755,6 +757,160 @@ public partial class TripWiseContext : DbContext
                 .WithMany(p => p.UserDocuments)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.NoAction); // ВАЖНО: NoAction вместо Cascade!
+        });
+
+        modelBuilder.Entity<TrainOrder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.OrderNumber)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.HasIndex(e => e.OrderNumber)
+                .IsUnique()
+                .HasDatabaseName("IX_TrainOrders_OrderNumber");
+
+            entity.Property(e => e.TrainNumber)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(e => e.ReturnTrainNumber)
+                .HasMaxLength(20);
+
+            entity.Property(e => e.DepartureStationId)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.DepartureStationName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.ArrivalStationId)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.ArrivalStationName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.Currency)
+                .HasMaxLength(10)
+                .HasDefaultValue("RUB");
+
+            entity.Property(e => e.CarType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.CarClass)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.SeatNumbers)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.CarNumber)
+                .HasMaxLength(20);
+
+            entity.Property(e => e.ContactEmail)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.ContactPhone)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(e => e.PassengerFullName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.PassengerDocumentType)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.PassengerDocumentNumber)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.PaymentMethod)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.TransactionId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.BookingReference)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.TicketNumber)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.ElectronicTicketUrl)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.TotalPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_TrainOrders_UserId");
+
+            entity.HasIndex(e => e.CreatedAt)
+                .HasDatabaseName("IX_TrainOrders_CreatedAt");
+        });
+
+        // Конфигурация для TrainPassenger
+        modelBuilder.Entity<TrainPassenger>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.FirstName)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.LastName)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.MiddleName)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Gender)
+                .HasMaxLength(1)
+                .IsRequired();
+
+            entity.Property(e => e.DocumentType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.DocumentNumber)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Citizenship)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.SeatNumber)
+                .HasMaxLength(20);
+
+            entity.Property(e => e.CarNumber)
+                .HasMaxLength(20);
+
+            entity.Property(e => e.Price)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasOne(d => d.Order)
+                .WithMany()
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.OrderId)
+                .HasDatabaseName("IX_TrainPassengers_OrderId");
         });
 
         OnModelCreatingPartial(modelBuilder);

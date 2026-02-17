@@ -1,0 +1,530 @@
+﻿@model TripWise.Models.ViewModels.CompleteBookingViewModel
+@{
+    ViewData["Title"] = "Оформление билета";
+    var isRoundTrip = Model.TrainInfo.IsRoundTrip;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-ticket-alt text-white"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Оформление билета
+                    </h1>
+                    <p class="page-subtitle">Заполните данные пассажира для покупки билета</p>
+                </div>
+            </div>
+
+            <!-- Информация о поезде -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-train text-primary me-2"></i>
+                        Информация о поезде
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <small class="text-muted">Направление</small>
+                                <div class="fw-bold fs-5">
+                                    @Model.TrainInfo.DepartureStationName → @Model.TrainInfo.ArrivalStationName
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Поезд</small>
+                                <div class="fw-bold">№ @Model.TrainInfo.TrainNumber</div>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Тип вагона</small>
+                                <div class="fw-bold">@Model.TrainInfo.CarType (@Model.TrainInfo.CarClass)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <small class="text-muted">Отправление</small>
+                                <div class="fw-bold">
+                                    @Model.TrainInfo.DepartureDateTime.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Прибытие</small>
+                                <div class="fw-bold">
+                                    @(Model.TrainInfo.ArrivalDateTime?.ToString("dd.MM.yyyy HH:mm") ?? "—")
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Время в пути</small>
+                                <div class="fw-bold">
+                                    @{
+                                        var hours = Model.TrainInfo.Duration / 60;
+                                        var minutes = Model.TrainInfo.Duration % 60;
+                                    }
+                                    @hours ч @minutes мин
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (isRoundTrip)
+                    {
+                        <div class="alert alert-info border-0 rounded-lg mt-3">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            <strong>Туда и обратно:</strong> также включен обратный билет
+                        </div>
+                    }
+
+                    <div class="alert alert-success border-0 rounded-lg mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-tag me-2"></i>Стоимость:</span>
+                            <span class="fw-bold fs-4 text-success">
+                                @Model.TotalPrice.ToString("N0") ₽
+                            </span>
+                        </div>
+                        <small class="text-muted">* за @Model.TrainInfo.Passengers пассажира</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Форма данных пассажира -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-user text-primary me-2"></i>
+                        Данные пассажира
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form id="bookingForm">
+                        @Html.AntiForgeryToken()
+
+                        <!-- ФИО -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="lastName" class="form-label fw-semibold">Фамилия</label>
+                                <input type="text" class="form-control form-control-lg" id="lastName"
+                                       name="Passenger.LastName" value="@Model.Passenger.LastName" required>
+                                <div class="invalid-feedback" id="lastNameError"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="firstName" class="form-label fw-semibold">Имя</label>
+                                <input type="text" class="form-control form-control-lg" id="firstName"
+                                       name="Passenger.FirstName" value="@Model.Passenger.FirstName" required>
+                                <div class="invalid-feedback" id="firstNameError"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="middleName" class="form-label fw-semibold">Отчество</label>
+                                <input type="text" class="form-control form-control-lg" id="middleName"
+                                       name="Passenger.MiddleName" value="@Model.Passenger.MiddleName">
+                            </div>
+                        </div>
+
+                        <!-- Дата рождения и пол -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="dateOfBirth" class="form-label fw-semibold">Дата рождения</label>
+                                <input type="date" class="form-control form-control-lg" id="dateOfBirth"
+                                       name="Passenger.DateOfBirth" value="@Model.Passenger.DateOfBirth.ToString("yyyy-MM-dd")" required>
+                                <div class="invalid-feedback" id="dateOfBirthError"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gender" class="form-label fw-semibold">Пол</label>
+                                <select class="form-select form-select-lg" id="gender" name="Passenger.Gender" required>
+                                    <option value="">Выберите пол</option>
+                                    <option value="M" selected="@(Model.Passenger.Gender == "M")">Мужской</option>
+                                    <option value="F" selected="@(Model.Passenger.Gender == "F")">Женский</option>
+                                </select>
+                                <div class="invalid-feedback" id="genderError"></div>
+                            </div>
+                        </div>
+
+                        <!-- Документ -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="documentType" class="form-label fw-semibold">Тип документа</label>
+                                <select class="form-select form-select-lg" id="documentType" name="Passenger.DocumentType" required>
+                                    <option value="passport" selected="@(Model.Passenger.DocumentType == "passport")">Паспорт РФ</option>
+                                    <option value="foreign_passport" selected="@(Model.Passenger.DocumentType == "foreign_passport")">Загранпаспорт</option>
+                                    <option value="birth_certificate" selected="@(Model.Passenger.DocumentType == "birth_certificate")">Свидетельство о рождении</option>
+                                    <option value="military_id" selected="@(Model.Passenger.DocumentType == "military_id")">Военный билет</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="documentNumber" class="form-label fw-semibold">Номер документа</label>
+                                <input type="text" class="form-control form-control-lg" id="documentNumber"
+                                       name="Passenger.DocumentNumber" value="@Model.Passenger.DocumentNumber" required>
+                                <div class="invalid-feedback" id="documentNumberError"></div>
+                            </div>
+                        </div>
+
+                        <!-- Гражданство -->
+                        <div class="mb-4">
+                            <label for="citizenship" class="form-label fw-semibold">Гражданство</label>
+                            <input type="text" class="form-control form-control-lg" id="citizenship"
+                                   name="Passenger.Citizenship" value="@(Model.Passenger.Citizenship ?? "РФ")">
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Контактные данные -->
+                        <h4 class="mb-3">Контактные данные</h4>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">Email</label>
+                                <input type="email" class="form-control form-control-lg" id="email"
+                                       name="Contact.Email" value="@Model.Contact.Email" required>
+                                <div class="form-text">На этот email придет билет</div>
+                                <div class="invalid-feedback" id="emailError"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label fw-semibold">Телефон</label>
+                                <input type="tel" class="form-control form-control-lg" id="phone"
+                                       name="Contact.Phone" value="@Model.Contact.Phone" required placeholder="+7 (999) 123-45-67">
+                                <div class="invalid-feedback" id="phoneError"></div>
+                            </div>
+                        </div>
+
+                        <!-- Согласие -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agreeTerms"
+                                       name="Contact.AgreeToTerms" value="true" required>
+                                <label class="form-check-label" for="agreeTerms">
+                                    Я согласен с <a href="#" target="_blank">условиями оформления билета</a> и
+                                    <a href="#" target="_blank">правилами перевозки</a>
+                                </label>
+                                <div class="invalid-feedback" id="agreeTermsError"></div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Назад
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="fas fa-credit-card me-2"></i>Перейти к оплате @Model.TotalPrice.ToString("N0") ₽
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Информация о безопасности -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-lock fa-2x text-primary mb-2"></i>
+                            <h6>Безопасная оплата</h6>
+                            <p class="small text-muted">Все платежи защищены</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-ticket-alt fa-2x text-primary mb-2"></i>
+                            <h6>Мгновенное получение</h6>
+                            <p class="small text-muted">Билет придет на email сразу</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-headset fa-2x text-primary mb-2"></i>
+                            <h6>Поддержка 24/7</h6>
+                            <p class="small text-muted">Помощь в любое время</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-control-lg, .form-select-lg {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        padding: 14px 18px;
+        font-family: 'Nunito', sans-serif;
+    }
+
+        .form-control-lg:focus, .form-select-lg:focus {
+            border-color: #0379D9;
+            box-shadow: 0 0 0 0.2rem rgba(3, 121, 217, 0.25);
+        }
+
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    .btn-success {
+        background: #40B624;
+        border: none;
+        box-shadow: 0 4px 12px rgba(64, 182, 36, 0.2);
+        padding: 14px 30px;
+        font-size: 1.1rem;
+    }
+
+        .btn-success:hover {
+            background: #33991b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(64, 182, 36, 0.3);
+        }
+
+    .btn-outline-secondary {
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        padding: 14px 30px;
+        font-size: 1.1rem;
+    }
+
+        .btn-outline-secondary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #334155;
+        }
+
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            console.log('Booking page loaded');
+
+            // Валидация формы
+            $('#bookingForm').submit(function(e) {
+                e.preventDefault();
+
+                // Сброс ошибок
+                $('.is-invalid').removeClass('is-invalid');
+                $('.invalid-feedback').hide();
+
+                // Сбор данных
+                var formData = {
+                    TrainInfo: @Html.Raw(Json.Serialize(Model.TrainInfo)),
+                    Passenger: {
+                        LastName: $('#lastName').val(),
+                        FirstName: $('#firstName').val(),
+                        MiddleName: $('#middleName').val(),
+                        DateOfBirth: $('#dateOfBirth').val(),
+                        Gender: $('#gender').val(),
+                        DocumentType: $('#documentType').val(),
+                        DocumentNumber: $('#documentNumber').val(),
+                        Citizenship: $('#citizenship').val()
+                    },
+                    Contact: {
+                        Email: $('#email').val(),
+                        Phone: $('#phone').val(),
+                        AgreeToTerms: $('#agreeTerms').is(':checked')
+                    }
+                };
+
+                // Базовая валидация на клиенте
+                var isValid = true;
+
+                if (!formData.Passenger.LastName) {
+                    $('#lastName').addClass('is-invalid');
+                    $('#lastNameError').text('Укажите фамилию').show();
+                    isValid = false;
+                }
+
+                if (!formData.Passenger.FirstName) {
+                    $('#firstName').addClass('is-invalid');
+                    $('#firstNameError').text('Укажите имя').show();
+                    isValid = false;
+                }
+
+                if (!formData.Passenger.DateOfBirth) {
+                    $('#dateOfBirth').addClass('is-invalid');
+                    $('#dateOfBirthError').text('Укажите дату рождения').show();
+                    isValid = false;
+                }
+
+                if (!formData.Passenger.Gender) {
+                    $('#gender').addClass('is-invalid');
+                    $('#genderError').text('Укажите пол').show();
+                    isValid = false;
+                }
+
+                if (!formData.Passenger.DocumentNumber) {
+                    $('#documentNumber').addClass('is-invalid');
+                    $('#documentNumberError').text('Укажите номер документа').show();
+                    isValid = false;
+                }
+
+                if (!formData.Contact.Email || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(formData.Contact.Email)) {
+                    $('#email').addClass('is-invalid');
+                    $('#emailError').text('Укажите корректный email').show();
+                    isValid = false;
+                }
+
+                if (!formData.Contact.Phone || formData.Contact.Phone.length < 10) {
+                    $('#phone').addClass('is-invalid');
+                    $('#phoneError').text('Укажите корректный телефон').show();
+                    isValid = false;
+                }
+
+                if (!formData.Contact.AgreeToTerms) {
+                    $('#agreeTerms').addClass('is-invalid');
+                    $('#agreeTermsError').text('Необходимо согласие с условиями').show();
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                // Отправка на сервер
+                var $btn = $('#submitBtn');
+                $btn.html('<span class="spinner-border spinner-border-sm me-2"></span>Обработка...');
+                $btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("ProcessPayment")',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: JSON.stringify(formData),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Показываем уведомление об успехе
+                            showMessage('success', 'Билет успешно оформлен! Перенаправляем...');
+                            setTimeout(function() {
+                                window.location.href = response.redirectUrl;
+                            }, 2000);
+                        } else {
+                            showMessage('danger', response.message || 'Ошибка при оформлении');
+                            $btn.html('<i class="fas fa-credit-card me-2"></i>Перейти к оплате @Model.TotalPrice.ToString("N0") ₽');
+                            $btn.prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        showMessage('danger', 'Ошибка сервера: ' + xhr.statusText);
+                        $btn.html('<i class="fas fa-credit-card me-2"></i>Перейти к оплате @Model.TotalPrice.ToString("N0") ₽');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+
+            // Функция показа сообщений
+            function showMessage(type, text) {
+                var alertClass = 'alert-' + type;
+                var icon = type === 'success' ? 'fa-check-circle' :
+                          type === 'warning' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle';
+
+                var html = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fas ${icon} me-2"></i>${text}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+
+                $('.container').prepend(html);
+
+                setTimeout(function() {
+                    $('.alert').fadeOut('slow', function() { $(this).remove(); });
+                }, 5000);
+            }
+        });
+    </script>
+}
