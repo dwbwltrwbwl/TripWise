@@ -60,6 +60,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<Review> Reviews { get; set; }
     public virtual DbSet<TrainOrder> TrainOrders { get; set; }
     public virtual DbSet<TrainPassenger> TrainPassengers { get; set; }
+    public DbSet<HotelBooking> HotelBookings { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -911,6 +912,40 @@ public partial class TripWiseContext : DbContext
 
             entity.HasIndex(e => e.OrderId)
                 .HasDatabaseName("IX_TrainPassengers_OrderId");
+        });
+        modelBuilder.Entity<HotelBooking>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasMaxLength(50);
+            entity.Property(e => e.BookingNumber).HasMaxLength(50).IsRequired();
+            entity.HasIndex(e => e.BookingNumber).IsUnique();
+
+            entity.Property(e => e.HotelId).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.HotelName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.HotelAddress).HasMaxLength(500);
+            entity.Property(e => e.HotelPhone).HasMaxLength(50);
+            entity.Property(e => e.HotelWebsite).HasMaxLength(500);
+            entity.Property(e => e.AccommodationType).HasMaxLength(50);
+
+            entity.Property(e => e.Currency).HasMaxLength(10).HasDefaultValue("RUB");
+            entity.Property(e => e.ContactName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ContactEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ContactPhone).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.SpecialRequests).HasMaxLength(1000);
+
+            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
+            entity.Property(e => e.TransactionId).HasMaxLength(100);
+            entity.Property(e => e.CancellationReason).HasMaxLength(500);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CheckInDate);
+            entity.HasIndex(e => e.Status);
         });
 
         OnModelCreatingPartial(modelBuilder);

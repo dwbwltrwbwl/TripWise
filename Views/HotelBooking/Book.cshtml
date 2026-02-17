@@ -1,0 +1,379 @@
+﻿@model TripWise.Models.ViewModels.HotelBookingViewModel
+@{
+    ViewData["Title"] = "Бронирование отеля";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-hotel text-white"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Бронирование отеля
+                    </h1>
+                    <p class="page-subtitle">@Model.HotelName</p>
+                </div>
+            </div>
+
+            <!-- Информация об отеле -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Информация об отеле
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4 class="fw-bold text-primary mb-3">@Model.HotelName</h4>
+                            <p class="mb-2">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                @Model.HotelAddress
+                            </p>
+                            @if (!string.IsNullOrEmpty(Model.HotelPhone))
+                            {
+                                <p class="mb-2">
+                                    <i class="fas fa-phone text-primary me-2"></i>
+                                    @Model.HotelPhone
+                                </p>
+                            }
+                            <p class="mb-2">
+                                <i class="fas fa-bed text-primary me-2"></i>
+                                @Model.AccommodationType
+                                @if (Model.Stars.HasValue)
+                                {
+                                    <span class="ms-2">@string.Concat(Enumerable.Repeat("★", Model.Stars.Value))</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="price-box bg-light p-3 rounded">
+                                <small class="text-muted">Цена за ночь</small>
+                                <h3 class="text-primary mb-0">@Model.PricePerNight.ToString("N0") ₽</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Форма бронирования -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Детали бронирования
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form id="bookingForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" id="HotelId" name="HotelId" value="@Model.HotelId" />
+                        <input type="hidden" id="HotelName" name="HotelName" value="@Model.HotelName" />
+                        <input type="hidden" id="HotelAddress" name="HotelAddress" value="@Model.HotelAddress" />
+                        <input type="hidden" id="HotelPhone" name="HotelPhone" value="@Model.HotelPhone" />
+                        <input type="hidden" id="HotelWebsite" name="HotelWebsite" value="@Model.HotelWebsite" />
+                        <input type="hidden" id="HotelLatitude" name="HotelLatitude" value="@Model.HotelLatitude" />
+                        <input type="hidden" id="HotelLongitude" name="HotelLongitude" value="@Model.HotelLongitude" />
+                        <input type="hidden" id="AccommodationType" name="AccommodationType" value="@Model.AccommodationType" />
+                        <input type="hidden" id="Stars" name="Stars" value="@Model.Stars" />
+                        <input type="hidden" id="PricePerNight" name="PricePerNight" value="@Model.PricePerNight" />
+
+                        <!-- Даты -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="CheckInDate" class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-alt me-2"></i>Дата заезда
+                                </label>
+                                <input type="date" class="form-control form-control-lg" id="CheckInDate"
+                                       name="CheckInDate" value="@Model.CheckInDate.ToString("yyyy-MM-dd")" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="CheckOutDate" class="form-label fw-semibold">
+                                    <i class="fas fa-calendar-alt me-2"></i>Дата выезда
+                                </label>
+                                <input type="date" class="form-control form-control-lg" id="CheckOutDate"
+                                       name="CheckOutDate" value="@Model.CheckOutDate.ToString("yyyy-MM-dd")" required>
+                            </div>
+                        </div>
+
+                        <!-- Гости и комнаты -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="Guests" class="form-label fw-semibold">
+                                    <i class="fas fa-users me-2"></i>Количество гостей
+                                </label>
+                                <select class="form-select form-select-lg" id="Guests" name="Guests" required>
+                                    @for (int i = 1; i <= 10; i++)
+                                    {
+                                        <option value="@i" selected="@(i == Model.Guests)">@i @(i == 1 ? "гость" : (i < 5 ? "гостя" : "гостей"))</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="Rooms" class="form-label fw-semibold">
+                                    <i class="fas fa-door-open me-2"></i>Количество комнат
+                                </label>
+                                <select class="form-select form-select-lg" id="Rooms" name="Rooms" required>
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <option value="@i" selected="@(i == Model.Rooms)">@i @(i == 1 ? "комната" : (i < 5 ? "комнаты" : "комнат"))</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Контактные данные -->
+                        <h4 class="mb-3">Контактные данные</h4>
+
+                        <div class="mb-3">
+                            <label for="ContactName" class="form-label fw-semibold">
+                                <i class="fas fa-user me-2"></i>Ваше имя
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="ContactName"
+                                   name="ContactName" value="@Model.ContactName" required>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="ContactEmail" class="form-label fw-semibold">
+                                    <i class="fas fa-envelope me-2"></i>Email
+                                </label>
+                                <input type="email" class="form-control form-control-lg" id="ContactEmail"
+                                       name="ContactEmail" value="@Model.ContactEmail" required>
+                                <div class="form-text">На этот email придет подтверждение</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ContactPhone" class="form-label fw-semibold">
+                                    <i class="fas fa-phone me-2"></i>Телефон
+                                </label>
+                                <input type="tel" class="form-control form-control-lg" id="ContactPhone"
+                                       name="ContactPhone" value="@Model.ContactPhone" required placeholder="+7 (999) 123-45-67">
+                            </div>
+                        </div>
+
+                        <!-- Особые пожелания -->
+                        <div class="mb-4">
+                            <label for="SpecialRequests" class="form-label fw-semibold">
+                                <i class="fas fa-comment me-2"></i>Особые пожелания (необязательно)
+                            </label>
+                            <textarea class="form-control" id="SpecialRequests" name="SpecialRequests"
+                                      rows="3" placeholder="Ранний заезд, поздний выезд, специальные требования...">@Model.SpecialRequests</textarea>
+                        </div>
+
+                        <!-- Согласие -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="AgreeToTerms"
+                                       name="AgreeToTerms" value="true" required>
+                                <label class="form-check-label" for="AgreeToTerms">
+                                    Я согласен с <a href="#" target="_blank">условиями бронирования</a> и
+                                    <a href="#" target="_blank">правилами отмены</a>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Итоговая стоимость -->
+                        <div class="alert alert-success border-0 rounded-lg mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Итоговая стоимость:</h6>
+                                    <p class="mb-0 small text-muted">
+                                        @Model.PricePerNight.ToString("N0") ₽ × <span id="nightsCount">@Model.Nights</span> ночей × @Model.Rooms комн.
+                                    </p>
+                                </div>
+                                <span class="fw-bold fs-3 text-success" id="totalPrice">
+                                    @((Model.PricePerNight * Model.Nights * Model.Rooms).ToString("N0")) ₽
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Назад
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="fas fa-check me-2"></i>Подтвердить бронирование
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Расчет количества ночей и общей стоимости
+            function updateTotal() {
+                const checkIn = new Date($('#CheckInDate').val());
+                const checkOut = new Date($('#CheckOutDate').val());
+
+                if (checkIn && checkOut && checkOut > checkIn) {
+                    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                    const pricePerNight = parseFloat($('#PricePerNight').val());
+                    const rooms = parseInt($('#Rooms').val());
+
+                    $('#nightsCount').text(nights);
+
+                    const total = pricePerNight * nights * rooms;
+                    $('#totalPrice').text(total.toLocaleString('ru-RU') + ' ₽');
+                }
+            }
+
+            $('#CheckInDate, #CheckOutDate, #Rooms').change(updateTotal);
+            updateTotal();
+
+            // Обработка отправки формы
+            $('#bookingForm').submit(function(e) {
+                e.preventDefault();
+
+                const $btn = $('#submitBtn');
+                $btn.html('<span class="spinner-border spinner-border-sm me-2"></span>Оформление...');
+                $btn.prop('disabled', true);
+
+                const formData = {
+                    HotelId: $('#HotelId').val(),
+                    HotelName: $('#HotelName').val(),
+                    HotelAddress: $('#HotelAddress').val(),
+                    HotelPhone: $('#HotelPhone').val(),
+                    HotelWebsite: $('#HotelWebsite').val(),
+                    HotelLatitude: parseFloat($('#HotelLatitude').val()),
+                    HotelLongitude: parseFloat($('#HotelLongitude').val()),
+                    AccommodationType: $('#AccommodationType').val(),
+                    Stars: $('#Stars').val() ? parseInt($('#Stars').val()) : null,
+                    PricePerNight: parseFloat($('#PricePerNight').val()),
+
+                    CheckInDate: $('#CheckInDate').val(),
+                    CheckOutDate: $('#CheckOutDate').val(),
+                    Guests: parseInt($('#Guests').val()),
+                    Rooms: parseInt($('#Rooms').val()),
+
+                    ContactName: $('#ContactName').val(),
+                    ContactEmail: $('#ContactEmail').val(),
+                    ContactPhone: $('#ContactPhone').val(),
+                    SpecialRequests: $('#SpecialRequests').val(),
+
+                    AgreeToTerms: $('#AgreeToTerms').is(':checked')
+                };
+
+                $.ajax({
+                    url: '@Url.Action("ProcessBooking")',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: JSON.stringify(formData),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (response.success) {
+                            showMessage('success', 'Бронирование успешно оформлено! Перенаправляем...');
+                            setTimeout(function() {
+                                window.location.href = response.redirectUrl;
+                            }, 2000);
+                        } else {
+                            showMessage('danger', response.message || 'Ошибка при бронировании');
+                            $btn.html('<i class="fas fa-check me-2"></i>Подтвердить бронирование');
+                            $btn.prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        showMessage('danger', 'Ошибка сервера');
+                        $btn.html('<i class="fas fa-check me-2"></i>Подтвердить бронирование');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+
+            function showMessage(type, text) {
+                var alertClass = 'alert-' + type;
+                var icon = type === 'success' ? 'fa-check-circle' :
+                          type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
+
+                var html = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fas ${icon} me-2"></i>${text}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+
+                $('.container').prepend(html);
+
+                setTimeout(function() {
+                    $('.alert').fadeOut('slow', function() { $(this).remove(); });
+                }, 5000);
+            }
+        });
+    </script>
+}

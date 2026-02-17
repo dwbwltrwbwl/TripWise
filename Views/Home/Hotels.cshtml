@@ -485,6 +485,7 @@
         }
 
         // Отображение списка отелей
+                // Отображение списка отелей
         function displayHotelsList(hotels) {
             const container = document.getElementById('hotelsList');
 
@@ -498,13 +499,16 @@
                 return;
             }
 
-            const hotelsHTML = hotels.map((hotel, index) => `
+            const hotelsHTML = hotels.map((hotel, index) => {
+                // Формируем цену (если нет в данных, генерируем случайную)
+                const price = hotel.tags['price'] || hotel.tags['charge'] || generateRandomPrice(hotel.accommodationType);
+
+                return `
                 <div class="hotel-item p-3 border-bottom"
                      data-hotel-id="${hotel.id}"
-                     onclick="focusHotel(${index})"
                      style="cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-start">
-                        <div>
+                        <div onclick="focusHotel(${index})" style="flex-grow: 1;">
                             <h6 class="mb-1">${hotel.name}</h6>
                             <p class="small text-muted mb-1">
                                 <i class="fas fa-map-marker-alt me-1"></i>${hotel.address}
@@ -519,24 +523,93 @@
                             <p class="small text-muted mb-0">
                                 <i class="fas fa-ruler me-1"></i>${hotel.distance.toFixed(1)} км от центра
                             </p>
+                            <p class="fw-bold text-primary mt-2 mb-0">
+                                от ${price} ₽ / ночь
+                            </p>
                         </div>
                     </div>
-                    ${hotel.website ? `
-                        <div class="mt-2">
-                            <a href="${hotel.website}" target="_blank" class="btn btn-sm btn-outline-primary">
+
+                    <div class="d-flex gap-2 mt-3">
+                        ${hotel.website ? `
+                            <a href="${hotel.website}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fas fa-external-link-alt me-1"></i>Сайт
                             </a>
-                        </div>
-                    ` : ''}
+                        ` : ''}
+                        <button class="btn btn-sm btn-success flex-grow-1" onclick="bookHotel(${index})">
+                            <i class="fas fa-calendar-check me-1"></i>Забронировать
+                        </button>
+                    </div>
+
                     <div class="mt-2">
                         <span class="badge osm-badge">OSM ID: ${hotel.id}</span>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             container.innerHTML = hotelsHTML;
         }
+                // Генерация случайной цены в зависимости от типа отеля
+        function generateRandomPrice(type) {
+            const basePrices = {
+                'Отель': 5000,
+                'Хостел': 1500,
+                'Гостевой дом': 3000,
+                'Апартаменты': 4000,
+                'Мотель': 2500,
+                'Кемпинг': 1000,
+                'Другое': 3500
+            };
 
+            const basePrice = basePrices[type] || 3500;
+            const variation = Math.floor(Math.random() * 2000) - 1000;
+            return Math.max(500, basePrice + variation);
+        }
+                // Переход к бронированию отеля
+        function bookHotel(index) {
+            if (!currentHotels[index]) return;
+
+            const hotel = currentHotels[index];
+
+            // Генерируем цену, если её нет
+            const pricePerNight = hotel.tags['price'] || hotel.tags['charge'] || generateRandomPrice(hotel.accommodationType);
+
+            // Формируем URL для перехода на страницу бронирования
+            const params = new URLSearchParams({
+                HotelId: hotel.id.toString(),
+                HotelName: hotel.name,
+                HotelAddress: hotel.address,
+                HotelPhone: hotel.phone !== 'Не указан' ? hotel.phone : '',
+                HotelWebsite: hotel.website || '',
+                HotelLatitude: hotel.lat,
+                HotelLongitude: hotel.lon,
+                AccommodationType: hotel.accommodationType,
+                Stars: hotel.stars || '',
+                PricePerNight: pricePerNight,
+                CheckInDate: getTomorrowDate(),
+                CheckOutDate: getDayAfterTomorrowDate(),
+                Guests: 2,
+                Rooms: 1
+            });
+
+            const url = `/HotelBooking/Book?${params.toString()}`;
+            console.log('Переход к бронированию:', url);
+
+            // Переходим на страницу бронирования
+            window.location.href = url;
+        }
+
+        // Вспомогательные функции для дат
+        function getTomorrowDate() {
+            const date = new Date();
+            date.setDate(date.getDate() + 1);
+            return date.toISOString().split('T')[0];
+        }
+
+        function getDayAfterTomorrowDate() {
+            const date = new Date();
+            date.setDate(date.getDate() + 3);
+            return date.toISOString().split('T')[0];
+        }
         // Добавление маркеров на карту
         function addMarkersToMap(hotels) {
             hotels.forEach((hotel, index) => {
@@ -575,7 +648,10 @@
         }
 
         // Создание содержимого popup
+                // Создание содержимого popup
         function createPopupContent(hotel) {
+            const price = hotel.tags['price'] || hotel.tags['charge'] || generateRandomPrice(hotel.accommodationType);
+
             return `
                 <div style="font-family: 'Nunito', sans-serif; min-width: 200px;">
                     <h6 class="mb-1">${hotel.name}</h6>
@@ -584,14 +660,49 @@
                     ${hotel.phone !== 'Не указан' ? `<p class="small mb-1"><strong>Телефон:</strong> ${hotel.phone}</p>` : ''}
                     ${hotel.stars ? `<p class="small mb-1"><strong>Звезд:</strong> ${'★'.repeat(hotel.stars)}</p>` : ''}
                     <p class="small mb-2"><strong>Расстояние:</strong> ${hotel.distance.toFixed(1)} км</p>
-                    ${hotel.website ? `<a href="${hotel.website}" target="_blank" class="btn btn-sm btn-primary w-100">Открыть сайт</a>` : ''}
+                    <p class="fw-bold text-primary mb-2">от ${price} ₽ / ночь</p>
+
+                    <div class="d-grid gap-2">
+                        ${hotel.website ? `
+                            <a href="${hotel.website}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>Сайт отеля
+                            </a>
+                        ` : ''}
+                        <button class="btn btn-sm btn-success" onclick="bookHotelFromPopup(${JSON.stringify(hotel).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-calendar-check me-1"></i>Забронировать
+                        </button>
+                    </div>
+
                     <div class="mt-2 text-center">
                         <small class="text-muted">Данные из OpenStreetMap</small>
                     </div>
                 </div>
             `;
         }
+                // Бронирование из popup
+        function bookHotelFromPopup(hotel) {
+            // Генерируем цену, если её нет
+            const pricePerNight = hotel.tags?.price || hotel.tags?.charge || generateRandomPrice(hotel.accommodationType);
 
+            const params = new URLSearchParams({
+                HotelId: hotel.id.toString(),
+                HotelName: hotel.name,
+                HotelAddress: hotel.address,
+                HotelPhone: hotel.phone !== 'Не указан' ? hotel.phone : '',
+                HotelWebsite: hotel.website || '',
+                HotelLatitude: hotel.lat,
+                HotelLongitude: hotel.lon,
+                AccommodationType: hotel.accommodationType,
+                Stars: hotel.stars || '',
+                PricePerNight: pricePerNight,
+                CheckInDate: getTomorrowDate(),
+                CheckOutDate: getDayAfterTomorrowDate(),
+                Guests: 2,
+                Rooms: 1
+            });
+
+            window.location.href = `/HotelBooking/Book?${params.toString()}`;
+        }
         // Вспомогательные функции для иконок и цветов
         function getColorByType(type) {
             const colors = {
@@ -707,5 +818,7 @@
         // Экспортируем функции для использования в onclick
         window.focusHotel = focusHotel;
         window.retrySearch = retrySearch;
+        window.bookHotel = bookHotel;
+        window.bookHotelFromPopup = bookHotelFromPopup;
     </script>
 }
