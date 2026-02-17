@@ -10,6 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using TripWise.Services;
 
 namespace TripWise.Controllers
 {
@@ -19,6 +20,7 @@ namespace TripWise.Controllers
         private readonly EmailService _emailService;
         private readonly ILogger<AccountController> _logger;
         private readonly IMemoryCache _cache;
+        private readonly IFileService _fileService;
         private const string DELETE_CODE_PREFIX = "DeleteCode_";
         private const string PASSWORD_CHANGE_CODE_PREFIX = "PasswordChangeCode_";
         private const string PASSWORD_CHANGE_DATA_PREFIX = "PasswordChangeData_";
@@ -26,12 +28,13 @@ namespace TripWise.Controllers
         private const string FORGOT_PASSWORD_DATA_PREFIX = "ForgotPasswordData_";
 
         public AccountController(TripWiseContext context, EmailService emailService,
-            ILogger<AccountController> logger, IMemoryCache memoryCache)
+            ILogger<AccountController> logger, IMemoryCache memoryCache, IFileService fileService)
         {
             _context = context;
             _emailService = emailService;
             _logger = logger;
             _cache = memoryCache;
+            _fileService = fileService;
         }
 
         [HttpGet]
@@ -439,7 +442,8 @@ namespace TripWise.Controllers
                 FirstName = user.FirstName,
                 MiddleName = user.MiddleName,
                 Email = user.Email,
-                Age = user.Age
+                Age = user.Age,
+                CurrentAvatarPath = user.AvatarPath // ВАЖНО: передаем текущий путь к аватарке
             };
 
             return View(model);
@@ -454,12 +458,41 @@ namespace TripWise.Controllers
             if (userId == null)
                 return RedirectToAction("Login");
 
+            Console.WriteLine("=== DEBUG: Edit POST method called ===");
+            Console.WriteLine($"RemoveAvatar: {model.RemoveAvatar}");
+            Console.WriteLine($"Avatar file received: {model.Avatar != null}");
+
+            if (model.Avatar != null)
+            {
+                Console.WriteLine($"File name: {model.Avatar.FileName}");
+                Console.WriteLine($"File size: {model.Avatar.Length} bytes");
+                Console.WriteLine($"Content type: {model.Avatar.ContentType}");
+            }
+
+            _logger.LogInformation("=== НАЧАЛО РЕДАКТИРОВАНИЯ ПРОФИЛЯ ===");
+            _logger.LogInformation("UserId: {UserId}", userId);
+            _logger.LogInformation("RemoveAvatar: {RemoveAvatar}", model.RemoveAvatar);
+            _logger.LogInformation("Avatar файл получен: {HasFile}", model.Avatar != null);
+
+            if (model.Avatar != null)
+            {
+                _logger.LogInformation("Имя файла: {FileName}", model.Avatar.FileName);
+                _logger.LogInformation("Размер: {FileSize} байт", model.Avatar.Length);
+                _logger.LogInformation("ContentType: {ContentType}", model.Avatar.ContentType);
+            }
+
             if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                _logger.LogWarning("Ошибки валидации: {Errors}", string.Join(", ", errors));
                 return View(model);
+            }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.IdUser == userId);
             if (user == null)
                 return RedirectToAction("Login");
+
+            _logger.LogInformation("Текущий AvatarPath пользователя: {AvatarPath}", user.AvatarPath);
 
             // Обновляем данные
             user.LastName = model.LastName?.Trim() ?? user.LastName;
@@ -468,10 +501,52 @@ namespace TripWise.Controllers
             user.Email = model.Email?.Trim().ToLower() ?? user.Email;
             user.Age = model.Age;
 
-            await _context.SaveChangesAsync();
+            // Обработка аватарки
+            if (model.RemoveAvatar)
+            {
+                _logger.LogInformation("Удаление аватарки");
+                // Удаляем старую аватарку
+                if (!string.IsNullOrEmpty(user.AvatarPath))
+                {
+                    _fileService.DeleteAvatar(user.AvatarPath);
+                    user.AvatarPath = null;
+                    _logger.LogInformation("Аватарка удалена");
+                }
+            }
+            else if (model.Avatar != null && model.Avatar.Length > 0)
+            {
+                _logger.LogInformation("Начинаем обработку новой аватарки");
 
-            // Обновляем сессию
-            HttpContext.Session.SetString("UserName", $"{user.LastName} {user.FirstName} {user.MiddleName}".Trim());
+                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+                if (!allowedTypes.Contains(model.Avatar.ContentType.ToLower()))
+                {
+                    _logger.LogWarning("Неподдерживаемый тип файла: {ContentType}", model.Avatar.ContentType);
+                    ModelState.AddModelError("Avatar", "Разрешены только изображения (JPEG, PNG, GIF)");
+                    return View(model);
+                }
+
+                if (model.Avatar.Length > 2 * 1024 * 1024)
+                {
+                    _logger.LogWarning("Файл слишком большой: {FileSize} байт", model.Avatar.Length);
+                    ModelState.AddModelError("Avatar", "Размер файла не должен превышать 2MB");
+                    return View(model);
+                }
+
+                if (!string.IsNullOrEmpty(user.AvatarPath))
+                {
+                    _logger.LogInformation("Удаляем старую аватарку: {AvatarPath}", user.AvatarPath);
+                    _fileService.DeleteAvatar(user.AvatarPath);
+                }
+
+                _logger.LogInformation("Сохраняем новую аватарку...");
+                user.AvatarPath = await _fileService.SaveAvatarAsync(model.Avatar, user.IdUser);
+                _logger.LogInformation("Новая аватарка сохранена: {AvatarPath}", user.AvatarPath);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Изменения сохранены в БД. Новый AvatarPath: {AvatarPath}", user.AvatarPath);
+
+            HttpContext.Session.SetString("UserName", GetFullUserName(user));
             HttpContext.Session.SetString("UserEmail", user.Email);
 
             TempData["SuccessMessage"] = "Профиль успешно обновлен";
@@ -1120,7 +1195,7 @@ namespace TripWise.Controllers
                 return Json(new { success = false, message = "Ошибка при сбросе пароля" });
             }
         }
-
+        
         private async Task SendPasswordResetCodeAsync(string toEmail, string code)
         {
             var subject = "Восстановление пароля - Вместе В Путь";
@@ -1261,6 +1336,7 @@ namespace TripWise.Controllers
         
             }
         }
+
 
 
     // Вспомогательный класс для результата проверки пароля

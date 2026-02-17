@@ -1,0 +1,598 @@
+﻿@model TripWise.Models.ViewModels.CompleteFlightBookingViewModel
+@{
+    ViewData["Title"] = "Бронирование авиабилета";
+    var isRoundTrip = Model.Flight.IsRoundTrip;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header-section mb-5">
+                <div class="page-header-icon">
+                    <i class="fas fa-plane text-white"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">
+                        Бронирование авиабилета
+                    </h1>
+                    <p class="page-subtitle">@Model.Flight.Airline · Рейс @Model.Flight.FlightNumber</p>
+                </div>
+            </div>
+
+            <!-- Информация о рейсе -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Информация о рейсе
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-3">
+                                @if (!string.IsNullOrEmpty(Model.Flight.AirlineLogo))
+                                {
+                                    <img src="@Model.Flight.AirlineLogo" alt="@Model.Flight.Airline" style="height: 40px; margin-right: 15px;" />
+                                }
+                                <div>
+                                    <h4 class="fw-bold text-primary mb-1">@Model.Flight.Airline</h4>
+                                    <p class="text-muted mb-0">Рейс @Model.Flight.FlightNumber · @(Model.Flight.Transfers == 0 ? "Прямой" : $"{Model.Flight.Transfers} пересадка")</p>
+                                </div>
+                            </div>
+
+                            <div class="flight-route mt-4">
+                                <div class="row align-items-center">
+                                    <div class="col-5 text-center">
+                                        <div class="fw-bold fs-3 text-primary">@Model.Flight.DepartureDateTime.ToString("HH:mm")</div>
+                                        <div class="fw-semibold">@Model.Flight.DepartureCity</div>
+                                        <div class="text-muted small">@Model.Flight.DepartureAirport</div>
+                                        <div class="text-muted small">@Model.Flight.DepartureDateTime.ToString("dd.MM.yyyy")</div>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <div class="flight-duration">
+                                            <i class="fas fa-plane text-primary"></i>
+                                        </div>
+                                        <div class="small text-muted">
+                                            @{
+                                                var hours = Model.Flight.Duration / 60;
+                                                var minutes = Model.Flight.Duration % 60;
+                                            }
+                                            @hours ч @minutes мин
+                                        </div>
+                                    </div>
+                                    <div class="col-5 text-center">
+                                        <div class="fw-bold fs-3 text-primary">@Model.Flight.ArrivalDateTime.ToString("HH:mm")</div>
+                                        <div class="fw-semibold">@Model.Flight.ArrivalCity</div>
+                                        <div class="text-muted small">@Model.Flight.ArrivalAirport</div>
+                                        <div class="text-muted small">@Model.Flight.ArrivalDateTime.ToString("dd.MM.yyyy")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (isRoundTrip && Model.Flight.ReturnFlightNumber != null)
+                            {
+                                <div class="return-flight mt-4 pt-4 border-top">
+                                    <h5 class="text-success mb-3">
+                                        <i class="fas fa-plane-arrival me-2"></i>Обратный рейс @Model.Flight.ReturnFlightNumber
+                                    </h5>
+                                    <div class="row align-items-center">
+                                        <div class="col-5 text-center">
+                                            <div class="fw-bold fs-4 text-success">@Model.Flight.ReturnDepartureDateTime.Value.ToString("HH:mm")</div>
+                                            <div class="fw-semibold">@Model.Flight.ArrivalCity</div>
+                                            <div class="text-muted small">@Model.Flight.ArrivalAirport</div>
+                                            <div class="text-muted small">@Model.Flight.ReturnDepartureDateTime.Value.ToString("dd.MM.yyyy")</div>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <div class="flight-duration">
+                                                <i class="fas fa-plane text-success"></i>
+                                            </div>
+                                            <div class="small text-muted">
+                                                @{
+                                                    var returnHours = Model.Flight.ReturnDuration.Value / 60;
+                                                    var returnMinutes = Model.Flight.ReturnDuration.Value % 60;
+                                                }
+                                                @returnHours ч @returnMinutes мин
+                                            </div>
+                                        </div>
+                                        <div class="col-5 text-center">
+                                            <div class="fw-bold fs-4 text-success">@Model.Flight.ReturnArrivalDateTime.Value.ToString("HH:mm")</div>
+                                            <div class="fw-semibold">@Model.Flight.DepartureCity</div>
+                                            <div class="text-muted small">@Model.Flight.DepartureAirport</div>
+                                            <div class="text-muted small">@Model.Flight.ReturnArrivalDateTime.Value.ToString("dd.MM.yyyy")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="price-box bg-light p-3 rounded">
+                                <small class="text-muted">Цена за билет</small>
+                                <h3 class="text-primary mb-0">@Model.Flight.Price.ToString("N0") ₽</h3>
+                                <small class="text-muted">за пассажира</small>
+                                @if (isRoundTrip)
+                                {
+                                    <div class="mt-2 small text-success">
+                                        <i class="fas fa-check-circle me-1"></i>Туда и обратно
+                                    </div>
+                                }
+                            </div>
+                            <div class="mt-3 small text-muted">
+                                <div><i class="fas fa-suitcase me-1"></i> @Model.Flight.Baggage</div>
+                                <div><i class="fas fa-briefcase me-1"></i> @Model.Flight.HandLuggage</div>
+                                <div><i class="fas fa-utensils me-1"></i> @Model.Flight.Meal</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Форма бронирования -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h3 class="section-subtitle mb-0">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Данные пассажиров
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form id="bookingForm">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Скрытые поля с данными рейса -->
+                        <input type="hidden" id="FlightId" name="Flight.FlightId" value="@Model.Flight.FlightId" />
+                        <input type="hidden" id="Airline" name="Flight.Airline" value="@Model.Flight.Airline" />
+                        <input type="hidden" id="AirlineCode" name="Flight.AirlineCode" value="@Model.Flight.AirlineCode" />
+                        <input type="hidden" id="AirlineLogo" name="Flight.AirlineLogo" value="@Model.Flight.AirlineLogo" />
+                        <input type="hidden" id="FlightNumber" name="Flight.FlightNumber" value="@Model.Flight.FlightNumber" />
+                        <input type="hidden" id="DepartureCity" name="Flight.DepartureCity" value="@Model.Flight.DepartureCity" />
+                        <input type="hidden" id="ArrivalCity" name="Flight.ArrivalCity" value="@Model.Flight.ArrivalCity" />
+                        <input type="hidden" id="DepartureAirport" name="Flight.DepartureAirport" value="@Model.Flight.DepartureAirport" />
+                        <input type="hidden" id="ArrivalAirport" name="Flight.ArrivalAirport" value="@Model.Flight.ArrivalAirport" />
+                        <input type="hidden" id="DepartureDateTime" name="Flight.DepartureDateTime" value="@Model.Flight.DepartureDateTime.ToString("o")" />
+                        <input type="hidden" id="ArrivalDateTime" name="Flight.ArrivalDateTime" value="@Model.Flight.ArrivalDateTime.ToString("o")" />
+                        <input type="hidden" id="Price" name="Flight.Price" value="@Model.Flight.Price" />
+                        <input type="hidden" id="Duration" name="Flight.Duration" value="@Model.Flight.Duration" />
+                        <input type="hidden" id="Transfers" name="Flight.Transfers" value="@Model.Flight.Transfers" />
+                        <input type="hidden" id="Aircraft" name="Flight.Aircraft" value="@Model.Flight.Aircraft" />
+                        <input type="hidden" id="Baggage" name="Flight.Baggage" value="@Model.Flight.Baggage" />
+                        <input type="hidden" id="HandLuggage" name="Flight.HandLuggage" value="@Model.Flight.HandLuggage" />
+                        <input type="hidden" id="Meal" name="Flight.Meal" value="@Model.Flight.Meal" />
+                        <input type="hidden" id="FlightClass" name="Flight.FlightClass" value="@Model.Flight.FlightClass" />
+                        <input type="hidden" id="IsRoundTrip" name="Flight.IsRoundTrip" value="@Model.Flight.IsRoundTrip.ToString()" />
+
+                        @if (isRoundTrip)
+                        {
+                            <input type="hidden" id="ReturnFlightId" name="Flight.ReturnFlightId" value="@Model.Flight.ReturnFlightId" />
+                            <input type="hidden" id="ReturnAirline" name="Flight.ReturnAirline" value="@Model.Flight.ReturnAirline" />
+                            <input type="hidden" id="ReturnFlightNumber" name="Flight.ReturnFlightNumber" value="@Model.Flight.ReturnFlightNumber" />
+                            <input type="hidden" id="ReturnDepartureDateTime" name="Flight.ReturnDepartureDateTime" value="@Model.Flight.ReturnDepartureDateTime?.ToString("o")" />
+                            <input type="hidden" id="ReturnArrivalDateTime" name="Flight.ReturnArrivalDateTime" value="@Model.Flight.ReturnArrivalDateTime?.ToString("o")" />
+                            <input type="hidden" id="ReturnDuration" name="Flight.ReturnDuration" value="@Model.Flight.ReturnDuration" />
+                            <input type="hidden" id="ReturnTransfers" name="Flight.ReturnTransfers" value="@Model.Flight.ReturnTransfers" />
+                        }
+
+                        <!-- Пассажиры -->
+                        <div id="passengers-container">
+                            @for (int i = 0; i < Model.Passengers.Count; i++)
+                            {
+                                <div class="passenger-card mb-4 p-3 border rounded">
+                                    <h5 class="mb-3">Пассажир @(i + 1)</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Фамилия</label>
+                                            <input type="text" class="form-control" name="Passengers[@i].LastName" value="@Model.Passengers[i].LastName" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Имя</label>
+                                            <input type="text" class="form-control" name="Passengers[@i].FirstName" value="@Model.Passengers[i].FirstName" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Отчество</label>
+                                            <input type="text" class="form-control" name="Passengers[@i].MiddleName" value="@Model.Passengers[i].MiddleName">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Дата рождения</label>
+                                            <input type="date" class="form-control" name="Passengers[@i].DateOfBirth" value="@Model.Passengers[i].DateOfBirth.ToString("yyyy-MM-dd")" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Пол</label>
+                                            <select class="form-select" name="Passengers[@i].Gender" required>
+                                                <option value="M" selected="@(Model.Passengers[i].Gender == "M")">Мужской</option>
+                                                <option value="F" selected="@(Model.Passengers[i].Gender == "F")">Женский</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Гражданство</label>
+                                            <input type="text" class="form-control" name="Passengers[@i].Nationality" value="@Model.Passengers[i].Nationality" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Тип документа</label>
+                                            <select class="form-select" name="Passengers[@i].DocumentType" required>
+                                                <option value="passport" selected="@(Model.Passengers[i].DocumentType == "passport")">Паспорт РФ</option>
+                                                <option value="foreign_passport" selected="@(Model.Passengers[i].DocumentType == "foreign_passport")">Загранпаспорт</option>
+                                                <option value="birth_certificate" selected="@(Model.Passengers[i].DocumentType == "birth_certificate")">Свидетельство о рождении</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Номер документа</label>
+                                            <input type="text" class="form-control" name="Passengers[@i].DocumentNumber" value="@Model.Passengers[i].DocumentNumber" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Контактные данные -->
+                        <h4 class="mb-3 mt-4">Контактные данные</h4>
+
+                        <div class="mb-3">
+                            <label for="ContactName" class="form-label fw-semibold">
+                                <i class="fas fa-user me-2"></i>Ваше имя
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="ContactName"
+                                   name="Contact.Name" value="@Model.Contact.Name" required>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="ContactEmail" class="form-label fw-semibold">
+                                    <i class="fas fa-envelope me-2"></i>Email
+                                </label>
+                                <input type="email" class="form-control form-control-lg" id="ContactEmail"
+                                       name="Contact.Email" value="@Model.Contact.Email" required>
+                                <div class="form-text">На этот email придет билет</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ContactPhone" class="form-label fw-semibold">
+                                    <i class="fas fa-phone me-2"></i>Телефон
+                                </label>
+                                <input type="tel" class="form-control form-control-lg" id="ContactPhone"
+                                       name="Contact.Phone" value="@Model.Contact.Phone" required placeholder="+7 (999) 123-45-67">
+                            </div>
+                        </div>
+
+                        <!-- Согласие -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="AgreeToTerms"
+                                       name="Contact.AgreeToTerms" value="true" required>
+                                <label class="form-check-label" for="AgreeToTerms">
+                                    Я согласен с <a href="#" target="_blank">условиями перевозки</a> и
+                                    <a href="#" target="_blank">правилами возврата билетов</a>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Итоговая стоимость -->
+                        <div class="alert alert-success border-0 rounded-lg mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Итоговая стоимость:</h6>
+                                    <p class="mb-0 small text-muted">
+                                        @Model.Flight.Price.ToString("N0") ₽ × @Model.Passengers.Count пасс.
+                                        @if (isRoundTrip)
+                                        {
+                                            <span> × 2 (туда и обратно)</span>
+                                        }
+                                    </p>
+                                </div>
+                                <span class="fw-bold fs-3 text-success">
+                                    @{
+                                        var total = Model.Flight.Price * Model.Passengers.Count * (isRoundTrip ? 2 : 1);
+                                    }
+                                    @total.ToString("N0") ₽
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Назад
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="fas fa-check me-2"></i>Подтвердить бронирование
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 25px 30px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .page-header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, #0379D9, #40B624);
+        }
+
+    .page-header-icon {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #0379D9;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin: 0;
+        max-width: 600px;
+    }
+
+    .section-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: #334155;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .flight-route {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+    }
+
+    .return-flight {
+        background: #f8fff8;
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .price-box {
+        background: linear-gradient(135deg, #f8fafc, #e8f4fe);
+        border: 1px solid #e2e8f0;
+    }
+
+    .passenger-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0 !important;
+    }
+
+        .passenger-card h5 {
+            color: #0379D9;
+            font-weight: 600;
+        }
+
+    .btn-success {
+        background: #40B624;
+        border: none;
+        box-shadow: 0 4px 12px rgba(64, 182, 36, 0.2);
+        padding: 14px 30px;
+        font-size: 1.1rem;
+    }
+
+        .btn-success:hover {
+            background: #33991b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(64, 182, 36, 0.3);
+        }
+
+    @@media (max-width: 768px) {
+        .page-header-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+
+            .page-header-section::before {
+                width: 100%;
+                height: 6px;
+                top: 0;
+                left: 0;
+                background: linear-gradient(to right, #0379D9, #40B624);
+            }
+
+        .page-header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Обработка отправки формы
+            $('#bookingForm').submit(function(e) {
+                e.preventDefault();
+
+                const $btn = $('#submitBtn');
+                $btn.html('<span class="spinner-border spinner-border-sm me-2"></span>Оформление...');
+                $btn.prop('disabled', true);
+
+                // Собираем данные пассажиров
+                const passengers = [];
+                $('.passenger-card').each(function(index) {
+                    const card = $(this);
+                    passengers.push({
+                        lastName: card.find('input[name$=".LastName"]').val(),
+                        firstName: card.find('input[name$=".FirstName"]').val(),
+                        middleName: card.find('input[name$=".MiddleName"]').val(),
+                        dateOfBirth: card.find('input[name$=".DateOfBirth"]').val(),
+                        gender: card.find('select[name$=".Gender"]').val(),
+                        nationality: card.find('input[name$=".Nationality"]').val(),
+                        documentType: card.find('select[name$=".DocumentType"]').val(),
+                        documentNumber: card.find('input[name$=".DocumentNumber"]').val()
+                    });
+                });
+
+                // Собираем данные формы
+                const formData = {
+                    flight: {
+                        flightId: $('#FlightId').val(),
+                        airline: $('#Airline').val(),
+                        airlineCode: $('#AirlineCode').val(),
+                        airlineLogo: $('#AirlineLogo').val(),
+                        flightNumber: $('#FlightNumber').val(),
+                        departureCity: $('#DepartureCity').val(),
+                        arrivalCity: $('#ArrivalCity').val(),
+                        departureAirport: $('#DepartureAirport').val(),
+                        arrivalAirport: $('#ArrivalAirport').val(),
+                        departureDateTime: $('#DepartureDateTime').val(),
+                        arrivalDateTime: $('#ArrivalDateTime').val(),
+                        price: parseFloat($('#Price').val()),
+                        duration: parseInt($('#Duration').val()),
+                        transfers: parseInt($('#Transfers').val()),
+                        aircraft: $('#Aircraft').val(),
+                        baggage: $('#Baggage').val(),
+                        handLuggage: $('#HandLuggage').val(),
+                        meal: $('#Meal').val(),
+                        flightClass: $('#FlightClass').val(),
+                        isRoundTrip: $('#IsRoundTrip').val() === 'True',
+
+                        returnFlightId: $('#ReturnFlightId').val(),
+                        returnAirline: $('#ReturnAirline').val(),
+                        returnFlightNumber: $('#ReturnFlightNumber').val(),
+                        returnDepartureDateTime: $('#ReturnDepartureDateTime').val(),
+                        returnArrivalDateTime: $('#ReturnArrivalDateTime').val(),
+                        returnDuration: $('#ReturnDuration').val() ? parseInt($('#ReturnDuration').val()) : null,
+                        returnTransfers: $('#ReturnTransfers').val() ? parseInt($('#ReturnTransfers').val()) : null
+                    },
+                    passengers: passengers,
+                    contact: {
+                        name: $('#ContactName').val(),
+                        email: $('#ContactEmail').val(),
+                        phone: $('#ContactPhone').val(),
+                        agreeToTerms: $('#AgreeToTerms').is(':checked')
+                    }
+                };
+
+                // Валидация
+                let isValid = true;
+                let errorMessage = '';
+
+                if (!formData.contact.name) {
+                    errorMessage += 'Укажите имя контактного лица\n';
+                    isValid = false;
+                }
+                if (!formData.contact.email || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(formData.contact.email)) {
+                    errorMessage += 'Укажите корректный email\n';
+                    isValid = false;
+                }
+                if (!formData.contact.phone || formData.contact.phone.length < 10) {
+                    errorMessage += 'Укажите корректный телефон\n';
+                    isValid = false;
+                }
+                if (!formData.contact.agreeToTerms) {
+                    errorMessage += 'Необходимо согласие с условиями\n';
+                    isValid = false;
+                }
+
+                for (let i = 0; i < formData.passengers.length; i++) {
+                    const p = formData.passengers[i];
+                    if (!p.lastName || !p.firstName || !p.dateOfBirth || !p.gender || !p.nationality || !p.documentNumber) {
+                        errorMessage += `Заполните все обязательные поля для пассажира ${i + 1}\n`;
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                if (!isValid) {
+                    alert(errorMessage);
+                    $btn.html('<i class="fas fa-check me-2"></i>Подтвердить бронирование');
+                    $btn.prop('disabled', false);
+                    return;
+                }
+
+                // Отправка на сервер
+                $.ajax({
+                    url: '@Url.Action("ProcessBooking")',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: JSON.stringify(formData),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (response.success) {
+                            showMessage('success', 'Бронирование успешно оформлено! Перенаправляем...');
+                            setTimeout(function() {
+                                window.location.href = response.redirectUrl;
+                            }, 2000);
+                        } else {
+                            showMessage('danger', response.message || 'Ошибка при бронировании');
+                            $btn.html('<i class="fas fa-check me-2"></i>Подтвердить бронирование');
+                            $btn.prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        let errorMsg = 'Ошибка сервера';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMsg = response.message || errorMsg;
+                        } catch (e) {}
+                        showMessage('danger', errorMsg);
+                        $btn.html('<i class="fas fa-check me-2"></i>Подтвердить бронирование');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+
+            function showMessage(type, text) {
+                var alertClass = 'alert-' + type;
+                var icon = type === 'success' ? 'fa-check-circle' :
+                          type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
+
+                var html = `
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fas ${icon} me-2"></i>${text}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+
+                $('.container').prepend(html);
+
+                setTimeout(function() {
+                    $('.alert').fadeOut('slow', function() { $(this).remove(); });
+                }, 5000);
+            }
+        });
+    </script>
+}

@@ -269,6 +269,7 @@ async function searchFlights(searchData) {
 function showFlightResults(flights, searchData) {
     console.log('=== ПОКАЗ РЕЗУЛЬТАТОВ ===');
     console.log('Получено рейсов:', flights?.length || 0);
+    console.log('Первый рейс:', flights[0]); // Посмотрим структуру первого рейса
     console.log('Пользователь авторизован:', isUserAuthenticated);
 
     const oldResults = document.getElementById('flightResultsContainer');
@@ -402,6 +403,12 @@ function buildStableFlightId(flight, isReturnFlight) {
 function generateFlightCard(flight, index, isReturnFlight) {
     if (!flight) return '';
 
+    console.log('Генерация карточки для рейса:', flight);
+    console.log('DepartureCity:', flight.departureCity);
+    console.log('ArrivalCity:', flight.arrivalCity);
+    console.log('DepartureAirport:', flight.departureAirport);
+    console.log('ArrivalAirport:', flight.arrivalAirport);
+
     const departureTime = formatTime(flight.departureTime);
     const arrivalTime = formatTime(flight.arrivalTime);
     const durationHours = Math.floor(flight.duration / 60);
@@ -415,6 +422,7 @@ function generateFlightCard(flight, index, isReturnFlight) {
     const priceFormatted = flight.price ? flight.price.toLocaleString('ru-RU') : '0';
     const currency = flight.currency || 'RUB';
 
+    // ВАЖНО: Проверяем, что попадает в flightData
     const flightData = {
         flightId: flightId,
         airline: flight.airline || 'Авиакомпания',
@@ -439,6 +447,8 @@ function generateFlightCard(flight, index, isReturnFlight) {
             departureDate: formatDateForApi(flight.departureTime)
         }
     };
+
+    console.log('flightData для карточки:', flightData);
 
     return `
         <div class="flight-card ${typeClass} border-bottom p-4">
@@ -567,500 +577,112 @@ async function checkFavoritesForFlights() {
 
 // ==================== ПОКУПКА БИЛЕТОВ ====================
 function selectRealFlight(flightId, price, airline, isReturn) {
-    const flightCard = document.querySelector(`[data-flight-id="${CSS.escape(flightId)}"]`)?.closest('.flight-card');
+    console.log('========== НАЧАЛО БРОНИРОВАНИЯ ==========');
+    console.log('Параметры вызова:', { flightId, price, airline, isReturn });
 
+    // Находим карточку рейса
+    const flightCard = event.currentTarget.closest('.flight-card');
     if (!flightCard) {
-        alert('Не удалось получить данные рейса');
+        console.error('❌ Карточка рейса не найдена');
+        return;
+    }
+    console.log('✅ Карточка рейса найдена');
+
+    // Получаем данные из data-flight-data
+    const favoriteButton = flightCard.querySelector('.favorite-btn');
+    if (!favoriteButton) {
+        console.error('❌ Кнопка избранного не найдена');
+        return;
+    }
+    console.log('✅ Кнопка избранного найдена');
+
+    const flightDataStr = favoriteButton.getAttribute('data-flight-data');
+    if (!flightDataStr) {
+        console.error('❌ Данные рейса не найдены');
         return;
     }
 
-    const departureCity = flightCard.querySelectorAll('.text-muted')[1]?.textContent.trim() || 'Москва';
-    const arrivalCity = flightCard.querySelectorAll('.text-muted')[3]?.textContent.trim() || 'Санкт-Петербург';
-    const departureTime = flightCard.querySelector('.time-display')?.textContent.trim() || '08:00';
-    const arrivalTime = flightCard.querySelectorAll('.time-display')[1]?.textContent.trim() || '10:00';
-
-    const flightData = {
-        flightId: flightId,
-        airline: airline,
-        flightNumber: `${airline} ${Math.floor(Math.random() * 9000) + 1000}`,
-        departureCity: departureCity,
-        arrivalCity: arrivalCity,
-        departureAirport: departureCity.includes('Москва') ? 'SVO' : 'LED',
-        arrivalAirport: arrivalCity.includes('Москва') ? 'SVO' : 'LED',
-        departureTime: new Date(new Date().setHours(parseInt(departureTime.split(':')[0]), parseInt(departureTime.split(':')[1]))),
-        arrivalTime: new Date(new Date().setHours(parseInt(arrivalTime.split(':')[0]), parseInt(arrivalTime.split(':')[1]))),
-        price: price,
-        currency: 'RUB',
-        transfers: 0,
-        isReturn: isReturn
-    };
-
-    showBookingModal(flightData, flightId);
-}
-
-function showBookingModal(flightData, flightId) {
-    console.log('Показ модального окна покупки для рейса:', flightId);
-
-    // Убедитесь, что flightData содержит все необходимые поля
-    const completeFlightData = {
-        ...flightData,
-        flightId: flightId,
-        // Добавляем недостающие поля
-        airline: flightData.airline || 'Аэрофлот',
-        flightNumber: flightData.flightNumber || 'SU 1234',
-        departureCity: flightData.departureCity || 'Москва',
-        arrivalCity: flightData.arrivalCity || 'Санкт-Петербург',
-        departureAirport: flightData.departureAirport || 'SVO',
-        arrivalAirport: flightData.arrivalAirport || 'LED',
-        departureTime: flightData.departureTime || new Date(),
-        arrivalTime: flightData.arrivalTime || new Date(),
-        price: flightData.price || 5000,
-        currency: flightData.currency || 'RUB',
-        transfers: flightData.transfers || 0,
-        duration: flightData.duration || 120,
-        isReturn: flightData.isReturn || false
-    };
-
-    const modalHtml = `
-        <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-plane me-2"></i>
-                            Бронирование рейса
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle fa-2x me-3"></i>
-                                <div>
-                                    <h6 class="mb-1">Демо-режим</h6>
-                                    <p class="mb-0 small">Это демонстрационная покупка. Данные не сохраняются в реальной системе.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0">Информация о рейсе</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p><strong>Авиакомпания:</strong> ${flightData.airline || 'Аэрофлот'}</p>
-                                        <p><strong>Рейс:</strong> ${flightData.flightNumber || 'SU 1234'}</p>
-                                        <p><strong>Маршрут:</strong> ${flightData.departureCity} → ${flightData.arrivalCity}</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><strong>Вылет:</strong> ${formatTime(flightData.departureTime)}</p>
-                                        <p><strong>Прилет:</strong> ${formatTime(flightData.arrivalTime)}</p>
-                                        <p><strong>Цена:</strong> <span class="text-primary fw-bold">${flightData.price ? flightData.price.toLocaleString('ru-RU') : '0'} RUB</span></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <form id="bookingForm">
-                            <div class="mb-4">
-                                <h6 class="mb-3"><i class="fas fa-users me-2"></i>Данные пассажиров</h6>
-                                <div id="passengersContainer">
-                                    <!-- Пассажиры будут добавляться здесь -->
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addPassengerField()">
-                                    <i class="fas fa-plus me-1"></i>Добавить пассажира
-                                </button>
-                            </div>
-
-                            <div class="mb-4">
-                                <h6 class="mb-3"><i class="fas fa-address-card me-2"></i>Контактная информация</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Email *</label>
-                                        <input type="email" class="form-control" name="contactEmail" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Телефон *</label>
-                                        <input type="tel" class="form-control" name="contactPhone" required>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Оплата (демо)</h6>
-                                <div class="alert alert-warning">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    Демо-данные платежа. Никакие реальные платежи не осуществляются.
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Номер карты</label>
-                                        <input type="text" class="form-control" value="4242 4242 4242 4242" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Срок действия</label>
-                                        <input type="text" class="form-control" value="12/28" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">CVV</label>
-                                        <input type="text" class="form-control" value="123" readonly>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Имя держателя карты</label>
-                                        <input type="text" class="form-control" value="DEMO USER" readonly>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fas fa-check me-2"></i>Подтвердить бронирование
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                    <i class="fas fa-times me-2"></i>Отмена
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    addPassengerField();
-
-    const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
-    bookingModal.show();
-
-    document.getElementById('bookingForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
-        await processBooking(completeFlightData, flightId, this);
-    });
-
-    document.getElementById('bookingModal').addEventListener('hidden.bs.modal', function () {
-        this.remove();
-    });
-}
-
-function addPassengerField() {
-    const container = document.getElementById('passengersContainer');
-    const passengerIndex = container.children.length + 1;
-
-    const passengerHtml = `
-        <div class="card mb-3 passenger-card">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Пассажир ${passengerIndex}</h6>
-                ${passengerIndex > 1 ? '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removePassenger(this)"><i class="fas fa-times"></i></button>' : ''}
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Имя *</label>
-                        <input type="text" class="form-control passenger-firstname" placeholder="Иван" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Фамилия *</label>
-                        <input type="text" class="form-control passenger-lastname" placeholder="Иванов" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Отчество</label>
-                        <input type="text" class="form-control passenger-middlename" placeholder="Иванович">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Дата рождения *</label>
-                        <input type="date" class="form-control passenger-birthdate" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Пол *</label>
-                        <select class="form-select passenger-gender" required>
-                            <option value="M">Мужской</option>
-                            <option value="F">Женский</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Гражданство *</label>
-                        <input type="text" class="form-control passenger-nationality" value="Россия" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Тип документа *</label>
-                        <select class="form-select passenger-doctype" required>
-                            <option value="passport">Паспорт</option>
-                            <option value="internal_passport">Внутренний паспорт</option>
-                            <option value="birth_certificate">Свидетельство о рождении</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Номер документа *</label>
-                        <input type="text" class="form-control passenger-docnumber" placeholder="1234 567890" required>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    container.insertAdjacentHTML('beforeend', passengerHtml);
-}
-
-function removePassenger(button) {
-    button.closest('.passenger-card').remove();
-    document.querySelectorAll('.passenger-card .card-header h6').forEach((header, index) => {
-        header.textContent = `Пассажир ${index + 1}`;
-    });
-}
-
-async function processBooking(flightData, flightId, formElement) {
     try {
-        const passengers = [];
-        document.querySelectorAll('.passenger-card').forEach(card => {
-            passengers.push({
-                firstName: card.querySelector('.passenger-firstname').value,
-                lastName: card.querySelector('.passenger-lastname').value,
-                middleName: card.querySelector('.passenger-middlename').value || '',
-                dateOfBirth: card.querySelector('.passenger-birthdate').value,
-                gender: card.querySelector('.passenger-gender').value,
-                nationality: card.querySelector('.passenger-nationality').value,
-                documentType: card.querySelector('.passenger-doctype').value,
-                documentNumber: card.querySelector('.passenger-docnumber').value
-            });
-        });
+        // Парсим данные рейса
+        const flightData = JSON.parse(flightDataStr.replace(/&apos;/g, "'"));
+        console.log('✅ Данные из flightData:', flightData);
 
-        const contact = {
-            email: formElement.querySelector('[name="contactEmail"]').value,
-            phone: formElement.querySelector('[name="contactPhone"]').value
-        };
+        // Получаем дату из формы поиска
+        const departureDateInput = document.getElementById('departureDate');
+        const returnDateInput = document.getElementById('returnDate');
 
-        const payment = {
-            method: "card",
-            cardNumber: "4242424242424242",
-            cardHolder: "DEMO USER",
-            expiryMonth: "12",
-            expiryYear: "28",
-            cvv: "123"
-        };
+        // Формируем даты с правильным временем
+        let departureDateTime = new Date(flightData.departureTime);
+        let arrivalDateTime = new Date(flightData.arrivalTime);
 
-        // Создаем корректный объект для отправки
-        const bookingRequest = {
-            flightId: flightId,
-            flightData: flightData, // Добавляем полные данные о рейсе
-            passengers: passengers,
-            contact: contact,
-            payment: payment,
-            // Убираем лишние поля которые могут конфликтовать
-            selectedFlight: null, // Убираем это поле
-            searchId: null // Убираем это поле
-        };
-
-        console.log('Отправка запроса на бронирование:', bookingRequest);
-
-        const submitBtn = formElement.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Обработка...';
-        submitBtn.disabled = true;
-
-        try {
-            const response = await fetch('/api/flights/book', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // Важно для передачи кук авторизации
-                body: JSON.stringify(bookingRequest)
-            });
-
-            console.log('Статус ответа бронирования:', response.status);
-
-            if (!response.ok) {
-                let errorMessage = `HTTP error! status: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.error || errorMessage;
-                } catch (e) {
-                    // Если не удалось распарсить JSON
-                }
-                throw new Error(errorMessage);
-            }
-
-            const result = await response.json();
-            console.log('Ответ от сервера:', result);
-
-            if (result.success) {
-                // Закрываем модальное окно
-                const bookingModal = document.getElementById('bookingModal');
-                if (bookingModal) {
-                    const modal = bootstrap.Modal.getInstance(bookingModal);
-                    if (modal) modal.hide();
-                }
-
-                // Показываем уведомление об успехе
-                showSuccessNotification(result);
-            } else {
-                alert(result.message || 'Ошибка при бронировании');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        } catch (error) {
-            console.error('Ошибка при бронировании:', error);
-
-            // Проверяем, если ошибка авторизации
-            if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                showAuthRequiredModal();
-                return;
-            }
-
-            alert('Ошибка при бронировании: ' + error.message);
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+        // Если дата невалидна, используем текущую + завтра
+        if (isNaN(departureDateTime.getTime())) {
+            departureDateTime = new Date();
+            departureDateTime.setDate(departureDateTime.getDate() + 1);
+            departureDateTime.setHours(10, 0, 0, 0);
         }
+
+        if (isNaN(arrivalDateTime.getTime())) {
+            arrivalDateTime = new Date(departureDateTime);
+            arrivalDateTime.setHours(departureDateTime.getHours() + 2,
+                departureDateTime.getMinutes(), 0, 0);
+        }
+
+        // Формируем данные для бронирования, используя данные из flightData
+        const bookingData = {
+            flightId: flightId,
+            airline: flightData.airline || airline,
+            airlineCode: flightData.airlineCode || flightId.split('_')[0] || 'SU',
+            airlineLogo: flightData.airlineLogo || '',
+            flightNumber: flightData.flightNumber || flightId.split('_')[1] || 'SU 1234',
+            departureCity: flightData.departureCity || '',
+            arrivalCity: flightData.arrivalCity || '',
+            departureAirport: flightData.departureAirport || '',
+            arrivalAirport: flightData.arrivalAirport || '',
+            departureDateTime: departureDateTime.toISOString(),
+            arrivalDateTime: arrivalDateTime.toISOString(),
+            price: price,
+            duration: flightData.duration || 120,
+            transfers: flightData.transfers || 0,
+            aircraft: flightData.aircraft || 'Airbus A320',
+            baggage: '1x23кг',
+            handLuggage: '1x10кг',
+            meal: 'Включено',
+            flightClass: 'economy',
+            isRoundTrip: isReturn,
+            passengers: 1
+        };
+
+        console.log('✅ Итоговые данные для бронирования:', bookingData);
+
+        // Формируем URL
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(bookingData)) {
+            if (value !== null && value !== undefined && value !== '') {
+                params.append(key, value.toString());
+            }
+        }
+
+        const url = `/FlightBooking/Book?${params.toString()}`;
+        console.log('✅ URL для перехода:', url);
+        console.log('========== КОНЕЦ БРОНИРОВАНИЯ ==========');
+
+        window.location.href = url;
+
     } catch (error) {
-        console.error('Общая ошибка при бронировании:', error);
-        alert('Произошла ошибка: ' + error.message);
+        console.error('❌ Ошибка при подготовке данных:', error);
+        showNotification('Ошибка при подготовке данных для бронирования', 'danger');
     }
 }
 
-function showSuccessNotification(result) {
-    const notificationHtml = `
-        <div class="modal fade" id="successModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-check-circle me-2"></i>
-                            Бронирование успешно!
-                        </h5>
-                    </div>
-                    <div class="modal-body text-center py-4">
-                        <i class="fas fa-plane-circle-check text-success mb-3" style="font-size: 4rem;"></i>
-                        <h4 class="mb-3">Ваш билет забронирован!</h4>
-
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <p class="mb-1"><strong>Номер заказа:</strong> ${result.orderNumber}</p>
-                                <p class="mb-1"><strong>Номер билета:</strong> ${result.ticketNumber}</p>
-                                <p class="mb-1"><strong>Сумма:</strong> ${result.totalPrice ? result.totalPrice.toLocaleString('ru-RU') : '0'} RUB</p>
-                                <p class="mb-0"><strong>Статус:</strong> <span class="badge bg-success">${result.status || 'подтвержден'}</span></p>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info text-start">
-                            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Демо-режим</h6>
-                            <p class="mb-0 small">
-                                Это демонстрационная покупка. В реальной системе:
-                                <ul class="small mb-0">
-                                    <li>Билет был бы отправлен на вашу почту</li>
-                                    <li>Произведен реальный платеж</li>
-                                    <li>Были бы сгенерированы реальные посадочные талоны</li>
-                                </ul>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" onclick="printDemoTicket('${result.ticketNumber}')">
-                            <i class="fas fa-print me-2"></i>Распечатать демо-билет
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="closeSuccessModal()">
-                            <i class="fas fa-check me-2"></i>Отлично!
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', notificationHtml);
-
-    const successModal = new bootstrap.Modal(document.getElementById('successModal'), {
-        backdrop: 'static',
-        keyboard: false
-    });
-    successModal.show();
-}
-
-function printDemoTicket(ticketNumber) {
-    const ticketHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Демо-билет ${ticketNumber}</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .ticket { border: 2px solid #000; padding: 20px; max-width: 600px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .airline-logo { font-size: 24px; font-weight: bold; color: #007bff; }
-                .flight-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-                .info-box { border: 1px solid #ddd; padding: 10px; }
-                .barcode { text-align: center; margin: 20px 0; font-family: monospace; }
-                .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-                @media print { 
-                    body { padding: 0; }
-                    .no-print { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="ticket">
-                <div class="header">
-                    <div class="airline-logo">✈ DEMO AIRLINES</div>
-                    <h2>ПОСАДОЧНЫЙ ТАЛОН</h2>
-                    <p><strong>Номер билета:</strong> ${ticketNumber}</p>
-                </div>
-                
-                <div class="flight-info">
-                    <div class="info-box">
-                        <strong>Рейс:</strong> DEMO-123<br>
-                        <strong>Класс:</strong> Эконом<br>
-                        <strong>Дата:</strong> ${new Date().toLocaleDateString('ru-RU')}
-                    </div>
-                    <div class="info-box">
-                        <strong>Вылет:</strong> 08:00 (SVO)<br>
-                        <strong>Прилет:</strong> 10:00 (LED)<br>
-                        <strong>Время в пути:</strong> 2ч 00м
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <strong>Пассажир:</strong> Демо Пользователь<br>
-                    <strong>Место:</strong> 12A<br>
-                    <strong>Выход на посадку:</strong> A1<br>
-                    <strong>Начало посадки:</strong> 07:00
-                </div>
-                
-                <div class="barcode">
-                    <div>*** ДЕМО-БИЛЕТ ***</div>
-                    <div style="letter-spacing: 3px; font-size: 18px;">||| || ||| || ||| || ||| ||</div>
-                    <div>${ticketNumber}</div>
-                </div>
-                
-                <div class="footer">
-                    <p>Это демонстрационный билет. Не действителен для реальной посадки.</p>
-                    <p>Распечатано: ${new Date().toLocaleString('ru-RU')}</p>
-                </div>
-                
-                <div class="no-print" style="text-align: center; margin-top: 20px;">
-                    <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer;">
-                        🖨 Распечатать билет
-                    </button>
-                    <button onclick="window.close()" style="padding: 10px 20px; background: #666; color: white; border: none; cursor: pointer; margin-left: 10px;">
-                        ✕ Закрыть
-                    </button>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(ticketHtml);
-    printWindow.document.close();
-}
-
-function closeSuccessModal() {
-    const modal = document.getElementById('successModal');
-    if (modal) {
-        bootstrap.Modal.getInstance(modal).hide();
-        modal.remove();
+function formatDateForUrl(date) {
+    if (!date) return '';
+    try {
+        const d = new Date(date);
+        return d.toISOString();
+    } catch (error) {
+        console.error('Ошибка форматирования даты:', error);
+        return '';
     }
 }
 
@@ -1683,9 +1305,6 @@ window.handleFavoriteClick = handleFavoriteClick;
 window.showMyOrders = showMyOrders;
 window.viewOrderDetails = viewOrderDetails;
 window.cancelOrder = cancelOrder;
-window.printDemoTicket = printDemoTicket;
-window.addPassengerField = addPassengerField;
-window.removePassenger = removePassenger;
 
 // ==================== ЗАГРУЗКА СТРАНИЦЫ ====================
 document.addEventListener('DOMContentLoaded', function () {

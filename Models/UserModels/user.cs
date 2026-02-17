@@ -20,6 +20,7 @@ public partial class User
     public DateTime CreatedAt { get; set; }
 
     public int IdRole { get; set; }
+    public string? AvatarPath { get; set; }
 
     public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
 

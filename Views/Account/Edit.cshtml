@@ -5,7 +5,7 @@
 
 <div class="container mt-4">
 
-    <!-- Заголовок страницы (НЕ МЕНЯЕМ) -->
+    <!-- Заголовок страницы -->
     <div class="page-header-section mb-5">
         <div class="page-header-icon">
             <i class="fas fa-user-edit"></i>
@@ -19,29 +19,82 @@
     </div>
 
     <div class="row">
-
-        <!-- Левая колонка — аватар (визуально) -->
+        <!-- Левая колонка — аватар -->
         <div class="col-lg-4 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="avatar-circle-lg mb-3">
-                        <div class="avatar-initials-lg">
-                            @Model.FirstName[0].ToString().ToUpper()@Model.LastName[0].ToString().ToUpper()
-                        </div>
-                    </div>
+                    <!-- ВАЖНО: форма начинается здесь, чтобы input type="file" был внутри формы -->
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
 
-                    <p class="text-muted small mb-0">
-                        Загрузка изображения будет добавлена позже
-                    </p>
+                        <!-- Скрытое поле для текущего пути аватара -->
+                        <input type="hidden" asp-for="CurrentAvatarPath" />
+
+                        <!-- Контейнер для аватара -->
+                        <div class="avatar-upload-container mb-3">
+                            @if (!string.IsNullOrEmpty(Model.CurrentAvatarPath))
+                            {
+                                <img src="@Model.CurrentAvatarPath" class="avatar-image" alt="Avatar" />
+                            }
+                            else
+                            {
+                                <div class="avatar-circle-lg">
+                                    <div class="avatar-initials-lg">
+                                        @Model.FirstName[0].ToString().ToUpper()@Model.LastName[0].ToString().ToUpper()
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Кнопка для загрузки нового аватара (ТЕПЕРЬ ВНУТРИ ФОРМЫ) -->
+                            <label for="avatarInput" class="avatar-upload-btn" title="Загрузить новое фото">
+                                <i class="fas fa-camera"></i>
+                            </label>
+                            <input type="file" id="avatarInput" name="Avatar" accept="image/*" style="display: none;" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.CurrentAvatarPath))
+                        {
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="RemoveAvatar" name="RemoveAvatar" value="true">
+                                <label class="form-check-label small" for="RemoveAvatar">
+                                    Удалить текущее фото
+                                </label>
+                            </div>
+                        }
+
+                        <p class="text-muted small mb-0">
+                            Поддерживаемые форматы: JPG, PNG, GIF<br>
+                            Макс. размер: 2 MB
+                        </p>
+
+                        <!-- Предпросмотр выбранного файла -->
+                        <div id="avatarPreview" class="mt-3" style="display: none;">
+                            <img id="previewImage" src="#" alt="Preview" class="preview-image" />
+                            <p class="small text-success mt-1">Новое фото выбрано</p>
+                        </div>
+
+                        <!-- Кнопки навигации (дублируем здесь для мобильных) -->
+                        <div class="d-flex justify-content-between mt-4 d-lg-none">
+                            <a asp-action="Profile" class="btn btn-outline-secondary">
+                                Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                Сохранить
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <!-- Правая колонка — форма -->
+        <!-- Правая колонка — форма с основными полями -->
         <div class="col-lg-8">
-            <form asp-action="Edit" method="post" class="card border-0 shadow-sm">
-
+            <!-- Используем ту же форму, что и выше, но продолжаем её -->
+            <form asp-action="Edit" method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
                 @Html.AntiForgeryToken()
+
+                <!-- Повторяем скрытое поле для безопасности -->
+                <input type="hidden" asp-for="CurrentAvatarPath" />
 
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="section-subtitle mb-0">
@@ -52,7 +105,6 @@
 
                 <div class="card-body p-4">
                     <div class="row g-3">
-
                         <div class="col-md-4">
                             <div class="form-floating">
                                 <input asp-for="LastName" class="form-control" placeholder="Фамилия" />
@@ -91,21 +143,19 @@
                                 <label asp-for="Age">Возраст</label>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
                 <div class="card-footer bg-white border-0 py-3 px-4">
                     <div class="d-flex justify-content-between">
                         <a asp-action="Profile" class="btn btn-outline-secondary">
-                            Назад
+                            <i class="fas fa-arrow-left me-2"></i>Назад
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            Сохранить изменения
+                            <i class="fas fa-save me-2"></i>Сохранить изменения
                         </button>
                     </div>
                 </div>
-
             </form>
         </div>
     </div>
@@ -177,6 +227,22 @@
     }
 
     /* Аватар для редактирования */
+    .avatar-upload-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+    }
+
+    .avatar-image {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
+    }
+
     .avatar-circle-lg {
         width: 150px;
         height: 150px;
@@ -187,8 +253,6 @@
         justify-content: center;
         margin: 0 auto;
         box-shadow: 0 4px 15px rgba(3, 121, 217, 0.2);
-        position: relative;
-        overflow: hidden;
         border: 4px solid white;
     }
 
@@ -200,9 +264,35 @@
         text-transform: uppercase;
     }
 
-    .avatar-actions {
-        max-width: 200px;
-        margin: 0 auto;
+    .avatar-upload-btn {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #0379D9;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid white;
+        transition: all 0.3s ease;
+    }
+
+        .avatar-upload-btn:hover {
+            background: #0356a8;
+            transform: scale(1.1);
+        }
+
+    .preview-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #40B624;
+        margin-top: 10px;
     }
 
     /* Форма */
@@ -252,7 +342,6 @@
         transition: all 0.3s ease;
         font-family: 'Nunito', sans-serif;
         padding: 10px 20px;
-        cursor: pointer;
     }
 
     .btn-primary {
@@ -264,19 +353,6 @@
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 18px rgba(3, 121, 217, 0.3);
-            background: linear-gradient(135deg, #0379D9, #40B624);
-        }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d, #495057);
-        border: none;
-        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
-    }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(108, 117, 125, 0.3);
-            background: linear-gradient(135deg, #6c757d, #495057);
         }
 
     .btn-outline-secondary {
@@ -291,28 +367,11 @@
             color: #334155;
         }
 
-    .btn-outline-danger {
-        border: 2px solid #fee2e2;
-        color: #dc2626;
-        background: white;
-    }
-
-        .btn-outline-danger:hover {
-            background: #fef2f2;
-            border-color: #fca5a5;
-            color: #dc2626;
-        }
-
     /* Карточка */
     .card {
         border-radius: 16px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    hr {
-        opacity: 0.1;
-        margin: 2rem 0;
     }
 
     /* Адаптивность */
@@ -360,29 +419,39 @@
             gap: 10px;
         }
 
-            .card-footer .d-flex div {
-                width: 100%;
-            }
-
             .card-footer .d-flex .btn {
                 width: 100%;
-                margin-bottom: 5px;
             }
     }
-
-    @@media (max-width: 576px) {
-        .page-title {
-            font-size: 1.75rem;
-        }
-
-        .form-floating > .form-control,
-        .form-floating > .form-select {
-            height: calc(3rem + 2px);
-            padding: 0.75rem;
-        }
-
-        .form-floating > label {
-            padding: 0.75rem;
-        }
-    }
 </style>
+
+@section Scripts {
+    <script>
+        document.getElementById('avatarInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Проверка размера файла
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Файл слишком большой. Максимальный размер 2MB');
+                    this.value = '';
+                    return;
+                }
+
+                // Проверка типа файла
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Неподдерживаемый тип файла. Разрешены: JPG, PNG, GIF');
+                    this.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('avatarPreview').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}
