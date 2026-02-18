@@ -14,14 +14,38 @@
     }
     else
     {
+        <!-- Кнопки действий -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <button class="btn btn-success w-100 mb-2" onclick="showCreateGroupModal()">
+                    <i class="fas fa-users me-2"></i>Создать групповой чат
+                </button>
+                <button class="btn btn-outline-primary w-100" onclick="showAddFriendModal()">
+                    <i class="fas fa-user-plus me-2"></i>Добавить участников
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-info w-100" onclick="showFriendsListModal()">
+                    <i class="fas fa-user-friends me-2"></i>Мои друзья
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-warning w-100" onclick="showFriendRequestsModal()">
+                    <i class="fas fa-bell me-2"></i>Запросы в друзья
+                    <span id="requestsBadge" class="badge bg-danger" style="display: none;">0</span>
+                </button>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Список чатов -->
             <div class="col-md-4">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Мои чаты</h5>
+                        <span class="badge bg-light text-primary" id="chatsCount">0</span>
                     </div>
-                    <div class="card-body p-0" id="chatsList">
+                    <div class="card-body p-0" id="chatsList" style="max-height: 600px; overflow-y: auto;">
                         <div class="text-center p-3">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Загрузка...</span>
@@ -42,12 +66,17 @@
                     </div>
                     <div class="card-footer">
                         <div class="input-group">
-                            <input type="text" class="form-control" id="messageInput" placeholder="Введите сообщение...">
-                            <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+                            <input type="text" class="form-control" id="messageInput"
+                                   placeholder="Введите сообщение..."
+                                   onkeypress="if(event.key === 'Enter') sendMessage()">
+                            <button class="btn btn-primary" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
                 <div id="noChatSelected" class="text-center p-5">
+                    <i class="fas fa-comments fa-4x text-muted mb-3"></i>
                     <h4>Выберите чат</h4>
                     <p class="text-muted">Начните общение с попутчиками</p>
                 </div>
@@ -55,3 +84,1130 @@
         </div>
     }
 </div>
+
+<!-- Модальное окно создания группы -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-users me-2"></i>Создать групповой чат
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Название группы (необязательно)</label>
+                    <input type="text" class="form-control" id="groupName" placeholder="Введите название группы">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Описание (необязательно)</label>
+                    <textarea class="form-control" id="groupDescription" rows="2" placeholder="Описание группы"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Выберите друзей для добавления</label>
+                    <div id="friendsForGroup" class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-center p-3">
+                            <div class="spinner-border spinner-border-sm text-primary"></div>
+                            Загрузка...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" onclick="createGroupChat()">
+                    <i class="fas fa-check me-2"></i>Создать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления участников -->
+<div class="modal fade" id="addMembersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Добавить участников
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Поиск друзей</label>
+                    <input type="text" class="form-control" id="searchFriendsInput"
+                           placeholder="Введите имя..." autocomplete="off">
+                </div>
+                <div id="friendsForAdding" class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center p-3">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                        Загрузка...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="addSelectedMembers()">
+                    <i class="fas fa-user-plus me-2"></i>Добавить выбранных
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно списка друзей -->
+<div class="modal fade" id="friendsListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-friends me-2"></i>Мои друзья
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="friendsListContainer" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center p-3">
+                        <div class="spinner-border text-info"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно запросов в друзья -->
+<div class="modal fade" id="friendRequestsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="fas fa-bell me-2"></i>Запросы в друзья
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="friendRequestsContainer" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center p-3">
+                        <div class="spinner-border text-warning"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно поиска пользователей -->
+<div class="modal fade" id="searchUsersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-search me-2"></i>Найти друзей
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="searchUsersInput"
+                           placeholder="Введите имя или email..." autocomplete="off">
+                </div>
+                <div id="searchResults" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted p-3">
+                        Начните вводить имя для поиска
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно информации о чате -->
+<div class="modal fade" id="chatInfoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Информация о чате
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="chatInfoContent">
+                <!-- Информация будет загружена динамически -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        // Глобальные переменные
+        let currentChatId = null;
+        let currentUserId = @(userId ?? 0);
+        let chats = [];
+        let messages = [];
+        let loadingMessages = false;
+        let messageTimer = null;
+        let connection = null;
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        $(document).ready(function() {
+            loadChats();
+            setupSignalR();
+            loadFriendsForGroup();
+            loadFriendsList();
+            loadFriendRequests();
+
+            // Периодическое обновление сообщений
+            setInterval(() => {
+                if (currentChatId) {
+                    loadNewMessages(currentChatId);
+                }
+            }, 3000);
+        });
+
+        // ==================== SIGNALR ====================
+        function setupSignalR() {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .withAutomaticReconnect()
+                .build();
+
+            connection.on("ReceiveMessage", function(chatId, message) {
+                if (chatId == currentChatId) {
+                    displayMessage(message);
+                    markAsRead(chatId);
+                } else {
+                    // Обновляем список чатов, чтобы показать новое сообщение
+                    loadChats();
+                    showNotification(`Новое сообщение в чате`, 'info');
+                }
+            });
+
+            connection.on("UserTyping", function(chatId, userName) {
+                if (chatId == currentChatId) {
+                    showTypingIndicator(userName);
+                }
+            });
+
+            connection.start().catch(err => console.error('SignalR ошибка:', err));
+        }
+
+        // ==================== ЗАГРУЗКА ЧАТОВ ====================
+        async function loadChats() {
+            try {
+                const response = await fetch('/Chats/GetUserChats');
+                const result = await response.json();
+
+                if (result.success) {
+                    chats = result.data || [];
+                    displayChats(chats);
+                    document.getElementById('chatsCount').textContent = chats.length;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке чатов:', error);
+                showNotification('Ошибка при загрузке чатов', 'danger');
+            }
+        }
+
+        function displayChats(chats) {
+            const container = document.getElementById('chatsList');
+
+            if (chats.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">У вас пока нет чатов</p>
+                        <small class="text-muted">Создайте групповой чат или начните общение с друзьями</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            chats.forEach(chat => {
+                const isActive = currentChatId === chat.id;
+                const unreadBadge = chat.unreadCount > 0 ?
+                    `<span class="badge bg-primary rounded-pill">${chat.unreadCount}</span>` : '';
+
+                html += `
+                    <div class="chat-item p-3 border-bottom ${isActive ? 'bg-light' : ''}"
+                         onclick="loadChat(${chat.id})"
+                         data-chat-id="${chat.id}"
+                         style="cursor: pointer;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-1 fw-bold">${chat.name}</h6>
+                                    ${chat.lastMessage ?
+                                        `<small class="text-muted ms-2">${new Date(chat.lastMessage.sentAt).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</small>`
+                                        : ''}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted text-truncate" style="max-width: 180px;">
+                                        ${chat.lastMessage ?
+                                            `<span class="fw-semibold">${chat.lastMessage.senderName}:</span> ${chat.lastMessage.text}`
+                                            : '<span class="fst-italic">Нет сообщений</span>'}
+                                    </small>
+                                    ${unreadBadge}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>${chat.memberCount}
+                                    ${chat.type === 'private' ?
+                                        '<i class="fas fa-lock ms-2" title="Личный чат"></i>' :
+                                        chat.type === 'group' ?
+                                        '<i class="fas fa-users ms-2" title="Групповой чат"></i>' :
+                                        '<i class="fas fa-suitcase ms-2" title="Чат поездки"></i>'}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ==================== ЗАГРУЗКА ЧАТА ====================
+        async function loadChat(chatId) {
+            currentChatId = chatId;
+
+            // Подсвечиваем выбранный чат
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('bg-light');
+            });
+            document.querySelector(`[data-chat-id="${chatId}"]`).classList.add('bg-light');
+
+            // Показываем контейнер чата
+            document.getElementById('chatContainer').style.display = 'block';
+            document.getElementById('noChatSelected').style.display = 'none';
+
+            // Загружаем сообщения
+            await loadMessages(chatId);
+
+            // Загружаем информацию о чате
+            await loadChatInfo(chatId);
+
+            // Отмечаем как прочитанное
+            await markAsRead(chatId);
+        }
+
+        async function loadMessages(chatId) {
+            try {
+                const response = await fetch(`/Chats/GetChatMessages/${chatId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    messages = result.data.messages || [];
+                    displayMessages(messages);
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке сообщений:', error);
+            }
+        }
+
+        function displayMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted p-4">
+                        <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                        <p>Нет сообщений</p>
+                        <small>Напишите первое сообщение</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            messages.forEach(msg => {
+                const isOutgoing = msg.senderId === currentUserId;
+                const time = new Date(msg.sentAt).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+
+                html += `
+                    <div class="message mb-3 ${isOutgoing ? 'text-end' : ''}">
+                        <div class="d-inline-block ${isOutgoing ? 'bg-primary text-white' : 'bg-light'}"
+                             style="max-width: 70%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word;">
+                            ${!isOutgoing ? `<small class="fw-bold d-block text-primary">${msg.senderName}</small>` : ''}
+                            <div>${msg.text}</div>
+                            <small class="${isOutgoing ? 'text-white-50' : 'text-muted'} d-block text-end">
+                                ${time}
+                                ${isOutgoing && msg.isRead ? '<i class="fas fa-check-double ms-1"></i>' : ''}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            scrollToBottom();
+        }
+
+        async function loadNewMessages(chatId) {
+            if (loadingMessages) return;
+
+            const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : 0;
+
+            try {
+                const response = await fetch(`/Chats/GetNewMessages/${chatId}?lastMessageId=${lastMessageId}`);
+                const result = await response.json();
+
+                if (result.success && result.data.messages.length > 0) {
+                    messages = [...messages, ...result.data.messages];
+
+                    let html = '';
+                    result.data.messages.forEach(msg => {
+                        const isOutgoing = msg.senderId === currentUserId;
+                        const time = new Date(msg.sentAt).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+
+                        html += `
+                            <div class="message mb-3 ${isOutgoing ? 'text-end' : ''}">
+                                <div class="d-inline-block ${isOutgoing ? 'bg-primary text-white' : 'bg-light'}"
+                                     style="max-width: 70%; padding: 10px 15px; border-radius: 18px;">
+                                    ${!isOutgoing ? `<small class="fw-bold d-block text-primary">${msg.senderName}</small>` : ''}
+                                    <div>${msg.text}</div>
+                                    <small class="${isOutgoing ? 'text-white-50' : 'text-muted'} d-block text-end">
+                                        ${time}
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('messagesContainer').insertAdjacentHTML('beforeend', html);
+                    scrollToBottom();
+
+                    // Обновляем список чатов
+                    loadChats();
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке новых сообщений:', error);
+            }
+        }
+
+        async function loadChatInfo(chatId) {
+            try {
+                const response = await fetch(`/Chats/GetChatInfo/${chatId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const chat = result.data.chat;
+                    let headerHtml = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">${chat.name}</h5>
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>${chat.members.length} участников
+                                    ${chat.type === 'group' ?
+                                        '<span class="ms-2 badge bg-success">Группа</span>' :
+                                        chat.type === 'trip' ?
+                                        '<span class="ms-2 badge bg-info">Поездка</span>' :
+                                        '<span class="ms-2 badge bg-secondary">Личный</span>'}
+                                </small>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="showChatInfo(${chatId})">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                ${chat.type === 'group' ? `
+                                    <button class="btn btn-sm btn-outline-danger" onclick="leaveChat(${chatId})">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('chatHeader').innerHTML = headerHtml;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке информации о чате:', error);
+            }
+        }
+
+        // ==================== ОТПРАВКА СООБЩЕНИЙ ====================
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text || !currentChatId) return;
+
+            input.value = '';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/SendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        chatId: currentChatId,
+                        text: text
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Сообщение будет добавлено через SignalR
+                    loadNewMessages(currentChatId);
+                } else {
+                    showNotification(result.message || 'Ошибка при отправке', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при отправке:', error);
+                showNotification('Ошибка при отправке сообщения', 'danger');
+            }
+        }
+
+        async function markAsRead(chatId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                await fetch(`/Chats/MarkAsRead/${chatId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка при отметке прочитанного:', error);
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ==================== ДРУЗЬЯ ====================
+        async function loadFriendsForGroup() {
+            try {
+                const response = await fetch('/Chats/GetFriendsForGroup');
+                const result = await response.json();
+
+                if (result.success) {
+                    const container = document.getElementById('friendsForGroup');
+                    const friends = result.data.friends || [];
+
+                    if (friends.length === 0) {
+                        container.innerHTML = '<div class="text-muted p-3 text-center">У вас пока нет друзей</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    friends.forEach(friend => {
+                        html += `
+                            <div class="form-check mb-2">
+                                <input class="form-check-input friend-checkbox" type="checkbox"
+                                       value="${friend.friendId}" id="friend${friend.friendId}">
+                                <label class="form-check-label d-flex align-items-center" for="friend${friend.friendId}">
+                                    ${friend.avatarPath ?
+                                        `<img src="${friend.avatarPath}" class="rounded-circle me-2" width="30" height="30">` :
+                                        `<div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:30px;height:30px;font-size:14px;">
+                                            ${friend.fullName.split(' ').map(n => n[0]).join('')}
+                                        </div>`
+                                    }
+                                    ${friend.fullName}
+                                </label>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке друзей:', error);
+            }
+        }
+
+                async function loadFriendsList() {
+            try {
+                console.log('Загрузка списка друзей...');
+                const response = await fetch('/api/friends/GetFriends');
+                const result = await response.json();
+                console.log('Ответ от сервера (друзья):', result);
+
+                if (result.success) {
+                    const container = document.getElementById('friendsListContainer');
+                    const friends = result.data || [];
+                    console.log('Получено друзей:', friends.length);
+
+                    if (friends.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center p-4">
+                                <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                                <p class="text-muted mb-2">У вас пока нет друзей</p>
+                                <button class="btn btn-primary btn-sm" onclick="showSearchUsersModal()">
+                                    <i class="fas fa-search me-2"></i>Найти друзей
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    friends.forEach(friend => {
+                        html += `
+                            <div class="friend-item p-2 border-bottom d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    ${friend.avatarPath ?
+                                        `<img src="${friend.avatarPath}" class="rounded-circle me-2" width="40" height="40">` :
+                                        `<div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:40px;height:40px;">
+                                            ${friend.firstName[0]}${friend.lastName[0]}
+                                        </div>`
+                                    }
+                                    <div>
+                                        <div class="fw-bold">${friend.fullName}</div>
+                                        <small class="text-muted">${friend.email}</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="startPrivateChat(${friend.friendId})">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке друзей:', error);
+            }
+        }
+
+        async function loadFriendRequests() {
+            try {
+                const response = await fetch('/api/friends/GetFriendRequests');
+                const result = await response.json();
+
+                if (result.success) {
+                    const requests = result.data || [];
+                    const badge = document.getElementById('requestsBadge');
+
+                    if (requests.length > 0) {
+                        badge.textContent = requests.length;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+
+                    const container = document.getElementById('friendRequestsContainer');
+
+                    if (requests.length === 0) {
+                        container.innerHTML = '<div class="text-center text-muted p-3">Нет новых запросов</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    requests.forEach(request => {
+                        html += `
+                            <div class="request-item p-2 border-bottom" data-request-id="${request.id}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        ${request.senderAvatar ?
+                                            `<img src="${request.senderAvatar}" class="rounded-circle me-2" width="40" height="40">` :
+                                            `<div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:40px;height:40px;">?</div>`
+                                        }
+                                        <div>
+                                            <div class="fw-bold">${request.senderName}</div>
+                                            <small class="text-muted">${new Date(request.sentAt).toLocaleDateString()}</small>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-sm btn-success me-1" onclick="acceptFriendRequest(${request.id})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="rejectFriendRequest(${request.id})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ${request.message ? `<div class="small text-muted mt-1">${request.message}</div>` : ''}
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке запросов:', error);
+            }
+        }
+
+        // ==================== ГРУППОВЫЕ ЧАТЫ ====================
+        function showCreateGroupModal() {
+            loadFriendsForGroup();
+            const modal = new bootstrap.Modal(document.getElementById('createGroupModal'));
+            modal.show();
+        }
+
+        async function createGroupChat() {
+            const checkboxes = document.querySelectorAll('.friend-checkbox:checked');
+            const userIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+            if (userIds.length === 0) {
+                alert('Выберите хотя бы одного друга');
+                return;
+            }
+
+            const name = document.getElementById('groupName').value.trim();
+            const description = document.getElementById('groupDescription').value.trim();
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/CreateGroupChat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        name: name || null,
+                        description: description || null,
+                        userIds: userIds
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Групповой чат создан!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+                    loadChats();
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка при создании чата', 'danger');
+            }
+        }
+
+        function showAddFriendModal() {
+            if (!currentChatId) {
+                alert('Сначала выберите чат');
+                return;
+            }
+            loadFriendsForAdding(currentChatId);
+            const modal = new bootstrap.Modal(document.getElementById('addMembersModal'));
+            modal.show();
+        }
+
+        async function loadFriendsForAdding(chatId) {
+            try {
+                const response = await fetch('/Chats/GetFriendsForGroup');
+                const result = await response.json();
+
+                if (result.success) {
+                    const container = document.getElementById('friendsForAdding');
+                    const friends = result.data.friends || [];
+
+                    if (friends.length === 0) {
+                        container.innerHTML = '<div class="text-muted p-3 text-center">У вас пока нет друзей</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    friends.forEach(friend => {
+                        html += `
+                            <div class="form-check mb-2">
+                                <input class="form-check-input add-member-checkbox" type="checkbox"
+                                       value="${friend.friendId}" id="addFriend${friend.friendId}">
+                                <label class="form-check-label d-flex align-items-center" for="addFriend${friend.friendId}">
+                                    ${friend.avatarPath ?
+                                        `<img src="${friend.avatarPath}" class="rounded-circle me-2" width="30" height="30">` :
+                                        `<div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:30px;height:30px;font-size:14px;">
+                                            ${friend.fullName.split(' ').map(n => n[0]).join('')}
+                                        </div>`
+                                    }
+                                    ${friend.fullName}
+                                </label>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+
+                    // Поиск
+                    document.getElementById('searchFriendsInput').addEventListener('input', function() {
+                        const term = this.value.toLowerCase();
+                        document.querySelectorAll('.add-member-checkbox').forEach(cb => {
+                            const label = cb.closest('.form-check');
+                            const text = label.querySelector('.form-check-label').textContent.toLowerCase();
+                            label.style.display = text.includes(term) ? '' : 'none';
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке друзей:', error);
+            }
+        }
+
+        async function addSelectedMembers() {
+            const checkboxes = document.querySelectorAll('.add-member-checkbox:checked');
+
+            if (checkboxes.length === 0) {
+                alert('Выберите хотя бы одного друга');
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            for (const checkbox of checkboxes) {
+                const userId = parseInt(checkbox.value);
+
+                try {
+                    await fetch('/Chats/AddMember', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({
+                            chatId: currentChatId,
+                            userId: userId
+                        })
+                    });
+                } catch (error) {
+                    console.error('Ошибка при добавлении участника:', error);
+                }
+            }
+
+            showNotification('Участники добавлены', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addMembersModal')).hide();
+            loadChatInfo(currentChatId);
+        }
+
+        // ==================== ЗАПРОСЫ В ДРУЗЬЯ ====================
+        function showFriendsListModal() {
+            loadFriendsList();
+            const modal = new bootstrap.Modal(document.getElementById('friendsListModal'));
+            modal.show();
+        }
+
+        function showFriendRequestsModal() {
+            loadFriendRequests();
+            const modal = new bootstrap.Modal(document.getElementById('friendRequestsModal'));
+            modal.show();
+        }
+
+        function showSearchUsersModal() {
+            const modal = new bootstrap.Modal(document.getElementById('searchUsersModal'));
+            modal.show();
+        }
+
+        async function acceptFriendRequest(requestId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/api/friends/AcceptFriendRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(requestId)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Друг добавлен!', 'success');
+                    loadFriendRequests();
+                    loadFriendsList();
+                    loadFriendsForGroup();
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка при принятии запроса', 'danger');
+            }
+        }
+
+        async function rejectFriendRequest(requestId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/api/friends/RejectFriendRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(requestId)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Запрос отклонен', 'info');
+                    loadFriendRequests();
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка при отклонении запроса', 'danger');
+            }
+        }
+
+        // ==================== ПОИСК ПОЛЬЗОВАТЕЛЕЙ ====================
+        async function searchUsers(term) {
+            try {
+                const response = await fetch(`/api/friends/SearchUsers?term=${encodeURIComponent(term)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    displaySearchResults(result.data || []);
+                }
+            } catch (error) {
+                console.error('Ошибка при поиске:', error);
+            }
+        }
+
+        function displaySearchResults(users) {
+            const container = document.getElementById('searchResults');
+
+            if (users.length === 0) {
+                container.innerHTML = '<div class="text-muted p-3 text-center">Ничего не найдено</div>';
+                return;
+            }
+
+            let html = '';
+            users.forEach(user => {
+                let actionButton = '';
+
+                if (user.isFriend) {
+                    actionButton = '<button class="btn btn-sm btn-success" disabled><i class="fas fa-check"></i> Друг</button>';
+                } else if (user.friendStatus === 'pending_sent') {
+                    actionButton = '<button class="btn btn-sm btn-secondary" disabled><i class="fas fa-clock"></i> Запрос отправлен</button>';
+                } else if (user.friendStatus === 'pending_received') {
+                    actionButton = '<button class="btn btn-sm btn-warning" disabled><i class="fas fa-hourglass"></i> Ожидает ответа</button>';
+                } else {
+                    actionButton = `<button class="btn btn-sm btn-primary" onclick="sendFriendRequest(${user.id})">
+                        <i class="fas fa-user-plus"></i> Добавить в друзья
+                    </button>`;
+                }
+
+                html += `
+                    <div class="search-result-item p-2 border-bottom d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            ${user.avatarPath ?
+                                `<img src="${user.avatarPath}" class="rounded-circle me-2" width="40" height="40">` :
+                                `<div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:40px;height:40px;">
+                                    ${user.firstName[0]}${user.lastName[0]}
+                                </div>`
+                            }
+                            <div>
+                                <div class="fw-bold">${user.fullName}</div>
+                                <small class="text-muted">${user.email}</small>
+                            </div>
+                        </div>
+                        <div>
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function sendFriendRequest(userId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/api/friends/SendFriendRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(userId)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Запрос отправлен!', 'success');
+                    const searchInput = document.getElementById('searchUsersInput');
+                    if (searchInput && searchInput.value.length >= 2) {
+                        searchUsers(searchInput.value);
+                    }
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка при отправке запроса', 'danger');
+            }
+        }
+
+        // ==================== ЛИЧНЫЕ ЧАТЫ ====================
+        async function startPrivateChat(friendId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/CreatePrivateChat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(friendId)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const chatId = result.data;
+                    loadChats();
+                    setTimeout(() => loadChat(chatId), 500);
+
+                    // Закрываем модальное окно
+                    bootstrap.Modal.getInstance(document.getElementById('friendsListModal')).hide();
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка при создании чата', 'danger');
+            }
+        }
+
+        // ==================== ИНФОРМАЦИЯ О ЧАТЕ ====================
+        async function showChatInfo(chatId) {
+            try {
+                const response = await fetch(`/Chats/GetChatInfo/${chatId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const chat = result.data.chat;
+                    let html = `
+                        <h6 class="mb-3">Информация о чате</h6>
+                        <p><strong>Название:</strong> ${chat.name}</p>
+                        <p><strong>Тип:</strong> ${chat.type === 'private' ? 'Личный' : chat.type === 'group' ? 'Групповой' : 'Поездка'}</p>
+                        <p><strong>Создан:</strong> ${new Date(chat.createdAt).toLocaleDateString()}</p>
+                        <p><strong>Участников:</strong> ${chat.members.length}</p>
+                        <h6 class="mt-3 mb-2">Участники:</h6>
+                        <ul class="list-unstyled">
+                    `;
+
+                    chat.members.forEach(member => {
+                        html += `
+                            <li class="mb-2 d-flex align-items-center">
+                                <i class="fas fa-user-circle me-2 text-primary"></i>
+                                ${member.fullName}
+                                ${member.role === 'admin' ? '<span class="badge bg-primary ms-2">Админ</span>' : ''}
+                            </li>
+                        `;
+                    });
+
+                    html += '</ul>';
+                    document.getElementById('chatInfoContent').innerHTML = html;
+
+                    const modal = new bootstrap.Modal(document.getElementById('chatInfoModal'));
+                    modal.show();
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке информации о чате:', error);
+            }
+        }
+
+        async function leaveChat(chatId) {
+            if (!confirm('Вы уверены, что хотите покинуть этот чат?')) return;
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch(`/Chats/LeaveChat/${chatId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Вы покинули чат', 'info');
+
+                    if (currentChatId === chatId) {
+                        currentChatId = null;
+                        document.getElementById('chatContainer').style.display = 'none';
+                        document.getElementById('noChatSelected').style.display = 'block';
+                    }
+
+                    loadChats();
+                } else {
+                    showNotification(result.message || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при выходе из чата:', error);
+                showNotification('Ошибка при выходе из чата', 'danger');
+            }
+        }
+
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function showNotification(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
+                    <div>${message}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function showTypingIndicator(userName) {
+            // Можно реализовать индикатор печатания
+        }
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ПОИСКА ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchUsersInput');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    const term = this.value.trim();
+                    if (term.length >= 2) {
+                        searchTimeout = setTimeout(() => searchUsers(term), 300);
+                    } else {
+                        document.getElementById('searchResults').innerHTML =
+                            '<div class="text-center text-muted p-3">Начните вводить имя для поиска</div>';
+                    }
+                });
+            }
+
+            const searchFriendsInput = document.getElementById('searchFriendsInput');
+            if (searchFriendsInput) {
+                searchFriendsInput.addEventListener('input', function() {
+                    const term = this.value.toLowerCase();
+                    document.querySelectorAll('.add-member-checkbox').forEach(cb => {
+                        const label = cb.closest('.form-check');
+                        const text = label.querySelector('.form-check-label').textContent.toLowerCase();
+                        label.style.display = text.includes(term) ? '' : 'none';
+                    });
+                });
+            }
+        });
+    </script>
+}

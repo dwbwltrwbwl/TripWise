@@ -12,12 +12,13 @@
             <div class="avatar-circle">
                 @if (!string.IsNullOrEmpty(Model.AvatarPath))
                 {
-                    <img src="@Model.AvatarPath" class="avatar-image-profile" alt="Avatar" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'avatar-initials\'>@Model.FirstName[0].ToString().ToUpper()@Model.LastName[0].ToString().ToUpper()</div>'" />
+                    <img src="@Model.AvatarPath?@DateTime.Now.Ticks" class="avatar-image-profile" alt="Avatar"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'avatar-initials\'>@(Model.FirstName?.Length > 0 ? Model.FirstName[0].ToString().ToUpper() : "")@(Model.LastName?.Length > 0 ? Model.LastName[0].ToString().ToUpper() : "")</div>'" />
                 }
                 else
                 {
                     <div class="avatar-initials">
-                        @Model.FirstName[0].ToString().ToUpper()@Model.LastName[0].ToString().ToUpper()
+                        @(Model.FirstName?.Length > 0 ? Model.FirstName[0].ToString().ToUpper() : "")@(Model.LastName?.Length > 0 ? Model.LastName[0].ToString().ToUpper() : "")
                     </div>
                 }
             </div>

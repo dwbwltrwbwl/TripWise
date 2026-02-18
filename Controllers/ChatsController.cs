@@ -47,64 +47,86 @@ namespace TripWise.Controllers
                     });
                 }
 
-                var chatMembers = await _context.ChatMembers
+                // Получаем ID чатов, в которых состоит пользователь
+                var chatIds = await _context.ChatMembers
                     .Where(cm => cm.UserId == userId)
-                    .Include(cm => cm.Chat)
-                        .ThenInclude(c => c.Messages)
-                            .ThenInclude(m => m.Sender)
-                    .Include(cm => cm.Chat)
-                        .ThenInclude(c => c.Members)
-                    .Include(cm => cm.Chat)
-                        .ThenInclude(c => c.Creator)
-                    .OrderByDescending(cm => cm.Chat.LastMessageAt ?? cm.Chat.CreatedAt)
+                    .Select(cm => cm.ChatId)
                     .ToListAsync();
 
-                var chats = new List<ChatDto>();
-
-                foreach (var cm in chatMembers)
-                {
-                    var chat = cm.Chat;
-                    if (chat == null) continue;
-
-                    var lastMessage = chat.Messages?
-                        .OrderByDescending(m => m.SentAt)
-                        .Select(m => new LastMessageDto
-                        {
-                            Id = m.IdMessage,
-                            Text = m.Message ?? "",
-                            SenderId = m.SenderId,
-                            SenderName = m.Sender != null
-                                ? $"{m.Sender.LastName} {m.Sender.FirstName}"
-                                : "",
-                            SentAt = m.SentAt,
-                            AttachmentType = m.AttachmentType
-                        })
-                        .FirstOrDefault();
-
-                    chats.Add(new ChatDto
+                // Получаем чаты без лишних Include
+                var chats = await _context.Chats
+                    .Where(c => chatIds.Contains(c.Id))
+                    .Select(c => new
                     {
-                        Id = chat.Id,
-                        Name = chat.Name ?? "Без названия",
-                        Description = chat.Description,
-                        Type = chat.Type ?? "private",
-                        TripId = chat.TripId,
-                        CreatedAt = chat.CreatedAt,
-                        CreatedById = chat.CreatedById,
-                        CreatedByName = chat.Creator != null
-                            ? $"{chat.Creator.LastName} {chat.Creator.FirstName}"
-                            : "",
-                        LastMessageAt = chat.LastMessageAt,
-                        MemberCount = chat.Members?.Count ?? 0,
-                        UnreadCount = chat.Messages?
-                            .Count(m => m.SentAt > (cm.LastReadAt ?? DateTime.MinValue)) ?? 0,
-                        LastMessage = lastMessage
-                    });
+                        c.Id,
+                        c.Name,
+                        c.Description,
+                        c.Type,
+                        c.TripId,
+                        c.CreatedAt,
+                        c.CreatedById,
+                        c.LastMessageAt,
+                        CreatorName = c.Creator != null ? c.Creator.LastName + " " + c.Creator.FirstName : "",
+                        MemberCount = c.Members.Count,
+                        LastMessage = c.Messages
+                            .OrderByDescending(m => m.SentAt)
+                            .Select(m => new
+                            {
+                                m.IdMessage,
+                                m.Message,
+                                m.SentAt,
+                                m.SenderId,
+                                SenderName = m.Sender != null ? m.Sender.LastName + " " + m.Sender.FirstName : ""
+                            })
+                            .FirstOrDefault()
+                    })
+                    .ToListAsync();
+
+                // Получаем информацию о прочитанных сообщениях для каждого чата
+                var unreadCounts = new Dictionary<int, int>();
+
+                foreach (var chat in chats)
+                {
+                    var lastRead = await _context.ChatMembers
+                        .Where(cm => cm.ChatId == chat.Id && cm.UserId == userId)
+                        .Select(cm => cm.LastReadAt)
+                        .FirstOrDefaultAsync();
+
+                    var unreadCount = await _context.ChatMessages
+                        .CountAsync(m => m.ChatId == chat.Id &&
+                                         m.SentAt > (lastRead ?? DateTime.MinValue) &&
+                                         m.SenderId != userId);
+
+                    unreadCounts[chat.Id] = unreadCount;
                 }
+
+                var chatDtos = chats.Select(c => new ChatDto
+                {
+                    Id = c.Id,
+                    Name = c.Name ?? "Без названия",
+                    Description = c.Description,
+                    Type = c.Type ?? "private",
+                    TripId = c.TripId,
+                    CreatedAt = c.CreatedAt,
+                    CreatedById = c.CreatedById,
+                    CreatedByName = c.CreatorName,
+                    LastMessageAt = c.LastMessageAt,
+                    MemberCount = c.MemberCount,
+                    UnreadCount = unreadCounts.ContainsKey(c.Id) ? unreadCounts[c.Id] : 0,
+                    LastMessage = c.LastMessage != null ? new LastMessageDto
+                    {
+                        Id = c.LastMessage.IdMessage,
+                        Text = c.LastMessage.Message ?? "",
+                        SenderId = c.LastMessage.SenderId,
+                        SenderName = c.LastMessage.SenderName,
+                        SentAt = c.LastMessage.SentAt
+                    } : null
+                }).ToList();
 
                 return Json(new ApiResponse<List<ChatDto>>
                 {
                     Success = true,
-                    Data = chats
+                    Data = chatDtos
                 });
             }
             catch (Exception ex)
@@ -380,19 +402,18 @@ namespace TripWise.Controllers
 
                 var messages = await _context.ChatMessages
                     .Where(m => m.ChatId == chatId)
-                    .Include(m => m.Sender)
-                    .OrderBy(m => m.SentAt)
                     .Select(m => new
                     {
                         m.IdMessage,
                         m.Message,
                         m.SentAt,
                         SenderId = m.SenderId,
-                        SenderName = m.Sender != null ? $"{m.Sender.LastName} {m.Sender.FirstName}" : "Пользователь",
+                        SenderName = m.Sender != null ? m.Sender.LastName + " " + m.Sender.FirstName : "Пользователь",
                         m.AttachmentType,
                         m.AttachmentUrl,
                         m.AttachmentName
                     })
+                    .OrderBy(m => m.SentAt)
                     .ToListAsync();
 
                 return Json(new ApiResponse<object>
@@ -873,6 +894,152 @@ namespace TripWise.Controllers
                 {
                     Success = false,
                     Message = "Ошибка при выходе из чата"
+                });
+            }
+        }
+        // GET: /Chats/GetFriendsList
+        [HttpGet("GetFriendsList")]
+        public async Task<IActionResult> GetFriendsList()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<List<object>>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var friends = await _context.Friends
+                    .Include(f => f.FriendUser)
+                    .Where(f => f.UserId == userId && f.Status == "accepted")
+                    .Select(f => new
+                    {
+                        f.FriendId,
+                        FullName = f.FriendUser.LastName + " " + f.FriendUser.FirstName +
+                                  (string.IsNullOrEmpty(f.FriendUser.MiddleName) ? "" : " " + f.FriendUser.MiddleName),
+                        f.FriendUser.AvatarPath,
+                        HasPrivateChat = _context.Chats
+                            .Any(c => c.Type == "private" &&
+                                c.Members.Count == 2 &&
+                                c.Members.Any(m => m.UserId == userId) &&
+                                c.Members.Any(m => m.UserId == f.FriendId))
+                    })
+                    .OrderBy(f => f.FullName)
+                    .ToListAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new { friends }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении списка друзей");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке друзей"
+                });
+            }
+        }
+
+        // GET: /Chats/GetFriendsForGroup
+        [HttpGet("GetFriendsForGroup")]
+        public async Task<IActionResult> GetFriendsForGroup()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<List<object>>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var friends = await _context.Friends
+                    .Include(f => f.FriendUser)
+                    .Where(f => f.UserId == userId && f.Status == "accepted")
+                    .Select(f => new
+                    {
+                        f.FriendId,
+                        FullName = f.FriendUser.LastName + " " + f.FriendUser.FirstName +
+                                  (string.IsNullOrEmpty(f.FriendUser.MiddleName) ? "" : " " + f.FriendUser.MiddleName),
+                        f.FriendUser.AvatarPath
+                    })
+                    .OrderBy(f => f.FullName)
+                    .ToListAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new { friends }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении списка друзей");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке друзей"
+                });
+            }
+        }
+
+        // GET: /Chats/GetTripParticipants/{tripId}
+        [HttpGet("GetTripParticipants/{tripId}")]
+        public async Task<IActionResult> GetTripParticipants(int tripId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var participants = await _context.TripParticipants
+    .Include(tp => tp.IdUserNavigation) 
+    .Include(tp => tp.IdParticipantRoleNavigation)  
+    .Where(tp => tp.IdTrip == tripId)
+    .Select(tp => new
+    {
+        tp.IdUser,
+        FullName = tp.IdUserNavigation.LastName + " " + tp.IdUserNavigation.FirstName +
+                  (string.IsNullOrEmpty(tp.IdUserNavigation.MiddleName) ? "" : " " + tp.IdUserNavigation.MiddleName),
+        tp.IdUserNavigation.AvatarPath,
+        Role = tp.IdParticipantRoleNavigation != null ? tp.IdParticipantRoleNavigation.ParticipantRole1 : "Участник",
+        IsFriend = _context.Friends
+            .Any(f => f.UserId == userId && f.FriendId == tp.IdUser && f.Status == "accepted")
+    })
+    .OrderBy(p => p.FullName)
+    .ToListAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new { participants }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении участников поездки");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке участников"
                 });
             }
         }

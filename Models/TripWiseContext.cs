@@ -60,6 +60,8 @@ public partial class TripWiseContext : DbContext
     public virtual DbSet<TrainPassenger> TrainPassengers { get; set; }
     public DbSet<HotelBooking> HotelBookings { get; set; }
     public DbSet<FlightBooking> FlightBookings { get; set; }
+    public DbSet<Friend> Friends { get; set; }
+    public DbSet<FriendRequest> FriendRequests { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -980,6 +982,40 @@ public partial class TripWiseContext : DbContext
             entity.HasIndex(e => e.TicketNumber);
             entity.HasIndex(e => e.DepartureDateTime);
             entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<Friend>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.UserId, e.FriendId }).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.FriendUser)
+                .WithMany()
+                .HasForeignKey(e => e.FriendId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<FriendRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.SenderId, e.ReceiverId }).IsUnique();
+
+            entity.HasOne(e => e.Sender)
+                .WithMany()
+                .HasForeignKey(e => e.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Receiver)
+                .WithMany()
+                .HasForeignKey(e => e.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -363,5 +363,32 @@ namespace TripWise.Controllers
             }
             return Ok(new { success = false, message = "Не удалось восстановить" });
         }
+        // В ReviewController добавьте метод для получения отзывов для главной
+        [HttpGet("GetHomeReviews")]
+        public async Task<IActionResult> GetHomeReviews()
+        {
+            try
+            {
+                var reviews = await _context.Reviews
+                    .Where(r => !r.IsDeleted && r.IsApproved)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Take(6)
+                    .Select(r => new ReviewDto
+                    {
+                        Id = r.Id,
+                        Name = r.Name,
+                        Rating = r.Rating,
+                        Text = r.Text.Length > 150 ? r.Text.Substring(0, 150) + "..." : r.Text,
+                        CreatedAt = r.CreatedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(reviews);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

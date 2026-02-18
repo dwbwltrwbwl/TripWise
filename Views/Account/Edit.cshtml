@@ -4,7 +4,6 @@
 }
 
 <div class="container mt-4">
-
     <!-- Заголовок страницы -->
     <div class="page-header-section mb-5">
         <div class="page-header-icon">
@@ -18,84 +17,62 @@
         </div>
     </div>
 
-    <div class="row">
-        <!-- Левая колонка — аватар -->
+    <!-- ОДНА ФОРМА ДЛЯ ВСЕГО -->
+    <form asp-action="Edit" method="post" enctype="multipart/form-data" class="row">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="CurrentAvatarPath" />
+
         <div class="col-lg-4 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <!-- ВАЖНО: форма начинается здесь, чтобы input type="file" был внутри формы -->
-                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
-                        @Html.AntiForgeryToken()
-
-                        <!-- Скрытое поле для текущего пути аватара -->
-                        <input type="hidden" asp-for="CurrentAvatarPath" />
-
-                        <!-- Контейнер для аватара -->
-                        <div class="avatar-upload-container mb-3">
-                            @if (!string.IsNullOrEmpty(Model.CurrentAvatarPath))
-                            {
-                                <img src="@Model.CurrentAvatarPath" class="avatar-image" alt="Avatar" />
-                            }
-                            else
-                            {
-                                <div class="avatar-circle-lg">
-                                    <div class="avatar-initials-lg">
-                                        @Model.FirstName[0].ToString().ToUpper()@Model.LastName[0].ToString().ToUpper()
-                                    </div>
-                                </div>
-                            }
-
-                            <!-- Кнопка для загрузки нового аватара (ТЕПЕРЬ ВНУТРИ ФОРМЫ) -->
-                            <label for="avatarInput" class="avatar-upload-btn" title="Загрузить новое фото">
-                                <i class="fas fa-camera"></i>
-                            </label>
-                            <input type="file" id="avatarInput" name="Avatar" accept="image/*" style="display: none;" />
-                        </div>
-
+                    <!-- Контейнер для аватара -->
+                    <div class="avatar-upload-container mb-3">
                         @if (!string.IsNullOrEmpty(Model.CurrentAvatarPath))
                         {
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="RemoveAvatar" name="RemoveAvatar" value="true">
-                                <label class="form-check-label small" for="RemoveAvatar">
-                                    Удалить текущее фото
-                                </label>
+                            <img src="@Model.CurrentAvatarPath" class="avatar-image" alt="Avatar" id="currentAvatar" />
+                        }
+                        else
+                        {
+                            <div class="avatar-circle-lg">
+                                <div class="avatar-initials-lg">
+                                    @(Model.FirstName?.Length > 0 ? Model.FirstName[0].ToString().ToUpper() : "")@(Model.LastName?.Length > 0 ? Model.LastName[0].ToString().ToUpper() : "")
+                                </div>
                             </div>
                         }
 
-                        <p class="text-muted small mb-0">
-                            Поддерживаемые форматы: JPG, PNG, GIF<br>
-                            Макс. размер: 2 MB
-                        </p>
+                        <!-- Кнопка для загрузки нового аватара -->
+                        <label for="avatarInput" class="avatar-upload-btn" title="Загрузить новое фото">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="avatarInput" name="Avatar" accept="image/*" style="display: none;" />
+                    </div>
 
-                        <!-- Предпросмотр выбранного файла -->
-                        <div id="avatarPreview" class="mt-3" style="display: none;">
-                            <img id="previewImage" src="#" alt="Preview" class="preview-image" />
-                            <p class="small text-success mt-1">Новое фото выбрано</p>
+                    @if (!string.IsNullOrEmpty(Model.CurrentAvatarPath))
+                    {
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="RemoveAvatar" name="RemoveAvatar" value="true">
+                            <label class="form-check-label small" for="RemoveAvatar">
+                                Удалить текущее фото
+                            </label>
                         </div>
+                    }
 
-                        <!-- Кнопки навигации (дублируем здесь для мобильных) -->
-                        <div class="d-flex justify-content-between mt-4 d-lg-none">
-                            <a asp-action="Profile" class="btn btn-outline-secondary">
-                                Назад
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                Сохранить
-                            </button>
-                        </div>
-                    </form>
+                    <p class="text-muted small mb-0">
+                        Поддерживаемые форматы: JPG, PNG, GIF<br>
+                        Макс. размер: 2 MB
+                    </p>
+
+                    <!-- Предпросмотр выбранного файла -->
+                    <div id="avatarPreview" class="mt-3" style="display: none;">
+                        <img id="previewImage" src="#" alt="Preview" class="preview-image" />
+                        <p class="small text-success mt-1">Новое фото выбрано</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Правая колонка — форма с основными полями -->
         <div class="col-lg-8">
-            <!-- Используем ту же форму, что и выше, но продолжаем её -->
-            <form asp-action="Edit" method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
-                @Html.AntiForgeryToken()
-
-                <!-- Повторяем скрытое поле для безопасности -->
-                <input type="hidden" asp-for="CurrentAvatarPath" />
-
+            <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="section-subtitle mb-0">
                         <i class="fas fa-info-circle text-primary me-2"></i>
@@ -156,9 +133,9 @@
                         </button>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 
 <style>
@@ -449,8 +426,28 @@
                 reader.onload = function(e) {
                     document.getElementById('previewImage').src = e.target.result;
                     document.getElementById('avatarPreview').style.display = 'block';
+
+                    // Скрываем текущий аватар при выборе нового
+                    const currentAvatar = document.getElementById('currentAvatar');
+                    if (currentAvatar) {
+                        currentAvatar.style.display = 'none';
+                    }
                 }
                 reader.readAsDataURL(file);
+
+                // Автоматически снимаем галочку "Удалить текущее фото" если она была отмечена
+                const removeCheckbox = document.getElementById('RemoveAvatar');
+                if (removeCheckbox) {
+                    removeCheckbox.checked = false;
+                }
+            }
+        });
+
+        // Если пользователь отмечает "Удалить текущее фото", скрываем предпросмотр
+        document.getElementById('RemoveAvatar')?.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                document.getElementById('avatarPreview').style.display = 'none';
+                document.getElementById('avatarInput').value = '';
             }
         });
     </script>

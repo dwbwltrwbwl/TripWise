@@ -1,4 +1,5 @@
-﻿@{
+﻿@model TripWise.Models.ViewModels.HomeViewModel
+@{
     ViewData["Title"] = "Главная";
 }
 
@@ -414,81 +415,69 @@
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div class="text-start">
                     <h2 class="fw-bold mb-3">Отзывы путешественников</h2>
-                    <p class="text-muted lead">Что говорят наши пользователи</p>
+                    <p class="text-muted lead">
+                        @if (Model.HasReviews)
+                        {
+                            <text>На основе @Model.Statistics.TotalReviews @GetReviewWord(Model.Statistics.TotalReviews) • Средняя оценка @Model.Statistics.AverageRating</text>
+                        }
+                        else
+                        {
+                            <text>Что говорят наши пользователи</text>
+                        }
+                    </p>
                 </div>
-                <a href="#" class="btn btn-outline-primary">Все отзывы</a>
+                <a asp-controller="Home" asp-action="Reviews" class="btn btn-outline-primary">Все отзывы</a>
             </div>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Анна Петрова</h6>
-                                <div class="d-flex align-items-center mt-1">
-                                    <div class="text-warning me-2">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
+
+            @if (Model.HasReviews)
+            {
+                <div class="row g-4">
+                    @foreach (var review in Model.RecentReviews)
+                    {
+                        <div class="col-md-4">
+                            <div class="testimonial-card bg-light rounded-3 p-4 h-100">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user text-white"></i>
                                     </div>
-                                    <small class="text-muted">5.0</small>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">@review.Name</h6>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <div class="text-warning me-2">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= review.Rating)
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                            <small class="text-muted">@review.Rating.ToString("F1")</small>
+                                        </div>
+                                        <small class="text-muted">@review.FormattedDate</small>
+                                    </div>
                                 </div>
+                                <p class="mb-0">"@review.ShortText"</p>
                             </div>
                         </div>
-                        <p class="mb-0">"С помощью этого сервиса мы с семьей легко спланировали поездку в Сочи. Особенно понравилась функция совместного планирования!"</p>
-                   </div>
-               </div>
-                <div class="col-md-4">
-                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Дмитрий Иванов</h6>
-                                <div class="d-flex align-items-center mt-1">
-                                    <div class="text-warning me-2">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star-half-alt"></i>
-                                    </div>
-                                    <small class="text-muted">4.5</small>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="mb-0">"Отличный сервис для групповых поездок! Бюджетная функция помогла нам легко разделить все расходы между участниками."</p>
-                    </div>
+                    }
                 </div>
-                <div class="col-md-4">
-                    <div class="testimonial-card bg-light rounded-3 p-4 h-100">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Ольга Сидорова</h6>
-                                <div class="d-flex align-items-center mt-1">
-                                    <div class="text-warning me-2">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="far fa-star"></i>
-                                    </div>
-                                    <small class="text-muted">4.0</small>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="mb-0">"Умные маршруты сэкономили нам кучу времени! Всё было продумано до мелочей, мы просто наслаждались путешествием."</p>
-                    </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Пока нет отзывов</h4>
+                    <p class="text-muted">Будьте первым, кто оставит отзыв!</p>
+                    <a asp-controller="Review" asp-action="Reviews" class="btn btn-primary mt-3">
+                        <i class="fas fa-pen me-2"></i>Оставить отзыв
+                    </a>
                 </div>
-            </div>
+            }
         </div>
     </section>
 
@@ -506,3 +495,12 @@
         </div>
     </section>
 </div>
+
+@functions {
+    public string GetReviewWord(int count)
+    {
+        if (count % 10 == 1 && count % 100 != 11) return "отзыва";
+        if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return "отзыва";
+        return "отзывов";
+    }
+}

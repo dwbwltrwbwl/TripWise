@@ -458,17 +458,6 @@ namespace TripWise.Controllers
             if (userId == null)
                 return RedirectToAction("Login");
 
-            Console.WriteLine("=== DEBUG: Edit POST method called ===");
-            Console.WriteLine($"RemoveAvatar: {model.RemoveAvatar}");
-            Console.WriteLine($"Avatar file received: {model.Avatar != null}");
-
-            if (model.Avatar != null)
-            {
-                Console.WriteLine($"File name: {model.Avatar.FileName}");
-                Console.WriteLine($"File size: {model.Avatar.Length} bytes");
-                Console.WriteLine($"Content type: {model.Avatar.ContentType}");
-            }
-
             _logger.LogInformation("=== НАЧАЛО РЕДАКТИРОВАНИЯ ПРОФИЛЯ ===");
             _logger.LogInformation("UserId: {UserId}", userId);
             _logger.LogInformation("RemoveAvatar: {RemoveAvatar}", model.RemoveAvatar);
@@ -505,7 +494,6 @@ namespace TripWise.Controllers
             if (model.RemoveAvatar)
             {
                 _logger.LogInformation("Удаление аватарки");
-                // Удаляем старую аватарку
                 if (!string.IsNullOrEmpty(user.AvatarPath))
                 {
                     _fileService.DeleteAvatar(user.AvatarPath);
@@ -546,6 +534,7 @@ namespace TripWise.Controllers
             await _context.SaveChangesAsync();
             _logger.LogInformation("Изменения сохранены в БД. Новый AvatarPath: {AvatarPath}", user.AvatarPath);
 
+            // Обновляем сессию
             HttpContext.Session.SetString("UserName", GetFullUserName(user));
             HttpContext.Session.SetString("UserEmail", user.Email);
 
