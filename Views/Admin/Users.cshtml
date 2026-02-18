@@ -1,0 +1,297 @@
+﻿@model IEnumerable<TripWise.Models.User>
+@{
+    ViewData["Title"] = "Управление пользователями";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid px-4">
+    <!-- Заголовок и статистика -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-gray-800">
+                <i class="fas fa-users me-2"></i>Управление пользователями
+            </h1>
+            <p class="text-muted">Всего пользователей: <strong>@Model.Count()</strong></p>
+        </div>
+        <div>
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-2"></i>Экспорт в Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter me-2"></i>Фильтры
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Поиск по имени или email...">
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <select class="form-select" id="roleFilter">
+                        <option value="all">Все роли</option>
+                        <option value="1">Администраторы</option>
+                        <option value="2">Пользователи</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <select class="form-select" id="dateFilter">
+                        <option value="all">Все даты</option>
+                        <option value="today">Сегодня</option>
+                        <option value="week">Эта неделя</option>
+                        <option value="month">Этот месяц</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">
+                        <i class="fas fa-search me-2"></i>Поиск
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица пользователей -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Список пользователей</h6>
+            <span class="badge bg-primary">Всего: @Model.Count()</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="usersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Пользователь</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Возраст</th>
+                            <th>Дата регистрации</th>
+                            <th>Аватар</th>
+                            <th>Статистика</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td><strong>#@user.IdUser</strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        @if (!string.IsNullOrEmpty(user.AvatarPath))
+                                        {
+                                            <img src="@user.AvatarPath" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-circle-sm me-2">
+                                                @(user.FirstName?.Length > 0 ? user.FirstName[0].ToString() : "")@(user.LastName?.Length > 0 ? user.LastName[0].ToString() : "")
+                                            </div>
+                                        }
+                                        <div>
+                                            <div class="fw-bold">
+                                                @user.LastName @user.FirstName
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(user.MiddleName))
+                                            {
+                                                <small class="text-muted">@user.MiddleName</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    @if (user.IdRole == 1)
+                                    {
+                                        <span class="badge badge-danger">Администратор</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-primary">Пользователь</span>
+                                    }
+                                </td>
+                                <td>@(user.Age?.ToString() ?? "—")</td>
+                                <td>
+                                    <span title="@user.CreatedAt.ToString("dd.MM.yyyy HH:mm")">
+                                        @user.CreatedAt.ToString("dd.MM.yyyy")
+                                    </span>
+                                    <br />
+                                    <small class="text-muted">@user.CreatedAt.ToString("HH:mm")</small>
+                                </td>
+                                <td class="text-center">
+                                    @if (!string.IsNullOrEmpty(user.AvatarPath))
+                                    {
+                                        <span class="badge badge-success">Есть</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Нет</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" onclick="showUserStats(@user.IdUser)" title="Статистика">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <!-- Только кнопка удаления -->
+                                    <button class="btn btn-sm btn-danger" onclick="deleteUser(@user.IdUser, '@user.Email')" title="Удалить пользователя">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно статистики пользователя -->
+<div class="modal fade" id="userStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Статистика пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userStatsContent">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Применение фильтров
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const role = document.getElementById('roleFilter').value;
+            const date = document.getElementById('dateFilter').value;
+
+            const rows = document.querySelectorAll('#usersTable tbody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const name = row.cells[1].innerText.toLowerCase();
+                const email = row.cells[2].innerText.toLowerCase();
+                const roleCell = row.cells[3].innerText;
+                const dateCell = row.cells[5].innerText;
+
+                let show = true;
+
+                // Поиск
+                if (search && !name.includes(search) && !email.includes(search)) {
+                    show = false;
+                }
+
+                // Фильтр по роли
+                if (role !== 'all') {
+                    const isAdmin = roleCell.includes('Администратор');
+                    if ((role === '1' && !isAdmin) || (role === '2' && isAdmin)) {
+                        show = false;
+                    }
+                }
+
+                // Фильтр по дате
+                if (date !== 'all') {
+                    const rowDate = new Date(dateCell.split(' ')[0].split('.').reverse().join('-'));
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (date === 'today') {
+                        const rowDateStr = rowDate.toDateString();
+                        const todayStr = today.toDateString();
+                        if (rowDateStr !== todayStr) show = false;
+                    } else if (date === 'week') {
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        if (rowDate < weekAgo) show = false;
+                    } else if (date === 'month') {
+                        const monthAgo = new Date();
+                        monthAgo.setMonth(monthAgo.getMonth() - 1);
+                        if (rowDate < monthAgo) show = false;
+                    }
+                }
+
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            alert(`Показано ${visibleCount} из ${rows.length} пользователей`);
+        }
+
+        // Показать статистику пользователя
+        function showUserStats(userId) {
+            const modal = new bootstrap.Modal(document.getElementById('userStatsModal'));
+
+            fetch(`/Admin/GetUserStats/${userId}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('userStatsContent').innerHTML = html;
+                    modal.show();
+                })
+                .catch(error => {
+                    document.getElementById('userStatsContent').innerHTML =
+                        '<div class="alert alert-danger">Ошибка загрузки статистики</div>';
+                    modal.show();
+                });
+        }
+
+        // Удаление пользователя
+        function deleteUser(userId, email) {
+            if (confirm(`Вы уверены, что хотите удалить пользователя ${email}?\nЭто действие нельзя отменить!`)) {
+                fetch(`/Admin/DeleteUser/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Пользователь успешно удален');
+                        location.reload();
+                    } else {
+                        alert('Ошибка при удалении пользователя: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка при удалении пользователя');
+                });
+            }
+        }
+
+        // Экспорт в Excel
+        function exportToExcel() {
+            window.location.href = '/Admin/ExportUsers';
+        }
+
+        // Поиск при нажатии Enter
+        document.getElementById('searchInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+
+        // Автоматическое применение фильтров при изменении
+        document.getElementById('roleFilter').addEventListener('change', applyFilters);
+        document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    </script>
+}
