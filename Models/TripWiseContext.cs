@@ -62,6 +62,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<FlightBooking> FlightBookings { get; set; }
     public DbSet<Friend> Friends { get; set; }
     public DbSet<FriendRequest> FriendRequests { get; set; }
+    public DbSet<PlannedActivity> PlannedActivities { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -1016,6 +1017,72 @@ public partial class TripWiseContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<PlannedActivity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.UserId, "IX_PlannedActivities_UserId");
+            entity.HasIndex(e => e.Date, "IX_PlannedActivities_Date");
+            entity.HasIndex(e => e.Category, "IX_PlannedActivities_Category");
+
+            entity.Property(e => e.Id).HasColumnName("Id");
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasColumnName("UserId");
+
+            entity.Property(e => e.ActivityId)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("ActivityId");
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("Name");
+
+            entity.Property(e => e.Date)
+                .IsRequired()
+                .HasColumnName("Date");
+
+            entity.Property(e => e.Time)
+                .IsRequired()
+                .HasColumnName("Time");
+
+            entity.Property(e => e.Description)
+                .HasColumnName("Description")
+                .HasColumnType("nvarchar(max)");
+
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("Category");
+
+            entity.Property(e => e.Tags)
+                .HasColumnName("Tags")
+                .HasColumnType("nvarchar(max)");
+
+            entity.Property(e => e.Latitude)
+                .HasColumnName("Latitude");
+
+            entity.Property(e => e.Longitude)
+                .HasColumnName("Longitude");
+
+            entity.Property(e => e.Address)
+                .HasMaxLength(500)
+                .HasColumnName("Address");
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasColumnName("CreatedAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            // Связь с пользователем
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.PlannedActivities) // Предполагая, что у User есть коллекция PlannedActivities
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         OnModelCreatingPartial(modelBuilder);

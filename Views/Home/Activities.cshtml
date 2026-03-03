@@ -481,23 +481,24 @@
             let activityToDelete = null;
 
             // Инициализация после загрузки DOM
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOM загружен, инициализация...');
+                    // Инициализация после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM загружен, инициализация...');
 
-                try {
-                    initializeActivitiesMap();
-                    setupActivitiesEventListeners();
-                    loadPlannedActivities();
-                    setupCityAutocomplete();
+            try {
+                initializeActivitiesMap();
+                setupActivitiesEventListeners();
+                loadPlannedActivities(); // Эта строка остается без изменений
+                setupCityAutocomplete();
 
-                    const confirmDeleteBtn = document.getElementById('confirmDeleteButton');
-                    if (confirmDeleteBtn) {
-                        confirmDeleteBtn.addEventListener('click', confirmDeleteActivity);
-                    }
-                } catch (error) {
-                    console.error('Ошибка при инициализации:', error);
+                const confirmDeleteBtn = document.getElementById('confirmDeleteButton');
+                if (confirmDeleteBtn) {
+                    confirmDeleteBtn.addEventListener('click', confirmDeleteActivity);
                 }
-            });
+            } catch (error) {
+                console.error('Ошибка при инициализации:', error);
+            }
+        });
 
             // Функция для автодополнения городов
             function setupCityAutocomplete() {
@@ -664,120 +665,130 @@
                 return colors[category] || '#0379D9';
             }
 
-            function loadPlannedActivitiesByCategories() {
-                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
-                const container = document.getElementById('plannedActivities');
+                        function loadPlannedActivitiesByCategories(activities) {
+            const container = document.getElementById('plannedActivities');
 
-                if (plannedActivities.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-calendar-plus fa-3x mb-3" style="color: #0379D9;"></i>
-                            <h5>У вас пока нет запланированных активностей</h5>
-                            <p class="small">Найдите активности на карте и добавляйте их в план</p>
-                        </div>
-                    `;
-                    return;
+            // Проверяем, что activities - это массив
+            if (!activities || activities.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calendar-plus fa-3x mb-3" style="color: #0379D9;"></i>
+                        <h5>У вас пока нет запланированных активностей</h5>
+                        <p class="small">Найдите активности на карте и добавляйте их в план</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Группируем активности по категориям
+            const activitiesByCategory = {};
+            activities.forEach(activity => {
+                const category = getPlannedActivityCategory(activity);
+                if (!activitiesByCategory[category]) {
+                    activitiesByCategory[category] = [];
                 }
+                activitiesByCategory[category].push(activity);
+            });
 
-                const activitiesByCategory = {};
-                plannedActivities.forEach(activity => {
-                    const category = getPlannedActivityCategory(activity);
-                    if (!activitiesByCategory[category]) activitiesByCategory[category] = [];
-                    activitiesByCategory[category].push(activity);
-                });
+            const sortedCategories = Object.keys(activitiesByCategory).sort((a, b) =>
+                activitiesByCategory[b].length - activitiesByCategory[a].length
+            );
 
-                const sortedCategories = Object.keys(activitiesByCategory).sort((a, b) => 
-                    activitiesByCategory[b].length - activitiesByCategory[a].length
-                );
-
-                let summaryHTML = `
-                    <div class="category-summary">
-                        ${sortedCategories.map(category => `
-                            <div class="summary-item">
-                                <i class="fas ${getCategoryIcon(category)}"></i>
-                                <div class="value">${activitiesByCategory[category].length}</div>
-                                <div class="label">${category}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-
-                let tabsHTML = `
-                    <div class="category-tabs">
-                        <div class="category-tab active" onclick="filterActivitiesByCategory('all')">
-                            Все <span class="badge">${plannedActivities.length}</span>
+            let summaryHTML = `
+                <div class="category-summary">
+                    ${sortedCategories.map(category => `
+                        <div class="summary-item">
+                            <i class="fas ${getCategoryIcon(category)}"></i>
+                            <div class="value">${activitiesByCategory[category].length}</div>
+                            <div class="label">${category}</div>
                         </div>
-                        ${sortedCategories.map(category => `
-                            <div class="category-tab" onclick="filterActivitiesByCategory('${category}')">
-                                <i class="fas ${getCategoryIcon(category)} me-1"></i>
-                                ${category} <span class="badge">${activitiesByCategory[category].length}</span>
-                            </div>
-                        `).join('')}
+                    `).join('')}
+                </div>
+            `;
+
+            let tabsHTML = `
+                <div class="category-tabs">
+                    <div class="category-tab active" onclick="filterActivitiesByCategory('all')">
+                        Все <span class="badge">${activities.length}</span>
                     </div>
+                    ${sortedCategories.map(category => `
+                        <div class="category-tab" onclick="filterActivitiesByCategory('${category}')">
+                            <i class="fas ${getCategoryIcon(category)} me-1"></i>
+                            ${category} <span class="badge">${activitiesByCategory[category].length}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            let categoriesHTML = '<div class="activities-categories">';
+
+            sortedCategories.forEach(category => {
+                const categoryActivities = activitiesByCategory[category];
+                const categoryColor = getCategoryColor(category);
+
+                categoriesHTML += `
+                    <div class="category-section" data-category="${category}">
+                        <div class="category-header">
+                            <div class="category-icon" style="background-color: ${categoryColor};">
+                                <i class="fas ${getCategoryIcon(category)}"></i>
+                            </div>
+                            <h6 class="category-title">${category}</h6>
+                            <span class="category-count">${categoryActivities.length}</span>
+                        </div>
+                        <div class="category-activities">
                 `;
 
-                let categoriesHTML = '<div class="activities-categories">';
-                sortedCategories.forEach(category => {
-                    const activities = activitiesByCategory[category];
-                    const categoryColor = getCategoryColor(category);
+                // Сортируем по дате
+                categoryActivities.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                categoryActivities.forEach(activity => {
+                    const activityDate = new Date(activity.date);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    activityDate.setHours(0, 0, 0, 0);
+
+                    const isPast = activityDate < today;
+                    const isToday = activityDate.getTime() === today.getTime();
+
+                    // Форматируем время (обрезаем секунды если есть)
+                    const activityTime = activity.time ? activity.time.substring(0, 5) : '';
 
                     categoriesHTML += `
-                        <div class="category-section" data-category="${category}">
-                            <div class="category-header">
-                                <div class="category-icon" style="background-color: ${categoryColor};">
-                                    <i class="fas ${getCategoryIcon(category)}"></i>
-                                </div>
-                                <h6 class="category-title">${category}</h6>
-                                <span class="category-count">${activities.length}</span>
+                        <div class="activity-card ${isPast ? 'text-muted opacity-50' : ''} ${isToday ? 'text-primary fw-bold' : ''}" data-activity-id="${activity.id}">
+                            <div class="activity-card-header">
+                                <h6 class="activity-card-title">${activity.name}</h6>
+                                <span class="activity-card-category">${category}</span>
                             </div>
-                            <div class="category-activities">
+                            <div class="activity-card-datetime">
+                                <span><i class="fas fa-calendar"></i> ${formatDate(activity.date)}</span>
+                                <span><i class="fas fa-clock"></i> ${activityTime}</span>
+                                ${isToday ? '<span class="badge bg-primary">Сегодня</span>' : ''}
+                                ${isPast ? '<span class="badge bg-secondary">Прошло</span>' : ''}
+                            </div>
+                            ${activity.description ? `
+                                <div class="activity-card-description">
+                                    <i class="fas fa-align-left me-2"></i>${activity.description}
+                                </div>
+                            ` : ''}
+                            <div class="activity-card-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editPlannedActivity(${activity.id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmation(${activity.id}, '${activity.name.replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     `;
-
-                    activities.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
-
-                    activities.forEach(activity => {
-                        const activityDate = new Date(activity.date);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        activityDate.setHours(0, 0, 0, 0);
-
-                        const isPast = activityDate < today;
-                        const isToday = activityDate.getTime() === today.getTime();
-
-                        categoriesHTML += `
-                            <div class="activity-card ${isPast ? 'text-muted opacity-50' : ''} ${isToday ? 'text-primary fw-bold' : ''}" data-activity-id="${activity.id}">
-                                <div class="activity-card-header">
-                                    <h6 class="activity-card-title">${activity.name}</h6>
-                                    <span class="activity-card-category">${category}</span>
-                                </div>
-                                <div class="activity-card-datetime">
-                                    <span><i class="fas fa-calendar"></i> ${formatDate(activity.date)}</span>
-                                    <span><i class="fas fa-clock"></i> ${activity.time}</span>
-                                    ${isToday ? '<span class="badge bg-primary">Сегодня</span>' : ''}
-                                    ${isPast ? '<span class="badge bg-secondary">Прошло</span>' : ''}
-                                </div>
-                                ${activity.description ? `
-                                    <div class="activity-card-description">
-                                        <i class="fas fa-align-left me-2"></i>${activity.description}
-                                    </div>
-                                ` : ''}
-                                <div class="activity-card-actions">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editPlannedActivity(${activity.id})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmation(${activity.id}, '${activity.name.replace(/'/g, "\\'")}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    categoriesHTML += '</div></div>';
                 });
-                categoriesHTML += '</div>';
 
-                container.innerHTML = `${summaryHTML}${tabsHTML}${categoriesHTML}`;
-            }
+                categoriesHTML += '</div></div>';
+            });
+
+            categoriesHTML += '</div>';
+
+            container.innerHTML = `${summaryHTML}${tabsHTML}${categoriesHTML}`;
+        }
 
             function formatDate(dateString) {
                 const options = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -802,19 +813,29 @@
                 });
             }
 
-            function editPlannedActivity(activityId) {
-                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
-                const activity = plannedActivities.find(a => a.id === activityId);
-                if (activity) {
-                    document.getElementById('activityName').value = activity.name;
-                    document.getElementById('activityDate').value = activity.date;
-                    document.getElementById('activityTime').value = activity.time;
-                    document.getElementById('activityDescription').value = activity.description || '';
-                    document.getElementById('addActivityForm').dataset.activityId = activityId;
-                    document.getElementById('addActivityForm').dataset.editMode = 'true';
-                    new bootstrap.Modal(document.getElementById('addActivityModal')).show();
-                }
+                    // Функция для редактирования активности
+        async function editPlannedActivity(activityId) {
+            try {
+                const response = await fetch(`/api/PlannedActivities/${activityId}`);
+                if (!response.ok) throw new Error('Активность не найдена');
+
+                const activity = await response.json();
+
+                document.getElementById('activityName').value = activity.name;
+                document.getElementById('activityDate').value = activity.date.split('T')[0];
+                document.getElementById('activityTime').value = activity.time.substring(0, 5);
+                document.getElementById('activityDescription').value = activity.description || '';
+                document.getElementById('addActivityForm').dataset.activityId = activity.activityId;
+                document.getElementById('addActivityForm').dataset.editMode = 'true';
+                document.getElementById('addActivityForm').dataset.id = activity.id;
+
+                const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Ошибка загрузки активности:', error);
+                alert('Не удалось загрузить активность для редактирования');
             }
+        }
 
             // Инициализация карты для активностей
             function initializeActivitiesMap() {
@@ -1315,55 +1336,144 @@
                 modal.show();
             }
 
-            function savePlannedActivity() {
-                const name = document.getElementById('activityName').value;
-                const date = document.getElementById('activityDate').value;
-                const time = document.getElementById('activityTime').value;
-                const description = document.getElementById('activityDescription').value;
-                const activityId = document.getElementById('addActivityForm').dataset.activityId;
-                const editMode = document.getElementById('addActivityForm').dataset.editMode === 'true';
+                    // Сохранение запланированной активности
+                // Сохранение запланированной активности
+                // Сохранение запланированной активности
+                // Сохранение запланированной активности
+        async function savePlannedActivity() {
+            const name = document.getElementById('activityName').value;
+            const date = document.getElementById('activityDate').value;
+            const time = document.getElementById('activityTime').value;
+            const description = document.getElementById('activityDescription').value;
+            const activityId = document.getElementById('addActivityForm').dataset.activityId;
+            const editMode = document.getElementById('addActivityForm').dataset.editMode === 'true';
+            const id = document.getElementById('addActivityForm').dataset.id;
 
-                if (!name || !date || !time) {
-                    alert('Пожалуйста, заполните обязательные поля');
-                    return;
+            if (!name || !date || !time) {
+                alert('Пожалуйста, заполните обязательные поля');
+                return;
+            }
+
+            // Находим активность из currentActivities чтобы получить её категорию и теги
+            const originalActivity = currentActivities.find(a => a.id == activityId);
+
+            // Формируем правильный формат времени для C# TimeSpan (часы:минуты:секунды)
+            const timeFormatted = time + ':00';
+
+            // Формируем данные для отправки - убираем поле activity, если оно не нужно
+            const activityData = {
+                name: name,
+                date: new Date(date).toISOString(),
+                time: timeFormatted, // Теперь в формате "HH:mm:ss"
+                description: description || '',
+                activityId: activityId,
+                category: originalActivity ? originalActivity.category : 'Другое',
+                tags: originalActivity && originalActivity.tags ? JSON.stringify(originalActivity.tags) : null,
+                latitude: originalActivity ? originalActivity.lat : null,
+                longitude: originalActivity ? originalActivity.lon : null,
+                address: originalActivity ? originalActivity.address : null
+            };
+
+            // Если это редактирование, добавляем id
+            if (editMode && id) {
+                activityData.id = parseInt(id);
+            }
+
+            console.log('Отправляемые данные:', JSON.stringify(activityData, null, 2));
+
+            try {
+                const saveButton = document.querySelector('.modal-footer .btn-primary');
+                const originalHTML = saveButton.innerHTML;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+                saveButton.disabled = true;
+
+                let url = '/api/PlannedActivities';
+                let method = 'POST';
+
+                if (editMode && id) {
+                    url = `/api/PlannedActivities/${id}`;
+                    method = 'PUT';
                 }
 
-                const originalActivity = currentActivities.find(a => a.id == activityId);
-                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(activityData)
+                });
 
-                if (editMode) {
-                    const index = plannedActivities.findIndex(a => a.id == activityId);
-                    if (index !== -1) {
-                        plannedActivities[index] = { ...plannedActivities[index], name, date, time, description };
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Ответ сервера:', errorText);
+
+                    // Парсим ошибку для более понятного сообщения
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.errors) {
+                            const errorMessages = Object.values(errorJson.errors).flat().join('\n');
+                            throw new Error(`Ошибка валидации:\n${errorMessages}`);
+                        }
+                    } catch (e) {
+                        // Если не удалось распарсить, используем исходную ошибку
                     }
-                } else {
-                    plannedActivities.push({
-                        id: Date.now(),
-                        activityId,
-                        name, date, time, description,
-                        category: originalActivity ? originalActivity.category : 'Другое',
-                        tags: originalActivity ? originalActivity.tags : null,
-                        createdAt: new Date().toISOString()
-                    });
+
+                    throw new Error(`Ошибка при сохранении: ${response.status}`);
                 }
 
-                localStorage.setItem('plannedActivities', JSON.stringify(plannedActivities));
-                bootstrap.Modal.getInstance(document.getElementById('addActivityModal')).hide();
-                loadPlannedActivitiesByCategories();
+                const result = await response.json();
+                console.log('Активность сохранена:', result);
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addActivityModal'));
+                modal.hide();
+
+                await loadPlannedActivities();
+
                 document.getElementById('addActivityForm').reset();
                 delete document.getElementById('addActivityForm').dataset.activityId;
                 delete document.getElementById('addActivityForm').dataset.editMode;
-            }
+                delete document.getElementById('addActivityForm').dataset.id;
 
-            function loadPlannedActivities() {
-                loadPlannedActivitiesByCategories();
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                alert(error.message || 'Не удалось сохранить активность');
+            } finally {
+                const saveButton = document.querySelector('.modal-footer .btn-primary');
+                saveButton.innerHTML = 'Сохранить';
+                saveButton.disabled = false;
             }
+        }
 
-            function removePlannedActivity(activityId) {
-                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
-                localStorage.setItem('plannedActivities', JSON.stringify(plannedActivities.filter(a => a.id !== activityId)));
-                loadPlannedActivities();
+                    // Загрузка запланированных активностей
+        async function loadPlannedActivities() {
+            try {
+                const response = await fetch('/api/PlannedActivities');
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки');
+                }
+                const activities = await response.json();
+                loadPlannedActivitiesByCategories(activities);
+            } catch (error) {
+                console.error('Ошибка загрузки активностей:', error);
+                showPlannedActivitiesError();
             }
+        }
+
+                    // Удаление запланированной активности
+        async function removePlannedActivity(activityId) {
+            try {
+                const response = await fetch(`/api/PlannedActivities/${activityId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Ошибка при удалении');
+
+                await loadPlannedActivities();
+            } catch (error) {
+                console.error('Ошибка удаления:', error);
+                alert('Не удалось удалить активность');
+            }
+        }
 
             function clearActivityMarkers() {
                 activityMarkers.forEach(marker => activitiesMap.removeLayer(marker));
@@ -1417,6 +1527,21 @@
                 const center = bounds.getCenter();
                 searchActivitiesFromMap(center.lat, center.lng);
             }
+
+                    // Функция для отображения ошибки загрузки активностей
+        function showPlannedActivitiesError() {
+            const container = document.getElementById('plannedActivities');
+            container.innerHTML = `
+                <div class="text-center text-danger py-4">
+                    <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                    <h5>Ошибка загрузки активностей</h5>
+                    <p class="small">Попробуйте обновить страницу</p>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadPlannedActivities()">
+                        <i class="fas fa-redo me-1"></i>Повторить
+                    </button>
+                </div>
+            `;
+        }
 
             window.focusActivity = focusActivity;
             window.addToPlanned = addToPlanned;
