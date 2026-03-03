@@ -8,7 +8,6 @@
             <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
                 Активности и развлечения
             </h1>
-            <p class="lead">Ищите интересные места и мероприятия с использованием OpenStreetMap</p>
 
             @if (Context.Session.GetInt32("UserId") == null)
             {
@@ -28,7 +27,7 @@
                         <form id="activitiesSearchForm">
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-medium">Место для поиска *</label>
+                                    <label class="form-label fw-medium">Место для поиска</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
                                         <input type="text"
@@ -37,7 +36,7 @@
                                                placeholder="Введите город или область (например: Сочи, Москва, Санкт-Петербург)"
                                                required
                                                style="font-family: 'Nunito', sans-serif;"
-                                               value="Сочи">
+                                               value="">
                                         <button type="button"
                                                 class="btn btn-outline-secondary"
                                                 id="useMyLocationForActivities"
@@ -131,9 +130,7 @@
                                 <div class="text-center text-muted py-3">
                                     <i class="fas fa-calendar-plus fa-2x mb-2"></i>
                                     <p>У вас пока нет запланированных активностей</p>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="showAddActivityModal()">
-                                        <i class="fas fa-plus me-1"></i>Добавить активность
-                                    </button>
+                                    <p class="small">Найдите активности на карте и добавляйте их в план</p>
                                 </div>
                             </div>
                         </div>
@@ -175,6 +172,26 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="savePlannedActivity()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteActivityModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить эту активность из плана?</p>
+                <p class="text-muted small" id="deleteActivityName"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteActivity()">Удалить</button>
             </div>
         </div>
     </div>
@@ -246,810 +263,1170 @@
         .activity-badge {
             font-size: 0.75rem;
         }
+
+        /* Стили для категорий активностей */
+    .activities-categories {
+        margin-bottom: 20px;
+    }
+
+    .category-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+    }
+
+    .category-tab {
+        padding: 8px 16px;
+        border-radius: 20px;
+        background-color: #f8f9fa;
+        color: #495057;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        border: 1px solid transparent;
+    }
+
+    .category-tab:hover {
+        background-color: #e9ecef;
+    }
+
+    .category-tab.active {
+        background-color: #0379D9;
+        color: white;
+    }
+
+    .category-tab .badge {
+        margin-left: 6px;
+        background-color: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 0.7rem;
+    }
+
+    .category-tab:not(.active) .badge {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .category-section {
+        margin-bottom: 25px;
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .category-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-right: 10px;
+    }
+
+    .category-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .category-count {
+        margin-left: 10px;
+        background-color: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #495057;
+    }
+
+    /* Стили для карточек активностей */
+    .activity-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
+        transition: all 0.2s;
+    }
+
+    .activity-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .activity-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .activity-card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+        color: #333;
+    }
+
+    .activity-card-category {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        border-radius: 12px;
+        background-color: #e7f1ff;
+        color: #0379D9;
+    }
+
+    .activity-card-datetime {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .activity-card-datetime i {
+        margin-right: 4px;
+        color: #0379D9;
+    }
+
+    .activity-card-description {
+        font-size: 0.9rem;
+        color: #495057;
+        margin-bottom: 12px;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+    }
+
+    .activity-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 10px;
+    }
+
+    .no-activities-category {
+        text-align: center;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+
+    .category-summary {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        color: white;
+    }
+
+    .summary-item {
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+        padding: 10px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+    }
+
+    .summary-item i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-item .value {
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .summary-item .label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
     </style>
 }
 
 @section Scripts {
-    <!-- Библиотеки для карты -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+        <!-- Библиотеки для карты -->
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-    <script>
-        // Глобальные переменные
-        let activitiesMap;
-        let activityMarkers = [];
-        let currentActivities = [];
-        let activitiesGeocoder;
+        <!-- jQuery и jQuery UI для автодополнения -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-        // Инициализация после загрузки DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeActivitiesMap();
-            setupActivitiesEventListeners();
-            loadPlannedActivities();
-        });
+        <script>
+            // Глобальные переменные
+            let activitiesMap;
+            let activityMarkers = [];
+            let currentActivities = [];
+            let activitiesGeocoder;
+            let activityToDelete = null;
 
-        // Инициализация карты для активностей
-        function initializeActivitiesMap() {
-            // Создаем карту с центром на России
-            activitiesMap = L.map('activitiesMap').setView([43.5855, 39.7231], 12); // Сочи по умолчанию
+            // Инициализация после загрузки DOM
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM загружен, инициализация...');
 
-            // Добавляем базовый слой OpenStreetMap
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            }).addTo(activitiesMap);
+                try {
+                    initializeActivitiesMap();
+                    setupActivitiesEventListeners();
+                    loadPlannedActivities();
+                    setupCityAutocomplete();
 
-            // Добавляем поиск
-            activitiesGeocoder = L.Control.geocoder({
-                defaultMarkGeocode: false,
-                placeholder: 'Поиск места...',
-                errorMessage: 'Ничего не найдено'
-            }).on('markgeocode', function(e) {
-                const center = e.geocode.center;
-                activitiesMap.setView(center, 13);
-
-                // Заполняем поле ввода
-                document.getElementById('activitiesDestination').value = e.geocode.name;
-
-                // Автоматически ищем активности
-                setTimeout(() => searchActivitiesFromMap(center.lat, center.lng), 500);
-            }).addTo(activitiesMap);
-
-            console.log('Карта активностей инициализирована');
-        }
-
-        // Настройка обработчиков событий для активностей
-        function setupActivitiesEventListeners() {
-            const form = document.getElementById('activitiesSearchForm');
-            const searchButton = document.getElementById('searchActivitiesButton');
-            const useMyLocationBtn = document.getElementById('useMyLocationForActivities');
-
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                handleActivitiesSearch();
-            });
-
-            searchButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                handleActivitiesSearch();
-            });
-
-            useMyLocationBtn.addEventListener('click', function() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        position => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            activitiesMap.setView([lat, lng], 13);
-                            searchActivitiesFromMap(lat, lng);
-                        },
-                        error => {
-                            alert('Не удалось получить местоположение: ' + error.message);
-                        }
-                    );
-                } else {
-                    alert('Геолокация не поддерживается вашим браузером');
+                    const confirmDeleteBtn = document.getElementById('confirmDeleteButton');
+                    if (confirmDeleteBtn) {
+                        confirmDeleteBtn.addEventListener('click', confirmDeleteActivity);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при инициализации:', error);
                 }
             });
-        }
 
-        // Основная функция поиска активностей
-                async function handleActivitiesSearch() {
-            const destination = document.getElementById('activitiesDestination').value.trim();
-            const searchButton = document.getElementById('searchActivitiesButton');
-
-            if (!destination) {
-                alert('Пожалуйста, введите место для поиска');
-                return;
-            }
-
-            // Автоматически уменьшаем радиус для первого поиска
-            if (document.getElementById('activitiesRadius').value > 2) {
-                document.getElementById('activitiesRadius').value = 2;
-            }
-
-            // Сохраняем оригинальное состояние кнопки
-            const originalHTML = searchButton.innerHTML;
-            searchButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
-            searchButton.disabled = true;
-
-            try {
-                // Сначала геокодируем место
-                const location = await geocodeForActivities(destination);
-
-                if (!location) {
-                    throw new Error('Место не найдено');
-                }
-
-                // Центрируем карту
-                activitiesMap.setView([location.lat, location.lon], 13);
-
-                // Ищем активности
-                await searchActivitiesFromMap(location.lat, location.lon);
-
-            } catch (error) {
-                console.error('Ошибка поиска активностей:', error);
-                alert('Ошибка при поиске места: ' + error.message);
-            } finally {
-                // Восстанавливаем кнопку
-                searchButton.innerHTML = originalHTML;
-                searchButton.disabled = false;
-            }
-        }
-
-        // Геокодирование для активностей
-        async function geocodeForActivities(placeName) {
-            try {
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(placeName)}&limit=1&accept-language=ru`
-                );
-
-                if (!response.ok) throw new Error('Ошибка геокодирования');
-
-                const data = await response.json();
-
-                if (data && data.length > 0) {
-                    return {
-                        lat: parseFloat(data[0].lat),
-                        lon: parseFloat(data[0].lon),
-                        display_name: data[0].display_name
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error('Ошибка геокодирования:', error);
-                return null;
-            }
-        }
-
-        // Поиск активностей через Overpass API
-                async function searchActivitiesFromMap(lat, lng) {
-            const radius = document.getElementById('activitiesRadius').value * 1000;
-            const activityType = document.getElementById('activityType').value;
-
-            // Показываем загрузку
-            showActivitiesLoading();
-
-            try {
-                // Упрощенные и оптимизированные запросы
-                let query = '';
-
-                // Ограничиваем количество результатов и используем более простой синтаксис
-                switch(activityType) {
-                    case 'tourism':
-                        query = `[out:json][timeout:10];
-                                node["tourism"="attraction"](around:${radius},${lat},${lng});
-                                node["tourism"="museum"](around:${radius},${lat},${lng});
-                                out body;`;
-                        break;
-                    case 'amenity':
-                        query = `[out:json][timeout:10];
-                                node["amenity"="restaurant"](around:${radius},${lat},${lng});
-                                node["amenity"="cafe"](around:${radius},${lat},${lng});
-                                out body;`;
-                        break;
-                    case 'leisure':
-                        query = `[out:json][timeout:10];
-                                node["leisure"="park"](around:${radius},${lat},${lng});
-                                node["leisure"="garden"](around:${radius},${lat},${lng});
-                                out body;`;
-                        break;
-                    case 'sport':
-                        query = `[out:json][timeout:10];
-                                node["leisure"="sports_centre"](around:${radius},${lat},${lng});
-                                node["sport"](around:${radius},${lat},${lng});
-                                out body;`;
-                        break;
-                    case 'shop':
-                        query = `[out:json][timeout:10];
-                                node["shop"](around:${radius},${lat},${lng});
-                                out body;`;
-                        break;
-                    default: // all - минимальный запрос
-                        query = `[out:json][timeout:10];
-                                (
-                                    node["tourism"](around:${radius},${lat},${lng});
-                                    node["amenity"="restaurant"](around:${radius},${lat},${lng});
-                                    node["amenity"="cafe"](around:${radius},${lat},${lng});
-                                );
-                                out body;`;
-                }
-
-                console.log('Выполняем Overpass запрос');
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд таймаут
-
-                const response = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `data=${encodeURIComponent(query)}`,
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    console.error('Статус ответа Overpass:', response.status);
-
-                    // Пробуем альтернативный сервер
-                    console.log('Пробуем альтернативный сервер...');
-                    await tryAlternativeOverpassServer(query, lat, lng);
+            // Функция для автодополнения городов
+            function setupCityAutocomplete() {
+                if (typeof jQuery === 'undefined') {
+                    console.error('jQuery не загружен!');
                     return;
                 }
 
-                const data = await response.json();
-                console.log('Получены данные от Overpass:', data);
-
-                if (!data.elements || data.elements.length === 0) {
-                    console.warn('Нет элементов в ответе');
-                    processActivitiesData([], lat, lng);
-                    showNoActivitiesResults();
-                } else {
-                    processActivitiesData(data.elements, lat, lng);
+                if ($("#activitiesDestination").length === 0) {
+                    console.error('Элемент activitiesDestination не найден');
+                    return;
                 }
 
-            } catch (error) {
-                console.error('Ошибка поиска активностей:', error);
+                $("#activitiesDestination").autocomplete({
+                    source: function(request, response) {
+                        $.ajax({
+                            url: "https://nominatim.openstreetmap.org/search",
+                            dataType: "json",
+                            data: {
+                                q: request.term,
+                                format: "json",
+                                limit: 10,
+                                addressdetails: 1,
+                                "accept-language": "ru",
+                                featureType: "city"
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        label: item.display_name.split(',')[0] + ', ' + item.display_name.split(',')[1],
+                                        value: item.display_name,
+                                        lat: item.lat,
+                                        lon: item.lon
+                                    };
+                                }));
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Ошибка автодополнения:', error);
+                            }
+                        });
+                    },
+                    minLength: 2,
+                    delay: 300,
+                    select: function(event, ui) {
+                        activitiesMap.setView([ui.item.lat, ui.item.lon], 13);
+                        setTimeout(() => searchActivitiesFromMap(parseFloat(ui.item.lat), parseFloat(ui.item.lon)), 500);
+                    }
+                });
+            }
 
-                if (error.name === 'AbortError') {
-                    showActivitiesError('Превышено время ожидания ответа от сервера. Уменьшите радиус поиска и попробуйте снова.');
-                } else {
-                    showActivitiesError('Не удалось загрузить данные. Попробуйте изменить параметры поиска или попробуйте позже.');
+            // Показать модальное окно подтверждения удаления
+            function showDeleteConfirmation(activityId, activityName) {
+                activityToDelete = activityId;
+                document.getElementById('deleteActivityName').textContent = `"${activityName}"`;
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteActivityModal'));
+                deleteModal.show();
+            }
+
+            // Подтверждение удаления активности
+            function confirmDeleteActivity() {
+                if (activityToDelete) {
+                    removePlannedActivity(activityToDelete);
+                    activityToDelete = null;
+                    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteActivityModal'));
+                    deleteModal.hide();
                 }
             }
-        }
-                async function tryAlternativeOverpassServer(query, lat, lng) {
-            try {
-                console.log('Пробуем альтернативный сервер Overpass...');
 
-                const response = await fetch('https://overpass.kumi.systems/api/interpreter', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `data=${encodeURIComponent(query)}`
+            // Функция для получения категории активности
+            function getPlannedActivityCategory(activity) {
+                if (activity.category) {
+                    const categoryMapping = {
+                        'Достопримечательность': 'Достопримечательности',
+                        'Музей': 'Культура',
+                        'Галерея': 'Культура',
+                        'Зоопарк': 'Развлечения',
+                        'Аквариум': 'Развлечения',
+                        'Парк развлечений': 'Развлечения',
+                        'Ресторан': 'Еда и напитки',
+                        'Кафе': 'Еда и напитки',
+                        'Бар': 'Еда и напитки',
+                        'Фастфуд': 'Еда и напитки',
+                        'Театр': 'Культура',
+                        'Кинотеатр': 'Развлечения',
+                        'Парк': 'Природа',
+                        'Сад': 'Природа',
+                        'Детская площадка': 'Развлечения',
+                        'Спортцентр': 'Спорт',
+                        'Бассейн': 'Спорт',
+                        'Историческое место': 'Достопримечательности',
+                        'Пляж': 'Природа',
+                        'Вершина': 'Природа',
+                        'Водопад': 'Природа',
+                        'Природный объект': 'Природа',
+                        'Спорт': 'Спорт',
+                        'Магазин': 'Шопинг',
+                        'Туристическое место': 'Достопримечательности',
+                        'Удобство': 'Другое',
+                        'Развлечение': 'Развлечения'
+                    };
+                    return categoryMapping[activity.category] || 'Другое';
+                }
+
+                if (activity.tags) {
+                    if (activity.tags.tourism) {
+                        if (activity.tags.tourism === 'attraction') return 'Достопримечательности';
+                        if (activity.tags.tourism === 'museum') return 'Культура';
+                        if (activity.tags.tourism === 'gallery') return 'Культура';
+                        if (activity.tags.tourism === 'zoo') return 'Развлечения';
+                        if (activity.tags.tourism === 'theme_park') return 'Развлечения';
+                    }
+                    if (activity.tags.amenity) {
+                        if (activity.tags.amenity === 'restaurant') return 'Еда и напитки';
+                        if (activity.tags.amenity === 'cafe') return 'Еда и напитки';
+                        if (activity.tags.amenity === 'bar') return 'Еда и напитки';
+                        if (activity.tags.amenity === 'fast_food') return 'Еда и напитки';
+                        if (activity.tags.amenity === 'theatre') return 'Культура';
+                        if (activity.tags.amenity === 'cinema') return 'Развлечения';
+                    }
+                    if (activity.tags.leisure) {
+                        if (activity.tags.leisure === 'park') return 'Природа';
+                        if (activity.tags.leisure === 'garden') return 'Природа';
+                        if (activity.tags.leisure === 'playground') return 'Развлечения';
+                        if (activity.tags.leisure === 'sports_centre') return 'Спорт';
+                        if (activity.tags.leisure === 'swimming_pool') return 'Спорт';
+                    }
+                    if (activity.tags.natural) {
+                        if (activity.tags.natural === 'beach') return 'Природа';
+                        if (activity.tags.natural === 'peak') return 'Природа';
+                        if (activity.tags.natural === 'waterfall') return 'Природа';
+                    }
+                    if (activity.tags.sport) return 'Спорт';
+                    if (activity.tags.shop) return 'Шопинг';
+                    if (activity.tags.historic) return 'Достопримечательности';
+                }
+                return 'Другое';
+            }
+
+            function getCategoryIcon(category) {
+                const icons = {
+                    'Культура': 'fa-landmark',
+                    'Еда и напитки': 'fa-utensils',
+                    'Природа': 'fa-tree',
+                    'Спорт': 'fa-futbol',
+                    'Развлечения': 'fa-film',
+                    'Шопинг': 'fa-shopping-bag',
+                    'Достопримечательности': 'fa-camera',
+                    'Другое': 'fa-map-marker-alt'
+                };
+                return icons[category] || 'fa-calendar';
+            }
+
+            function getCategoryColor(category) {
+                const colors = {
+                    'Культура': '#9C27B0',
+                    'Еда и напитки': '#FF5722',
+                    'Природа': '#4CAF50',
+                    'Спорт': '#2196F3',
+                    'Развлечения': '#E91E63',
+                    'Шопинг': '#FF9800',
+                    'Достопримечательности': '#673AB7',
+                    'Другое': '#607D8B'
+                };
+                return colors[category] || '#0379D9';
+            }
+
+            function loadPlannedActivitiesByCategories() {
+                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+                const container = document.getElementById('plannedActivities');
+
+                if (plannedActivities.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-plus fa-3x mb-3" style="color: #0379D9;"></i>
+                            <h5>У вас пока нет запланированных активностей</h5>
+                            <p class="small">Найдите активности на карте и добавляйте их в план</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const activitiesByCategory = {};
+                plannedActivities.forEach(activity => {
+                    const category = getPlannedActivityCategory(activity);
+                    if (!activitiesByCategory[category]) activitiesByCategory[category] = [];
+                    activitiesByCategory[category].push(activity);
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const sortedCategories = Object.keys(activitiesByCategory).sort((a, b) => 
+                    activitiesByCategory[b].length - activitiesByCategory[a].length
+                );
 
-                const data = await response.json();
-                console.log('Получены данные от альтернативного сервера:', data);
+                let summaryHTML = `
+                    <div class="category-summary">
+                        ${sortedCategories.map(category => `
+                            <div class="summary-item">
+                                <i class="fas ${getCategoryIcon(category)}"></i>
+                                <div class="value">${activitiesByCategory[category].length}</div>
+                                <div class="label">${category}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
 
-                if (!data.elements || data.elements.length === 0) {
-                    console.warn('Нет элементов в ответе');
-                    processActivitiesData([], lat, lng);
-                    showNoActivitiesResults();
-                } else {
-                    processActivitiesData(data.elements, lat, lng);
-                }
+                let tabsHTML = `
+                    <div class="category-tabs">
+                        <div class="category-tab active" onclick="filterActivitiesByCategory('all')">
+                            Все <span class="badge">${plannedActivities.length}</span>
+                        </div>
+                        ${sortedCategories.map(category => `
+                            <div class="category-tab" onclick="filterActivitiesByCategory('${category}')">
+                                <i class="fas ${getCategoryIcon(category)} me-1"></i>
+                                ${category} <span class="badge">${activitiesByCategory[category].length}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
 
-            } catch (altError) {
-                console.error('Ошибка альтернативного сервера:', altError);
-                showActivitiesError('Сервис временно недоступен. Попробуйте позже или уменьшите радиус поиска.');
+                let categoriesHTML = '<div class="activities-categories">';
+                sortedCategories.forEach(category => {
+                    const activities = activitiesByCategory[category];
+                    const categoryColor = getCategoryColor(category);
+
+                    categoriesHTML += `
+                        <div class="category-section" data-category="${category}">
+                            <div class="category-header">
+                                <div class="category-icon" style="background-color: ${categoryColor};">
+                                    <i class="fas ${getCategoryIcon(category)}"></i>
+                                </div>
+                                <h6 class="category-title">${category}</h6>
+                                <span class="category-count">${activities.length}</span>
+                            </div>
+                            <div class="category-activities">
+                    `;
+
+                    activities.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+
+                    activities.forEach(activity => {
+                        const activityDate = new Date(activity.date);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        activityDate.setHours(0, 0, 0, 0);
+
+                        const isPast = activityDate < today;
+                        const isToday = activityDate.getTime() === today.getTime();
+
+                        categoriesHTML += `
+                            <div class="activity-card ${isPast ? 'text-muted opacity-50' : ''} ${isToday ? 'text-primary fw-bold' : ''}" data-activity-id="${activity.id}">
+                                <div class="activity-card-header">
+                                    <h6 class="activity-card-title">${activity.name}</h6>
+                                    <span class="activity-card-category">${category}</span>
+                                </div>
+                                <div class="activity-card-datetime">
+                                    <span><i class="fas fa-calendar"></i> ${formatDate(activity.date)}</span>
+                                    <span><i class="fas fa-clock"></i> ${activity.time}</span>
+                                    ${isToday ? '<span class="badge bg-primary">Сегодня</span>' : ''}
+                                    ${isPast ? '<span class="badge bg-secondary">Прошло</span>' : ''}
+                                </div>
+                                ${activity.description ? `
+                                    <div class="activity-card-description">
+                                        <i class="fas fa-align-left me-2"></i>${activity.description}
+                                    </div>
+                                ` : ''}
+                                <div class="activity-card-actions">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editPlannedActivity(${activity.id})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmation(${activity.id}, '${activity.name.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    categoriesHTML += '</div></div>';
+                });
+                categoriesHTML += '</div>';
+
+                container.innerHTML = `${summaryHTML}${tabsHTML}${categoriesHTML}`;
             }
-        }
 
-        // Обработка данных активностей из OSM
-                function processActivitiesData(elements, centerLat, centerLng) {
-            // Очищаем предыдущие маркеры
-            clearActivityMarkers();
-            currentActivities = [];
+            function formatDate(dateString) {
+                const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                return new Date(dateString).toLocaleDateString('ru-RU', options);
+            }
 
-            const activities = [];
-
-            // Обрабатываем элементы более эффективно
-            elements.forEach(element => {
-                // Быстрая проверка наличия необходимых данных
-                if (!element.tags || (!element.tags.name && !element.tags.tourism && !element.tags.amenity && !element.tags.leisure)) {
-                    return; // пропускаем элементы без полезных данных
+            function filterActivitiesByCategory(category) {
+                document.querySelectorAll('.category-tab').forEach(tab => tab.classList.remove('active'));
+                const tabs = document.querySelectorAll('.category-tab');
+                for (let tab of tabs) {
+                    if (category === 'all' && tab.textContent.includes('Все')) {
+                        tab.classList.add('active');
+                        break;
+                    } else if (tab.textContent.includes(category)) {
+                        tab.classList.add('active');
+                        break;
+                    }
                 }
+
+                document.querySelectorAll('.category-section').forEach(section => {
+                    section.style.display = category === 'all' || section.dataset.category === category ? 'block' : 'none';
+                });
+            }
+
+            function editPlannedActivity(activityId) {
+                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+                const activity = plannedActivities.find(a => a.id === activityId);
+                if (activity) {
+                    document.getElementById('activityName').value = activity.name;
+                    document.getElementById('activityDate').value = activity.date;
+                    document.getElementById('activityTime').value = activity.time;
+                    document.getElementById('activityDescription').value = activity.description || '';
+                    document.getElementById('addActivityForm').dataset.activityId = activityId;
+                    document.getElementById('addActivityForm').dataset.editMode = 'true';
+                    new bootstrap.Modal(document.getElementById('addActivityModal')).show();
+                }
+            }
+
+            // Инициализация карты для активностей
+            function initializeActivitiesMap() {
+                activitiesMap = L.map('activitiesMap').setView([43.5855, 39.7231], 12); // Сочи по умолчанию
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(activitiesMap);
+
+                activitiesGeocoder = L.Control.geocoder({
+                    defaultMarkGeocode: false,
+                    placeholder: 'Поиск места...',
+                    errorMessage: 'Ничего не найдено'
+                }).on('markgeocode', function(e) {
+                    const center = e.geocode.center;
+                    activitiesMap.setView(center, 13);
+                    document.getElementById('activitiesDestination').value = e.geocode.name;
+                    setTimeout(() => searchActivitiesFromMap(center.lat, center.lng), 500);
+                }).addTo(activitiesMap);
+
+                console.log('Карта активностей инициализирована');
+            }
+
+                function setupActivitiesEventListeners() {
+        const form = document.getElementById('activitiesSearchForm');
+        const searchButton = document.getElementById('searchActivitiesButton');
+        const useMyLocationBtn = document.getElementById('useMyLocationForActivities');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleActivitiesSearch();
+        });
+
+        searchButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleActivitiesSearch();
+        });
+
+        useMyLocationBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        // Показываем загрузку на кнопке
+                        const originalHTML = useMyLocationBtn.innerHTML;
+                        useMyLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        useMyLocationBtn.disabled = true;
+
+                        try {
+                            // Получаем название города по координатам
+                            const cityName = await reverseGeocode(lat, lng);
+
+                            // Подставляем название города в поле ввода
+                            document.getElementById('activitiesDestination').value = cityName;
+
+                            // Центрируем карту
+                            activitiesMap.setView([lat, lng], 13);
+
+                            // Ищем активности
+                            searchActivitiesFromMap(lat, lng);
+                        } catch (error) {
+                            console.error('Ошибка при определении города:', error);
+                            alert('Не удалось определить ваш город');
+                        } finally {
+                            // Восстанавливаем кнопку
+                            useMyLocationBtn.innerHTML = originalHTML;
+                            useMyLocationBtn.disabled = false;
+                        }
+                    },
+                    error => {
+                        alert('Не удалось получить местоположение: ' + error.message);
+                    }
+                );
+            } else {
+                alert('Геолокация не поддерживается вашим браузером');
+            }
+        });
+    }
+
+        // Функция обратного геокодирования (получение названия города по координатам)
+    async function reverseGeocode(lat, lng) {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=10`
+            );
+
+            if (!response.ok) throw new Error('Ошибка обратного геокодирования');
+
+            const data = await response.json();
+
+            // Пытаемся получить название города
+            if (data.address) {
+                // Приоритет: city > town > village > municipality
+                const city = data.address.city || 
+                            data.address.town || 
+                            data.address.village || 
+                            data.address.municipality ||
+                            data.address.county ||
+                            'Неизвестный город';
+                return city;
+            }
+
+            return 'Неизвестный город';
+        } catch (error) {
+            console.error('Ошибка обратного геокодирования:', error);
+            throw error;
+        }
+    }
+
+            async function handleActivitiesSearch() {
+                const destination = document.getElementById('activitiesDestination').value.trim();
+                const searchButton = document.getElementById('searchActivitiesButton');
+
+                if (!destination) {
+                    alert('Пожалуйста, введите место для поиска');
+                    return;
+                }
+
+                const originalHTML = searchButton.innerHTML;
+                searchButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Поиск...';
+                searchButton.disabled = true;
 
                 try {
-                    const activity = {
-                        id: element.id || Date.now() + Math.random(),
-                        type: element.type || 'node',
-                        name: element.tags.name || getDefaultName(element.tags),
-                        lat: element.lat || (element.center ? element.center.lat : centerLat + (Math.random() * 0.01 - 0.005)),
-                        lon: element.lon || (element.center ? element.center.lon : centerLng + (Math.random() * 0.01 - 0.005)),
-                        tags: element.tags,
-                        distance: calculateDistance(centerLat, centerLng,
-                            element.lat || centerLat,
-                            element.lon || centerLng),
-                        category: getActivityCategory(element.tags)
-                    };
-
-                    // Только основные поля для ускорения обработки
-                    activity.address = element.tags['addr:street'] ?
-                        `${element.tags['addr:street']} ${element.tags['addr:housenumber'] || ''}`.trim() :
-                        'Адрес не указан';
-
-                    activities.push(activity);
-                } catch (e) {
-                    console.warn('Ошибка обработки элемента:', e, element);
+                    const location = await geocodeForActivities(destination);
+                    if (!location) throw new Error('Место не найдено');
+                    activitiesMap.setView([location.lat, location.lon], 13);
+                    await searchActivitiesFromMap(location.lat, location.lon);
+                } catch (error) {
+                    console.error('Ошибка поиска активностей:', error);
+                    alert('Ошибка при поиске места: ' + error.message);
+                } finally {
+                    searchButton.innerHTML = originalHTML;
+                    searchButton.disabled = false;
                 }
-            });
-
-            // Ограничиваем количество отображаемых элементов для производительности
-            const displayLimit = 30;
-            const limitedActivities = activities.slice(0, displayLimit);
-
-            // Сортируем по расстоянию
-            limitedActivities.sort((a, b) => a.distance - b.distance);
-
-            // Сохраняем и отображаем
-            currentActivities = limitedActivities;
-            displayActivitiesList(limitedActivities);
-            addActivityMarkersToMap(limitedActivities);
-
-            // Обновляем счетчик
-            document.getElementById('activitiesCount').textContent = limitedActivities.length;
-
-            if (limitedActivities.length === 0) {
-                showNoActivitiesResults();
-            }
-        }
-
-        // Получение категории активности
-        function getActivityCategory(tags) {
-            if (tags.tourism) {
-                if (tags.tourism === 'attraction') return 'Достопримечательность';
-                if (tags.tourism === 'museum') return 'Музей';
-                if (tags.tourism === 'gallery') return 'Галерея';
-                if (tags.tourism === 'zoo') return 'Зоопарк';
-                if (tags.tourism === 'aquarium') return 'Аквариум';
-                if (tags.tourism === 'theme_park') return 'Парк развлечений';
-                return 'Туристическое место';
-            }
-            if (tags.amenity) {
-                if (tags.amenity === 'restaurant') return 'Ресторан';
-                if (tags.amenity === 'cafe') return 'Кафе';
-                if (tags.amenity === 'bar' || tags.amenity === 'pub') return 'Бар';
-                if (tags.amenity === 'fast_food') return 'Фастфуд';
-                if (tags.amenity === 'theatre') return 'Театр';
-                if (tags.amenity === 'cinema') return 'Кинотеатр';
-                return 'Удобство';
-            }
-            if (tags.leisure) {
-                if (tags.leisure === 'park') return 'Парк';
-                if (tags.leisure === 'garden') return 'Сад';
-                if (tags.leisure === 'playground') return 'Детская площадка';
-                if (tags.leisure === 'sports_centre') return 'Спортцентр';
-                if (tags.leisure === 'swimming_pool') return 'Бассейн';
-                return 'Развлечение';
-            }
-            if (tags.historic) return 'Историческое место';
-            if (tags.natural) {
-                if (tags.natural === 'beach') return 'Пляж';
-                if (tags.natural === 'peak') return 'Вершина';
-                if (tags.natural === 'waterfall') return 'Водопад';
-                return 'Природный объект';
-            }
-            if (tags.sport) return 'Спорт';
-            if (tags.shop) return 'Магазин';
-            return 'Другое';
-        }
-
-        // Получение имени по умолчанию
-        function getDefaultName(tags) {
-            if (tags.tourism === 'attraction') return 'Достопримечательность';
-            if (tags.amenity === 'restaurant') return 'Ресторан';
-            if (tags.leisure === 'park') return 'Парк';
-            if (tags.natural === 'beach') return 'Пляж';
-            return 'Место';
-        }
-
-        // Отображение списка активностей
-        function displayActivitiesList(activities) {
-            const container = document.getElementById('activitiesList');
-
-            if (activities.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-map-marker-alt fa-2x mb-3"></i>
-                        <p>Активностей не найдено в этой области</p>
-                    </div>
-                `;
-                return;
             }
 
-            const activitiesHTML = activities.map((activity, index) => `
-                <div class="activity-item"
-                     data-activity-id="${activity.id}"
-                     onclick="focusActivity(${index})"
-                     style="cursor: pointer;">
-                    <div class="d-flex align-items-start">
-                        <div class="activity-icon">
-                            <i class="fas ${getActivityIcon(activity.category)}"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1">${activity.name}</h6>
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-tag me-1"></i>${activity.category}
-                            </p>
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-map-marker-alt me-1"></i>${activity.address}
-                            </p>
-                            <p class="small text-muted mb-0">
-                                <i class="fas fa-ruler me-1"></i>${activity.distance.toFixed(1)} км
-                            </p>
-                        </div>
-                    </div>
-                    ${activity.opening_hours ? `
-                        <div class="mt-2">
-                            <span class="badge bg-light text-dark activity-badge">
-                                <i class="fas fa-clock me-1"></i>${activity.opening_hours}
-                            </span>
-                        </div>
-                    ` : ''}
-                    <div class="mt-2">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="addToPlanned(event, ${index})">
-                            <i class="fas fa-plus me-1"></i>В план
-                        </button>
-                        ${activity.website ? `
-                            <a href="${activity.website}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        ` : ''}
-                    </div>
-                </div>
-            `).join('');
+            async function geocodeForActivities(placeName) {
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(placeName)}&limit=1&accept-language=ru`
+                    );
+                    if (!response.ok) throw new Error('Ошибка геокодирования');
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        return {
+                            lat: parseFloat(data[0].lat),
+                            lon: parseFloat(data[0].lon),
+                            display_name: data[0].display_name
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Ошибка геокодирования:', error);
+                    return null;
+                }
+            }
 
-            container.innerHTML = activitiesHTML;
-        }
+            // ОРИГИНАЛЬНАЯ РАБОЧАЯ ФУНКЦИЯ ПОИСКА
+            async function searchActivitiesFromMap(lat, lng) {
+                const radius = document.getElementById('activitiesRadius').value * 1000;
+                const activityType = document.getElementById('activityType').value;
 
-        // Получение иконки для категории
-        function getActivityIcon(category) {
-            const icons = {
-                'Достопримечательность': 'fa-landmark',
-                'Музей': 'fa-university',
-                'Галерея': 'fa-palette',
-                'Зоопарк': 'fa-paw',
-                'Аквариум': 'fa-fish',
-                'Парк развлечений': 'fa-ferris-wheel',
-                'Ресторан': 'fa-utensils',
-                'Кафе': 'fa-coffee',
-                'Бар': 'fa-beer',
-                'Фастфуд': 'fa-hamburger',
-                'Театр': 'fa-theater-masks',
-                'Кинотеатр': 'fa-film',
-                'Парк': 'fa-tree',
-                'Сад': 'fa-seedling',
-                'Детская площадка': 'fa-child',
-                'Спортцентр': 'fa-dumbbell',
-                'Бассейн': 'fa-swimming-pool',
-                'Историческое место': 'fa-monument',
-                'Пляж': 'fa-umbrella-beach',
-                'Вершина': 'fa-mountain',
-                'Водопад': 'fa-water',
-                'Природный объект': 'fa-leaf',
-                'Спорт': 'fa-futbol',
-                'Магазин': 'fa-shopping-bag',
-                'Туристическое место': 'fa-camera',
-                'Удобство': 'fa-concierge-bell',
-                'Развлечение': 'fa-gamepad',
-                'Другое': 'fa-map-marker-alt'
-            };
-            return icons[category] || 'fa-map-marker-alt';
-        }
+                showActivitiesLoading();
 
-        // Добавление маркеров активностей на карту
-        function addActivityMarkersToMap(activities) {
-            activities.forEach((activity, index) => {
-                const icon = L.divIcon({
-                    html: `<div style="
-                        background-color: ${getActivityColor(activity.category)};
-                        width: 28px;
-                        height: 28px;
-                        border-radius: 50%;
-                        border: 2px solid white;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: white;
-                        font-size: 12px;
-                    ">
-                        <i class="fas ${getActivityIcon(activity.category)}"></i>
-                    </div>`,
-                    className: 'activity-marker',
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 14]
-                });
+                try {
+                    let query = '';
 
-                const marker = L.marker([activity.lat, activity.lon], { icon })
-                    .addTo(activitiesMap)
-                    .bindPopup(createActivityPopupContent(activity))
-                    .on('click', () => {
-                        focusActivity(index);
+                    switch(activityType) {
+                        case 'tourism':
+                            query = `[out:json][timeout:10];
+                                    node["tourism"="attraction"](around:${radius},${lat},${lng});
+                                    node["tourism"="museum"](around:${radius},${lat},${lng});
+                                    out body;`;
+                            break;
+                        case 'amenity':
+                            query = `[out:json][timeout:10];
+                                    node["amenity"="restaurant"](around:${radius},${lat},${lng});
+                                    node["amenity"="cafe"](around:${radius},${lat},${lng});
+                                    out body;`;
+                            break;
+                        case 'leisure':
+                            query = `[out:json][timeout:10];
+                                    node["leisure"="park"](around:${radius},${lat},${lng});
+                                    node["leisure"="garden"](around:${radius},${lat},${lng});
+                                    out body;`;
+                            break;
+                        case 'sport':
+                            query = `[out:json][timeout:10];
+                                    node["leisure"="sports_centre"](around:${radius},${lat},${lng});
+                                    node["sport"](around:${radius},${lat},${lng});
+                                    out body;`;
+                            break;
+                        case 'shop':
+                            query = `[out:json][timeout:10];
+                                    node["shop"](around:${radius},${lat},${lng});
+                                    out body;`;
+                            break;
+                        default:
+                            query = `[out:json][timeout:10];
+                                    (
+                                        node["tourism"](around:${radius},${lat},${lng});
+                                        node["amenity"="restaurant"](around:${radius},${lat},${lng});
+                                        node["amenity"="cafe"](around:${radius},${lat},${lng});
+                                    );
+                                    out body;`;
+                    }
+
+                    console.log('Выполняем Overpass запрос');
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                    const response = await fetch('https://overpass-api.de/api/interpreter', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `data=${encodeURIComponent(query)}`,
+                        signal: controller.signal
                     });
 
-                activityMarkers.push(marker);
-            });
-        }
+                    clearTimeout(timeoutId);
 
-        // Получение цвета для категории
-        function getActivityColor(category) {
-            const colors = {
-                'Достопримечательность': '#0379D9',
-                'Музей': '#28a745',
-                'Галерея': '#17a2b8',
-                'Зоопарк': '#ffc107',
-                'Аквариум': '#20c997',
-                'Парк развлечений': '#fd7e14',
-                'Ресторан': '#dc3545',
-                'Кафе': '#e83e8c',
-                'Бар': '#6f42c1',
-                'Фастфуд': '#343a40',
-                'Театр': '#007bff',
-                'Кинотеатр': '#6610f2',
-                'Парк': '#198754',
-                'Сад': '#20c997',
-                'Детская площадка': '#fd7e14',
-                'Спортцентр': '#dc3545',
-                'Бассейн': '#0dcaf0',
-                'Историческое место': '#795548',
-                'Пляж': '#ff9800',
-                'Вершина': '#607d8b',
-                'Водопад': '#2196f3',
-                'Природный объект': '#4caf50',
-                'Спорт': '#f44336',
-                'Магазин': '#9c27b0',
-                'Туристическое место': '#03a9f4',
-                'Удобство': '#ff5722',
-                'Развлечение': '#e91e63',
-                'Другое': '#6c757d'
-            };
-            return colors[category] || '#0379D9';
-        }
+                    if (!response.ok) {
+                        console.error('Статус ответа Overpass:', response.status);
+                        console.log('Пробуем альтернативный сервер...');
+                        await tryAlternativeOverpassServer(query, lat, lng);
+                        return;
+                    }
 
-        // Создание содержимого popup для активности
-        function createActivityPopupContent(activity) {
-            return `
-                <div style="font-family: 'Nunito', sans-serif; min-width: 200px;">
-                    <h6 class="mb-1">${activity.name}</h6>
-                    <p class="small mb-1"><strong>Категория:</strong> ${activity.category}</p>
-                    <p class="small mb-1"><strong>Адрес:</strong> ${activity.address}</p>
-                    ${activity.opening_hours ? `<p class="small mb-1"><strong>Часы работы:</strong> ${activity.opening_hours}</p>` : ''}
-                    ${activity.phone ? `<p class="small mb-1"><strong>Телефон:</strong> ${activity.phone}</p>` : ''}
-                    ${activity.description ? `<p class="small mb-2"><strong>Описание:</strong> ${activity.description}</p>` : ''}
-                    <p class="small mb-2"><strong>Расстояние:</strong> ${activity.distance.toFixed(1)} км</p>
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-sm btn-primary" onclick="addToPlannedFromPopup('${activity.id}')">
-                            <i class="fas fa-plus me-1"></i>Добавить в план
-                        </button>
-                        ${activity.website ? `<a href="${activity.website}" target="_blank" class="btn btn-sm btn-outline-primary">Открыть сайт</a>` : ''}
-                    </div>
-                    <div class="mt-2 text-center">
-                        <small class="text-muted">Данные из OpenStreetMap</small>
-                    </div>
-                </div>
-            `;
-        }
+                    const data = await response.json();
+                    console.log('Получены данные от Overpass:', data);
 
-        // Фокус на активности
-        function focusActivity(index) {
-            if (!currentActivities[index]) return;
+                    if (!data.elements || data.elements.length === 0) {
+                        console.warn('Нет элементов в ответе');
+                        processActivitiesData([], lat, lng);
+                        showNoActivitiesResults();
+                    } else {
+                        processActivitiesData(data.elements, lat, lng);
+                    }
 
-            const activity = currentActivities[index];
-
-            // Центрируем карту на активности
-            activitiesMap.setView([activity.lat, activity.lon], 16);
-
-            // Открываем popup
-            activityMarkers[index].openPopup();
-
-            // Выделяем в списке
-            document.querySelectorAll('.activity-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            const activityElement = document.querySelector(`[data-activity-id="${activity.id}"]`);
-            if (activityElement) {
-                activityElement.classList.add('active');
-                activityElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        // Добавление активности в запланированные
-        function addToPlanned(event, index) {
-            event.stopPropagation();
-
-            if (!currentActivities[index]) return;
-
-            const activity = currentActivities[index];
-
-            // Создаем модальное окно для добавления в план
-            const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
-            document.getElementById('activityName').value = activity.name;
-            document.getElementById('activityDate').value = new Date().toISOString().split('T')[0];
-
-            // Сохраняем ID активности для дальнейшего использования
-            document.getElementById('addActivityForm').dataset.activityId = activity.id;
-
-            modal.show();
-        }
-
-        function addToPlannedFromPopup(activityId) {
-            const activity = currentActivities.find(a => a.id == activityId);
-            if (!activity) return;
-
-            const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
-            document.getElementById('activityName').value = activity.name;
-            document.getElementById('activityDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('addActivityForm').dataset.activityId = activityId;
-
-            modal.show();
-        }
-
-        // Сохранение запланированной активности
-        function savePlannedActivity() {
-            const name = document.getElementById('activityName').value;
-            const date = document.getElementById('activityDate').value;
-            const time = document.getElementById('activityTime').value;
-            const description = document.getElementById('activityDescription').value;
-            const activityId = document.getElementById('addActivityForm').dataset.activityId;
-
-            if (!name || !date || !time) {
-                alert('Пожалуйста, заполните обязательные поля');
-                return;
+                } catch (error) {
+                    console.error('Ошибка поиска активностей:', error);
+                    if (error.name === 'AbortError') {
+                        showActivitiesError('Превышено время ожидания ответа от сервера. Уменьшите радиус поиска и попробуйте снова.');
+                    } else {
+                        showActivitiesError('Не удалось загрузить данные. Попробуйте изменить параметры поиска или попробуйте позже.');
+                    }
+                }
             }
 
-            // Сохраняем в localStorage (в реальном приложении это должно быть на сервере)
-            const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+            async function tryAlternativeOverpassServer(query, lat, lng) {
+                try {
+                    console.log('Пробуем альтернативный сервер Overpass...');
+                    const response = await fetch('https://overpass.kumi.systems/api/interpreter', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `data=${encodeURIComponent(query)}`
+                    });
 
-            const newActivity = {
-                id: Date.now(),
-                activityId: activityId,
-                name: name,
-                date: date,
-                time: time,
-                description: description,
-                createdAt: new Date().toISOString()
-            };
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            plannedActivities.push(newActivity);
-            localStorage.setItem('plannedActivities', JSON.stringify(plannedActivities));
+                    const data = await response.json();
+                    console.log('Получены данные от альтернативного сервера:', data);
 
-            // Закрываем модальное окно
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addActivityModal'));
-            modal.hide();
+                    if (!data.elements || data.elements.length === 0) {
+                        processActivitiesData([], lat, lng);
+                        showNoActivitiesResults();
+                    } else {
+                        processActivitiesData(data.elements, lat, lng);
+                    }
+                } catch (altError) {
+                    console.error('Ошибка альтернативного сервера:', altError);
+                    showActivitiesError('Сервис временно недоступен. Попробуйте позже или уменьшите радиус поиска.');
+                }
+            }
 
-            // Обновляем список запланированных активностей
-            loadPlannedActivities();
+            function processActivitiesData(elements, centerLat, centerLng) {
+                clearActivityMarkers();
+                currentActivities = [];
+                const activities = [];
 
-            // Очищаем форму
-            document.getElementById('addActivityForm').reset();
-            delete document.getElementById('addActivityForm').dataset.activityId;
-        }
+                elements.forEach(element => {
+                    if (!element.tags || (!element.tags.name && !element.tags.tourism && !element.tags.amenity && !element.tags.leisure)) {
+                        return;
+                    }
 
-        // Загрузка запланированных активностей
-        function loadPlannedActivities() {
-            const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
-            const container = document.getElementById('plannedActivities');
+                    try {
+                        const activity = {
+                            id: element.id || Date.now() + Math.random(),
+                            type: element.type || 'node',
+                            name: element.tags.name || getDefaultName(element.tags),
+                            lat: element.lat || (element.center ? element.center.lat : centerLat),
+                            lon: element.lon || (element.center ? element.center.lon : centerLng),
+                            tags: element.tags,
+                            distance: calculateDistance(centerLat, centerLng,
+                                element.lat || centerLat,
+                                element.lon || centerLng),
+                            category: getActivityCategory(element.tags)
+                        };
 
-            if (plannedActivities.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-muted py-3">
-                        <i class="fas fa-calendar-plus fa-2x mb-2"></i>
-                        <p>У вас пока нет запланированных активностей</p>
-                        <button class="btn btn-outline-primary btn-sm" onclick="showAddActivityModal()">
-                            <i class="fas fa-plus me-1"></i>Добавить активность
+                        activity.address = element.tags['addr:street'] ?
+                            `${element.tags['addr:street']} ${element.tags['addr:housenumber'] || ''}`.trim() :
+                            'Адрес не указан';
+
+                        activities.push(activity);
+                    } catch (e) {
+                        console.warn('Ошибка обработки элемента:', e);
+                    }
+                });
+
+                const displayLimit = 30;
+                const limitedActivities = activities.slice(0, displayLimit);
+                limitedActivities.sort((a, b) => a.distance - b.distance);
+
+                currentActivities = limitedActivities;
+                displayActivitiesList(limitedActivities);
+                addActivityMarkersToMap(limitedActivities);
+                document.getElementById('activitiesCount').textContent = limitedActivities.length;
+
+                if (limitedActivities.length === 0) showNoActivitiesResults();
+            }
+
+            function getActivityCategory(tags) {
+                if (tags.tourism) {
+                    if (tags.tourism === 'attraction') return 'Достопримечательность';
+                    if (tags.tourism === 'museum') return 'Музей';
+                    if (tags.tourism === 'gallery') return 'Галерея';
+                    if (tags.tourism === 'zoo') return 'Зоопарк';
+                    if (tags.tourism === 'aquarium') return 'Аквариум';
+                    if (tags.tourism === 'theme_park') return 'Парк развлечений';
+                    return 'Туристическое место';
+                }
+                if (tags.amenity) {
+                    if (tags.amenity === 'restaurant') return 'Ресторан';
+                    if (tags.amenity === 'cafe') return 'Кафе';
+                    if (tags.amenity === 'bar' || tags.amenity === 'pub') return 'Бар';
+                    if (tags.amenity === 'fast_food') return 'Фастфуд';
+                    if (tags.amenity === 'theatre') return 'Театр';
+                    if (tags.amenity === 'cinema') return 'Кинотеатр';
+                    return 'Удобство';
+                }
+                if (tags.leisure) {
+                    if (tags.leisure === 'park') return 'Парк';
+                    if (tags.leisure === 'garden') return 'Сад';
+                    if (tags.leisure === 'playground') return 'Детская площадка';
+                    if (tags.leisure === 'sports_centre') return 'Спортцентр';
+                    if (tags.leisure === 'swimming_pool') return 'Бассейн';
+                    return 'Развлечение';
+                }
+                if (tags.historic) return 'Историческое место';
+                if (tags.natural) {
+                    if (tags.natural === 'beach') return 'Пляж';
+                    if (tags.natural === 'peak') return 'Вершина';
+                    if (tags.natural === 'waterfall') return 'Водопад';
+                    return 'Природный объект';
+                }
+                if (tags.sport) return 'Спорт';
+                if (tags.shop) return 'Магазин';
+                return 'Другое';
+            }
+
+            function getDefaultName(tags) {
+                if (tags.tourism === 'attraction') return 'Достопримечательность';
+                if (tags.amenity === 'restaurant') return 'Ресторан';
+                if (tags.leisure === 'park') return 'Парк';
+                if (tags.natural === 'beach') return 'Пляж';
+                return 'Место';
+            }
+
+            function displayActivitiesList(activities) {
+                const container = document.getElementById('activitiesList');
+                if (activities.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-map-marker-alt fa-2x mb-3"></i><p>Активностей не найдено в этой области</p></div>';
+                    return;
+                }
+
+                container.innerHTML = activities.map((activity, index) => `
+                    <div class="activity-item" data-activity-id="${activity.id}" onclick="focusActivity(${index})" style="cursor: pointer;">
+                        <div class="d-flex align-items-start">
+                            <div class="activity-icon"><i class="fas ${getActivityIcon(activity.category)}"></i></div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${activity.name}</h6>
+                                <p class="small text-muted mb-1"><i class="fas fa-tag me-1"></i>${activity.category}</p>
+                                <p class="small text-muted mb-1"><i class="fas fa-map-marker-alt me-1"></i>${activity.address}</p>
+                                <p class="small text-muted mb-0"><i class="fas fa-ruler me-1"></i>${activity.distance.toFixed(1)} км</p>
+                            </div>
+                        </div>
+                        ${activity.opening_hours ? `<div class="mt-2"><span class="badge bg-light text-dark activity-badge"><i class="fas fa-clock me-1"></i>${activity.opening_hours}</span></div>` : ''}
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="addToPlanned(event, ${index})"><i class="fas fa-plus me-1"></i>В план</button>
+                            ${activity.website ? `<a href="${activity.website}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function getActivityIcon(category) {
+                const icons = {
+                    'Достопримечательность': 'fa-landmark', 'Музей': 'fa-university', 'Галерея': 'fa-palette',
+                    'Зоопарк': 'fa-paw', 'Аквариум': 'fa-fish', 'Парк развлечений': 'fa-ferris-wheel',
+                    'Ресторан': 'fa-utensils', 'Кафе': 'fa-coffee', 'Бар': 'fa-beer', 'Фастфуд': 'fa-hamburger',
+                    'Театр': 'fa-theater-masks', 'Кинотеатр': 'fa-film', 'Парк': 'fa-tree', 'Сад': 'fa-seedling',
+                    'Детская площадка': 'fa-child', 'Спортцентр': 'fa-dumbbell', 'Бассейн': 'fa-swimming-pool',
+                    'Историческое место': 'fa-monument', 'Пляж': 'fa-umbrella-beach', 'Вершина': 'fa-mountain',
+                    'Водопад': 'fa-water', 'Природный объект': 'fa-leaf', 'Спорт': 'fa-futbol',
+                    'Магазин': 'fa-shopping-bag', 'Туристическое место': 'fa-camera', 'Удобство': 'fa-concierge-bell',
+                    'Развлечение': 'fa-gamepad', 'Другое': 'fa-map-marker-alt'
+                };
+                return icons[category] || 'fa-map-marker-alt';
+            }
+
+            function addActivityMarkersToMap(activities) {
+                activities.forEach((activity, index) => {
+                    const icon = L.divIcon({
+                        html: `<div style="background-color: ${getActivityColor(activity.category)}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;"><i class="fas ${getActivityIcon(activity.category)}"></i></div>`,
+                        className: 'activity-marker',
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    });
+
+                    const marker = L.marker([activity.lat, activity.lon], { icon })
+                        .addTo(activitiesMap)
+                        .bindPopup(createActivityPopupContent(activity))
+                        .on('click', () => focusActivity(index));
+
+                    activityMarkers.push(marker);
+                });
+            }
+
+            function getActivityColor(category) {
+                const colors = {
+                    'Достопримечательность': '#0379D9', 'Музей': '#28a745', 'Галерея': '#17a2b8',
+                    'Зоопарк': '#ffc107', 'Аквариум': '#20c997', 'Парк развлечений': '#fd7e14',
+                    'Ресторан': '#dc3545', 'Кафе': '#e83e8c', 'Бар': '#6f42c1', 'Фастфуд': '#343a40',
+                    'Театр': '#007bff', 'Кинотеатр': '#6610f2', 'Парк': '#198754', 'Сад': '#20c997',
+                    'Детская площадка': '#fd7e14', 'Спортцентр': '#dc3545', 'Бассейн': '#0dcaf0',
+                    'Историческое место': '#795548', 'Пляж': '#ff9800', 'Вершина': '#607d8b',
+                    'Водопад': '#2196f3', 'Природный объект': '#4caf50', 'Спорт': '#f44336',
+                    'Магазин': '#9c27b0', 'Туристическое место': '#03a9f4', 'Удобство': '#ff5722',
+                    'Развлечение': '#e91e63', 'Другое': '#6c757d'
+                };
+                return colors[category] || '#0379D9';
+            }
+
+            function createActivityPopupContent(activity) {
+                return `
+                    <div style="font-family: 'Nunito', sans-serif; min-width: 200px;">
+                        <h6 class="mb-1">${activity.name}</h6>
+                        <p class="small mb-1"><strong>Категория:</strong> ${activity.category}</p>
+                        <p class="small mb-1"><strong>Адрес:</strong> ${activity.address}</p>
+                        ${activity.opening_hours ? `<p class="small mb-1"><strong>Часы работы:</strong> ${activity.opening_hours}</p>` : ''}
+                        ${activity.phone ? `<p class="small mb-1"><strong>Телефон:</strong> ${activity.phone}</p>` : ''}
+                        ${activity.description ? `<p class="small mb-2"><strong>Описание:</strong> ${activity.description}</p>` : ''}
+                        <p class="small mb-2"><strong>Расстояние:</strong> ${activity.distance.toFixed(1)} км</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-primary" onclick="addToPlannedFromPopup('${activity.id}')"><i class="fas fa-plus me-1"></i>Добавить в план</button>
+                            ${activity.website ? `<a href="${activity.website}" target="_blank" class="btn btn-sm btn-outline-primary">Открыть сайт</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function focusActivity(index) {
+                if (!currentActivities[index]) return;
+                const activity = currentActivities[index];
+                activitiesMap.setView([activity.lat, activity.lon], 16);
+                activityMarkers[index].openPopup();
+                document.querySelectorAll('.activity-item').forEach(item => item.classList.remove('active'));
+                const activityElement = document.querySelector(`[data-activity-id="${activity.id}"]`);
+                if (activityElement) {
+                    activityElement.classList.add('active');
+                    activityElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+
+            function addToPlanned(event, index) {
+                event.stopPropagation();
+                if (!currentActivities[index]) return;
+                const activity = currentActivities[index];
+                const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
+                document.getElementById('activityName').value = activity.name;
+                document.getElementById('activityDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('addActivityForm').dataset.activityId = activity.id;
+                delete document.getElementById('addActivityForm').dataset.editMode;
+                modal.show();
+            }
+
+            function addToPlannedFromPopup(activityId) {
+                const activity = currentActivities.find(a => a.id == activityId);
+                if (!activity) return;
+                const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
+                document.getElementById('activityName').value = activity.name;
+                document.getElementById('activityDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('addActivityForm').dataset.activityId = activityId;
+                delete document.getElementById('addActivityForm').dataset.editMode;
+                modal.show();
+            }
+
+            function savePlannedActivity() {
+                const name = document.getElementById('activityName').value;
+                const date = document.getElementById('activityDate').value;
+                const time = document.getElementById('activityTime').value;
+                const description = document.getElementById('activityDescription').value;
+                const activityId = document.getElementById('addActivityForm').dataset.activityId;
+                const editMode = document.getElementById('addActivityForm').dataset.editMode === 'true';
+
+                if (!name || !date || !time) {
+                    alert('Пожалуйста, заполните обязательные поля');
+                    return;
+                }
+
+                const originalActivity = currentActivities.find(a => a.id == activityId);
+                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+
+                if (editMode) {
+                    const index = plannedActivities.findIndex(a => a.id == activityId);
+                    if (index !== -1) {
+                        plannedActivities[index] = { ...plannedActivities[index], name, date, time, description };
+                    }
+                } else {
+                    plannedActivities.push({
+                        id: Date.now(),
+                        activityId,
+                        name, date, time, description,
+                        category: originalActivity ? originalActivity.category : 'Другое',
+                        tags: originalActivity ? originalActivity.tags : null,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+
+                localStorage.setItem('plannedActivities', JSON.stringify(plannedActivities));
+                bootstrap.Modal.getInstance(document.getElementById('addActivityModal')).hide();
+                loadPlannedActivitiesByCategories();
+                document.getElementById('addActivityForm').reset();
+                delete document.getElementById('addActivityForm').dataset.activityId;
+                delete document.getElementById('addActivityForm').dataset.editMode;
+            }
+
+            function loadPlannedActivities() {
+                loadPlannedActivitiesByCategories();
+            }
+
+            function removePlannedActivity(activityId) {
+                const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
+                localStorage.setItem('plannedActivities', JSON.stringify(plannedActivities.filter(a => a.id !== activityId)));
+                loadPlannedActivities();
+            }
+
+            function clearActivityMarkers() {
+                activityMarkers.forEach(marker => activitiesMap.removeLayer(marker));
+                activityMarkers = [];
+            }
+
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            function showActivitiesLoading() {
+                document.getElementById('activitiesList').innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                        <p>Поиск активностей...</p>
+                    </div>
+                `;
+            }
+
+            function showNoActivitiesResults() {
+                document.getElementById('activitiesList').innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-map-marker-alt fa-2x mb-3"></i>
+                        <p>Активностей не найдено в выбранной области</p>
+                        <p class="small">Попробуйте увеличить радиус поиска или выбрать другое место</p>
+                    </div>
+                `;
+            }
+
+            function showActivitiesError(message) {
+                document.getElementById('activitiesList').innerHTML = `
+                    <div class="text-center text-danger py-5">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <p>${message}</p>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="retryActivitiesSearch()">
+                            <i class="fas fa-redo me-1"></i>Попробовать снова
                         </button>
                     </div>
                 `;
-                return;
             }
 
-            const activitiesHTML = plannedActivities.map(activity => `
-                <div class="planned-activity-item">
-                    <div>
-                        <h6 class="mb-1">${activity.name}</h6>
-                        <p class="small text-muted mb-0">
-                            <i class="fas fa-calendar me-1"></i>${activity.date}
-                            <i class="fas fa-clock ms-2 me-1"></i>${activity.time}
-                        </p>
-                        ${activity.description ? `<p class="small text-muted mb-0">${activity.description}</p>` : ''}
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removePlannedActivity(${activity.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `).join('');
+            function retryActivitiesSearch() {
+                const bounds = activitiesMap.getBounds();
+                const center = bounds.getCenter();
+                searchActivitiesFromMap(center.lat, center.lng);
+            }
 
-            container.innerHTML = activitiesHTML;
-        }
-
-        // Удаление запланированной активности
-        function removePlannedActivity(activityId) {
-            if (!confirm('Удалить эту активность из плана?')) return;
-
-            const plannedActivities = JSON.parse(localStorage.getItem('plannedActivities') || '[]');
-            const updatedActivities = plannedActivities.filter(a => a.id !== activityId);
-            localStorage.setItem('plannedActivities', JSON.stringify(updatedActivities));
-            loadPlannedActivities();
-        }
-
-        // Показать модальное окно добавления активности
-        function showAddActivityModal() {
-            document.getElementById('addActivityForm').reset();
-            delete document.getElementById('addActivityForm').dataset.activityId;
-            const modal = new bootstrap.Modal(document.getElementById('addActivityModal'));
-            modal.show();
-        }
-
-        // Очистка маркеров активностей
-        function clearActivityMarkers() {
-            activityMarkers.forEach(marker => activitiesMap.removeLayer(marker));
-            activityMarkers = [];
-        }
-
-        // Расчет расстояния (та же функция, что и в отелях)
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a =
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // Вспомогательные функции UI для активностей
-        function showActivitiesLoading() {
-            const container = document.getElementById('activitiesList');
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Загрузка...</span>
-                    </div>
-                    <p>Поиск активностей в OpenStreetMap...</p>
-                </div>
-            `;
-        }
-
-        function showNoActivitiesResults() {
-            const container = document.getElementById('activitiesList');
-            container.innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="fas fa-map-marker-alt fa-2x mb-3"></i>
-                    <p>Активностей не найдено в выбранной области</p>
-                    <p class="small">Попробуйте увеличить радиус поиска или выбрать другое место</p>
-                </div>
-            `;
-        }
-
-        function showActivitiesError(message) {
-            const container = document.getElementById('activitiesList');
-            container.innerHTML = `
-                <div class="text-center text-danger py-5">
-                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                    <p>${message}</p>
-                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="retryActivitiesSearch()">
-                        <i class="fas fa-redo me-1"></i>Попробовать снова
-                    </button>
-                </div>
-            `;
-        }
-
-        function retryActivitiesSearch() {
-            const bounds = activitiesMap.getBounds();
-            const center = bounds.getCenter();
-            searchActivitiesFromMap(center.lat, center.lng);
-        }
-
-        // Экспортируем функции для использования в onclick
-        window.focusActivity = focusActivity;
-        window.addToPlanned = addToPlanned;
-        window.addToPlannedFromPopup = addToPlannedFromPopup;
-        window.savePlannedActivity = savePlannedActivity;
-        window.removePlannedActivity = removePlannedActivity;
-        window.showAddActivityModal = showAddActivityModal;
-        window.retryActivitiesSearch = retryActivitiesSearch;
-    </script>
+            window.focusActivity = focusActivity;
+            window.addToPlanned = addToPlanned;
+            window.addToPlannedFromPopup = addToPlannedFromPopup;
+            window.savePlannedActivity = savePlannedActivity;
+            window.removePlannedActivity = removePlannedActivity;
+            window.retryActivitiesSearch = retryActivitiesSearch;
+            window.showDeleteConfirmation = showDeleteConfirmation;
+            window.confirmDeleteActivity = confirmDeleteActivity;
+            window.filterActivitiesByCategory = filterActivitiesByCategory;
+            window.editPlannedActivity = editPlannedActivity;
+        </script>
 }
