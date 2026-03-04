@@ -1,9 +1,10 @@
 ﻿@using TripWise.Models
-@model Tuple<List<FavoriteFlight>, List<FavoriteTrain>>
+@model Tuple<List<FavoriteFlight>, List<FavoriteTrain>, List<FavoriteHotel>>
 @{
     ViewData["Title"] = "Избранное";
     var flights = Model?.Item1 ?? new List<FavoriteFlight>();
     var trains = Model?.Item2 ?? new List<FavoriteTrain>();
+    var hotels = Model?.Item3 ?? new List<FavoriteHotel>();
     var userId = Context.Session.GetInt32("UserId");
 }
 
@@ -14,6 +15,7 @@
     <p><strong>ID пользователя:</strong> @(userId?.ToString() ?? "не авторизован")</p>
     <p><strong>Количество рейсов:</strong> @flights.Count</p>
     <p><strong>Количество поездов:</strong> @trains.Count</p>
+    <p><strong>Количество отелей:</strong> @hotels.Count</p>
 </div>
 
 <div class="container mt-4">
@@ -43,7 +45,7 @@
                     </div>
                 </div>
             }
-            else if (flights.Count == 0 && trains.Count == 0)
+            else if (flights.Count == 0 && trains.Count == 0 && hotels.Count == 0)
             {
                 <div class="card shadow-sm border-0">
                     <div class="card-body text-center py-5">
@@ -51,14 +53,17 @@
                         <h5>Пока ничего нет в избранном</h5>
                         <p class="text-muted mb-4">
                             Сохраняйте понравившиеся направления, нажимая на сердечко<br>
-                            при поиске билетов.
+                            при поиске билетов и отелей.
                         </p>
-                        <div class="d-flex gap-3 justify-content-center">
+                        <div class="d-flex gap-3 justify-content-center flex-wrap">
                             <a asp-controller="Flights" asp-action="Index" class="btn btn-primary btn-lg">
                                 <i class="fas fa-plane me-2"></i>Найти авиабилеты
                             </a>
                             <a asp-controller="Home" asp-action="Railway" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-train me-2"></i>Найти ЖД билеты
+                            </a>
+                            <a asp-controller="Home" asp-action="Hotels" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-hotel me-2"></i>Найти отели
                             </a>
                         </div>
                     </div>
@@ -92,6 +97,19 @@
                             <i class="fas fa-train me-2"></i>
                             ЖД билеты
                             <span class="badge bg-primary ms-2">@trains.Count</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(flights.Count == 0 && trains.Count == 0 && hotels.Count > 0 ? "active" : "")"
+                                id="hotels-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#hotels"
+                                type="button"
+                                role="tab"
+                        @(hotels.Count == 0 ? "disabled" : "")>
+                            <i class="fas fa-hotel me-2"></i>
+                            Отели
+                            <span class="badge bg-primary ms-2">@hotels.Count</span>
                         </button>
                     </li>
                 </ul>
@@ -471,6 +489,176 @@
                             </div>
                         }
                     </div>
+
+                    <!-- Вкладка с отелями -->
+                    <div class="tab-pane fade @(flights.Count == 0 && trains.Count == 0 && hotels.Count > 0 ? "show active" : "")"
+                         id="hotels"
+                         role="tabpanel"
+                         aria-labelledby="hotels-tab">
+
+                        @if (hotels.Count > 0)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <p class="lead mb-0">Сохраненные отели</p>
+                                <div>
+                                    <span class="badge bg-primary fs-6">
+                                        <i class="fas fa-hotel me-1"></i> @hotels.Count отелей
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Фильтры для отелей -->
+                                <div class="col-md-3 mb-4">
+                                    <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">
+                                                <i class="fas fa-filter me-2"></i>Фильтры
+                                            </h6>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted mb-2">Тип жилья</label>
+                                                <select class="form-select" id="hotelTypeFilter">
+                                                    <option value="">Все типы</option>
+                                                    @foreach (var type in hotels.Select(h => h.AccommodationType).Where(t => !string.IsNullOrEmpty(t)).Distinct())
+                                                    {
+                                                        <option value="@type">@type</option>
+                                                    }
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small text-muted mb-2">Сортировка</label>
+                                                <select class="form-select" id="hotelSortFilter">
+                                                    <option value="date">По дате добавления</option>
+                                                    <option value="price_asc">По цене (дешевые)</option>
+                                                    <option value="price_desc">По цене (дорогие)</option>
+                                                    <option value="name">По названию</option>
+                                                </select>
+                                            </div>
+
+                                            <button class="btn btn-outline-primary w-100" onclick="applyHotelFilters()">
+                                                <i class="fas fa-sync-alt me-2"></i>Применить
+                                            </button>
+
+                                            <hr class="my-3">
+
+                                            <div class="small text-muted">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Всего отелей:</span>
+                                                    <strong>@hotels.Count</strong>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>С рейтингом:</span>
+                                                    <strong>@hotels.Count(h => h.Stars.HasValue && h.Stars > 0)</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Список избранных отелей -->
+                                <div class="col-md-9">
+                                    <div id="hotelFavoritesList">
+                                        @foreach (var hotel in hotels)
+                                        {
+                                            <div class="card shadow-sm border-0 mb-3 hotel-item"
+                                                 data-hotel-id="@hotel.HotelId"
+                                                 data-type="@hotel.AccommodationType"
+                                                 data-price="@hotel.PricePerNight"
+                                                 data-name="@hotel.HotelName"
+                                                 data-date="@hotel.AddedDate.Ticks">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-8">
+                                                            <div class="d-flex align-items-start">
+                                                                <div class="me-3">
+                                                                    @if (!string.IsNullOrEmpty(hotel.AccommodationType))
+                                                                    {
+                                                                        <span class="badge bg-info">@hotel.AccommodationType</span>
+                                                                    }
+                                                                    @if (hotel.Stars.HasValue && hotel.Stars > 0)
+                                                                    {
+                                                                        <div class="mt-1">
+                                                                            @for (int i = 0; i < hotel.Stars.Value; i++)
+                                                                            {
+                                                                                <i class="fas fa-star text-warning small"></i>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                                <div>
+                                                                    <h5 class="mb-1">@hotel.HotelName</h5>
+                                                                    @if (!string.IsNullOrEmpty(hotel.HotelAddress))
+                                                                    {
+                                                                        <p class="small text-muted mb-1">
+                                                                            <i class="fas fa-map-marker-alt me-1"></i>@hotel.HotelAddress
+                                                                        </p>
+                                                                    }
+                                                                    @if (!string.IsNullOrEmpty(hotel.Phone) && hotel.Phone != "Не указан")
+                                                                    {
+                                                                        <p class="small text-muted mb-1">
+                                                                            <i class="fas fa-phone me-1"></i>@hotel.Phone
+                                                                        </p>
+                                                                    }
+                                                                    @if (hotel.PricePerNight.HasValue)
+                                                                    {
+                                                                        <p class="fw-bold text-primary mt-2 mb-0">
+                                                                            от @hotel.PricePerNight.Value.ToString("N0") @hotel.Currency / ночь
+                                                                        </p>
+                                                                    }
+                                                                    <div class="mt-2">
+                                                                        <small class="text-muted">
+                                                                            <i class="far fa-calendar-plus me-1"></i>
+                                                                            Добавлен: @hotel.AddedDate.ToString("dd.MM.yyyy")
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="d-flex flex-column align-items-end">
+                                                                <div class="d-flex gap-2 mt-2 mt-md-0">
+                                                                    @if (!string.IsNullOrEmpty(hotel.Website))
+                                                                    {
+                                                                        <a href="@hotel.Website" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                            <i class="fas fa-external-link-alt"></i>
+                                                                        </a>
+                                                                    }
+                                                                    @if (!string.IsNullOrEmpty(hotel.BookingUrl))
+                                                                    {
+                                                                        <a href="@hotel.BookingUrl" target="_blank" class="btn btn-primary">
+                                                                            <i class="fas fa-calendar-check me-2"></i>Забронировать
+                                                                        </a>
+                                                                    }
+                                                                    <button class="btn btn-outline-danger remove-hotel-favorite"
+                                                                            data-hotel-id="@hotel.HotelId">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="mt-2">
+                                                                    <span class="badge bg-light text-dark">OSM ID: @hotel.HotelId</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @if (hotels.Count > 10)
+                                    {
+                                        <div class="text-center mt-4">
+                                            <button class="btn btn-outline-primary" id="loadMoreHotelsBtn">
+                                                <i class="fas fa-chevron-down me-2"></i>Показать еще
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             }
         </div>
@@ -571,7 +759,9 @@
                             setTimeout(() => {
                                 card.remove();
                                 updateCounters();
-                                if (document.querySelectorAll('.flight-item').length === 0) {
+                                if (document.querySelectorAll('.flight-item').length === 0 &&
+                                    document.querySelectorAll('.train-item').length === 0 &&
+                                    document.querySelectorAll('.hotel-item').length === 0) {
                                     location.reload();
                                 }
                             }, 300);
@@ -678,8 +868,9 @@
                             setTimeout(() => {
                                 card.remove();
                                 updateCounters();
-                                if (document.querySelectorAll('.train-item').length === 0 &&
-                                    document.querySelectorAll('.flight-item').length === 0) {
+                                if (document.querySelectorAll('.flight-item').length === 0 &&
+                                    document.querySelectorAll('.train-item').length === 0 &&
+                                    document.querySelectorAll('.hotel-item').length === 0) {
                                     location.reload();
                                 }
                             }, 300);
@@ -698,13 +889,124 @@
             }
         });
 
-        // Обновление счетчиков
+        // ==================== ФУНКЦИИ ДЛЯ ОТЕЛЕЙ ====================
+        function applyHotelFilters() {
+            const type = document.getElementById('hotelTypeFilter')?.value;
+            const sort = document.getElementById('hotelSortFilter')?.value;
+
+            if (!type && !sort) return;
+
+            const items = document.querySelectorAll('.hotel-item');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const itemType = item.getAttribute('data-type');
+                const typeMatch = !type || itemType === type;
+
+                if (typeMatch) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Сортировка
+            const container = document.getElementById('hotelFavoritesList');
+            if (container && sort) {
+                const sortedItems = Array.from(items)
+                    .filter(item => item.style.display !== 'none')
+                    .sort((a, b) => {
+                        switch(sort) {
+                            case 'price_asc':
+                                return parseFloat(a.getAttribute('data-price') || 0) - parseFloat(b.getAttribute('data-price') || 0);
+                            case 'price_desc':
+                                return parseFloat(b.getAttribute('data-price') || 0) - parseFloat(a.getAttribute('data-price') || 0);
+                            case 'name':
+                                return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+                            default: // date
+                                return new Date(parseInt(b.getAttribute('data-date'))) - new Date(parseInt(a.getAttribute('data-date')));
+                        }
+                    });
+
+                sortedItems.forEach(item => container.appendChild(item));
+            }
+
+            // Показываем/скрываем кнопку "Показать еще"
+            const loadMoreBtn = document.getElementById('loadMoreHotelsBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = visibleCount > 10 ? '' : 'none';
+            }
+        }
+
+        // Удаление отеля из избранного
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('.remove-hotel-favorite')) {
+                e.preventDefault();
+
+                const button = e.target.closest('.remove-hotel-favorite');
+                const hotelId = button.getAttribute('data-hotel-id');
+
+                if (!hotelId) {
+                    alert('Ошибка: идентификатор отеля не найден');
+                    return;
+                }
+
+                if (confirm('Удалить отель из избранного?')) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    try {
+                        const response = await fetch('/api/favorites/hotel/remove', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ hotelId: hotelId })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            const card = button.closest('.hotel-item');
+                            card.style.transition = 'opacity 0.3s';
+                            card.style.opacity = '0';
+
+                            setTimeout(() => {
+                                card.remove();
+                                updateCounters();
+                                if (document.querySelectorAll('.flight-item').length === 0 &&
+                                    document.querySelectorAll('.train-item').length === 0 &&
+                                    document.querySelectorAll('.hotel-item').length === 0) {
+                                    location.reload();
+                                }
+                            }, 300);
+                        } else {
+                            alert(result.message || 'Ошибка при удалении отеля');
+                            button.disabled = false;
+                            button.innerHTML = '<i class="fas fa-trash"></i>';
+                        }
+                    } catch (error) {
+                        console.error('Ошибка удаления:', error);
+                        alert('Ошибка при удалении отеля');
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-trash"></i>';
+                    }
+                }
+            }
+        });
+
+        // ==================== ОБЩИЕ ФУНКЦИИ ====================
         function updateCounters() {
             const flightCount = document.querySelectorAll('.flight-item').length;
             const trainCount = document.querySelectorAll('.train-item').length;
+            const hotelCount = document.querySelectorAll('.hotel-item').length;
 
             const flightTab = document.getElementById('flights-tab');
             const trainTab = document.getElementById('trains-tab');
+            const hotelTab = document.getElementById('hotels-tab');
 
             if (flightTab) {
                 const badge = flightTab.querySelector('.badge');
@@ -716,6 +1018,12 @@
                 const badge = trainTab.querySelector('.badge');
                 if (badge) badge.textContent = trainCount;
                 if (trainCount === 0) trainTab.disabled = true;
+            }
+
+            if (hotelTab) {
+                const badge = hotelTab.querySelector('.badge');
+                if (badge) badge.textContent = hotelCount;
+                if (hotelCount === 0) hotelTab.disabled = true;
             }
         }
 
@@ -762,6 +1070,29 @@
 
                     if (document.querySelectorAll('.train-item[style*="display: none"]').length === 0) {
                         loadMoreTrainsBtn.style.display = 'none';
+                    }
+                });
+            }
+
+            // Кнопка "Показать еще" для отелей
+            const hotelItems = document.querySelectorAll('.hotel-item');
+            const loadMoreHotelsBtn = document.getElementById('loadMoreHotelsBtn');
+
+            if (loadMoreHotelsBtn && hotelItems.length > 10) {
+                hotelItems.forEach((item, index) => {
+                    if (index >= 10) item.style.display = 'none';
+                });
+
+                loadMoreHotelsBtn.addEventListener('click', function() {
+                    const hiddenItems = document.querySelectorAll('.hotel-item[style*="display: none"]');
+                    const toShow = Math.min(10, hiddenItems.length);
+
+                    for (let i = 0; i < toShow; i++) {
+                        hiddenItems[i].style.display = '';
+                    }
+
+                    if (document.querySelectorAll('.hotel-item[style*="display: none"]').length === 0) {
+                        loadMoreHotelsBtn.style.display = 'none';
                     }
                 });
             }

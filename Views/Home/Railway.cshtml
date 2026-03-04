@@ -1339,7 +1339,7 @@
         }
     }
 
-        function generateTrainGroupCard(group, searchData, index) {
+                function generateTrainGroupCard(group, searchData, index) {
         const uniqueGroupId = `train-group-${group.id}-${index}`;
         const isRoundTrip = group.isRoundTrip || false;
         const typeColor = isRoundTrip ? 'secondary' : 'primary';
@@ -1352,19 +1352,82 @@
         const departureStationName = getStationName(group.forwardTrain.departureStation);
         const arrivalStationName = getStationName(group.forwardTrain.arrivalStation);
 
+        // Функция для форматирования даты и времени в ISO строку
+        function formatToISO(dateStr, timeStr) {
+            if (!dateStr || !timeStr) {
+                console.log('Отсутствует дата или время:', { dateStr, timeStr });
+                // Если нет данных, используем текущую дату + время
+                const now = new Date();
+                return now.toISOString();
+            }
+
+            try {
+                console.log('Форматирование даты:', { dateStr, timeStr });
+
+                // Если дата в формате DD.MM.YYYY (как приходит из RZD API)
+                if (dateStr.includes('.')) {
+                    const parts = dateStr.split('.');
+                    if (parts.length === 3) {
+                        const year = parts[2];
+                        const month = parts[1].padStart(2, '0');
+                        const day = parts[0].padStart(2, '0');
+
+                        // Форматируем время, убеждаемся что оно в формате HH:MM
+                        let time = timeStr;
+                        if (time && !time.includes(':')) {
+                            time = time.substring(0, 2) + ':' + time.substring(2, 4);
+                        }
+
+                        const isoString = `${year}-${month}-${day}T${time || '00:00'}:00`;
+                        console.log('Сформирована ISO дата:', isoString);
+                        return isoString;
+                    }
+                }
+
+                // Если дата уже в формате ISO или YYYY-MM-DD
+                if (dateStr.includes('-')) {
+                    const isoString = `${dateStr}T${timeStr || '00:00'}:00`;
+                    console.log('Сформирована ISO дата (из ISO формата):', isoString);
+                    return isoString;
+                }
+
+                console.log('Неизвестный формат даты, используем текущую');
+                return new Date().toISOString();
+
+            } catch (error) {
+                console.error('Ошибка форматирования даты:', error, { dateStr, timeStr });
+                return new Date().toISOString();
+            }
+        }
+
+        // Форматируем даты с проверкой
+        console.log('Данные поезда туда:', group.forwardTrain);
+
+        const departureDateTime = formatToISO(group.forwardTrain.departureDate, group.forwardTrain.departureTime);
+        const arrivalDateTime = formatToISO(group.forwardTrain.arrivalDate, group.forwardTrain.arrivalTime);
+
+        let returnDepartureDateTime = null;
+        let returnArrivalDateTime = null;
+
+        if (group.returnTrain) {
+            console.log('Данные поезда обратно:', group.returnTrain);
+            returnDepartureDateTime = formatToISO(group.returnTrain.departureDate, group.returnTrain.departureTime);
+            returnArrivalDateTime = formatToISO(group.returnTrain.arrivalDate, group.returnTrain.arrivalTime);
+        }
+
         // Подготовка данных для избранного - ИСПРАВЛЕНО
         const trainData = {
             trainGroupId: uniqueGroupId,
             forwardTrainNumber: group.forwardTrain.trainNumber,
             returnTrainNumber: group.returnTrain?.trainNumber || null,
-            departureStation: departureStationName, // Отправляем название, а не код
-            arrivalStation: arrivalStationName,     // Отправляем название, а не код
+            departureStation: departureStationName,
+            arrivalStation: arrivalStationName,
             departureStationId: group.forwardTrain.departureStation,
             arrivalStationId: group.forwardTrain.arrivalStation,
-            departureDateTime: group.forwardTrain.departureDateTime || formatDateTime(group.forwardTrain.departureDate, group.forwardTrain.departureTime),
-            returnDepartureDateTime: group.returnTrain ? (group.returnTrain.departureDateTime || formatDateTime(group.returnTrain.departureDate, group.returnTrain.departureTime)) : null,
-            arrivalDateTime: group.forwardTrain.arrivalDateTime || formatDateTime(group.forwardTrain.arrivalDate, group.forwardTrain.arrivalTime),
-            returnArrivalDateTime: group.returnTrain ? (group.returnTrain.arrivalDateTime || formatDateTime(group.returnTrain.arrivalDate, group.returnTrain.arrivalTime)) : null,
+            departureDateTime: departureDateTime,
+            returnDepartureDateTime: returnDepartureDateTime,
+            arrivalDateTime: arrivalDateTime,
+            returnArrivalDateTime: returnArrivalDateTime,
             price: group.totalPrice || 0,
             currency: "RUB",
             duration: parseDuration(group.forwardTrain.travelTime),
@@ -1376,6 +1439,8 @@
             passengers: parseInt(document.getElementById('railwayPassengers').value) || 1,
             bookingUrl: window.location.href
         };
+
+        console.log('Подготовленные данные для избранного:', JSON.stringify(trainData, null, 2));
 
         return `
             <div class="card train-group-card shadow-sm mb-4 border-${typeColor}">
@@ -1460,6 +1525,28 @@
                 </div>
             </div>
         `;
+    }
+        function parseDuration(durationString) {
+        if (!durationString) return 0;
+        // Если длительность в формате "HH:MM"
+        const parts = durationString.split(':');
+        if (parts.length === 2) {
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+        return 0;
+    }
+        // Функция для парсинга даты из формата RZD (DD.MM.YYYY)
+    function parseRzdDate(dateStr) {
+        if (!dateStr) return null;
+        try {
+            const parts = dateStr.split('.');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+        } catch (error) {
+            console.error('Ошибка парсинга даты:', error);
+        }
+        return null;
     }
 
     function generateTrainSection(train, title, date, color) {
@@ -1589,7 +1676,7 @@
         return categories[type] || type;
     }
 
-        function getStationName(stationId) {
+            function getStationName(stationId) {
         if (!stationId) return stationId;
         const station = stationsData.find(s => s.id === stationId);
         return station ? station.name : stationId;

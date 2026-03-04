@@ -63,6 +63,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<PlannedActivity> PlannedActivities { get; set; }
     public DbSet<FavoriteFlight> FavoriteFlights { get; set; }
     public DbSet<FavoriteTrain> FavoriteTrains { get; set; }
+    public DbSet<FavoriteHotel> FavoriteHotels { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -88,7 +89,14 @@ public partial class TripWiseContext : DbContext
             entity.Property(e => e.AddedDate).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.Currency).HasDefaultValue("RUB");
         });
-
+        modelBuilder.Entity<FavoriteHotel>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.HotelId);
+            entity.HasIndex(e => new { e.UserId, e.HotelId }).IsUnique();
+            entity.Property(e => e.AddedDate).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Currency).HasDefaultValue("RUB");
+        });
         modelBuilder.Entity<Chat>(entity =>
         {
             entity.HasKey(e => e.Id);

@@ -29,26 +29,30 @@ namespace TripWise.Controllers
             if (!userId.HasValue)
             {
                 return View("~/Views/Home/Favorites.cshtml",
-                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>>(
+                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>, List<FavoriteHotel>>(
                         new List<FavoriteFlight>(),
-                        new List<FavoriteTrain>()));
+                        new List<FavoriteTrain>(),
+                        new List<FavoriteHotel>()));
             }
 
             try
             {
                 var flights = await _favoriteService.GetUserFavoriteFlightsAsync(userId.Value);
                 var trains = await _favoriteService.GetUserFavoriteTrainsAsync(userId.Value);
+                var hotels = await _favoriteService.GetUserFavoriteHotelsAsync(userId.Value);
 
                 return View("~/Views/Home/Favorites.cshtml",
-                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>>(flights, trains));
+                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>, List<FavoriteHotel>>(
+                        flights, trains, hotels));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении избранного");
                 return View("~/Views/Home/Favorites.cshtml",
-                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>>(
+                    new Tuple<List<FavoriteFlight>, List<FavoriteTrain>, List<FavoriteHotel>>(
                         new List<FavoriteFlight>(),
-                        new List<FavoriteTrain>()));
+                        new List<FavoriteTrain>(),
+                        new List<FavoriteHotel>()));
             }
         }
     }

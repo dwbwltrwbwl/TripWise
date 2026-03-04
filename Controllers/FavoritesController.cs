@@ -396,6 +396,110 @@ namespace TripWise.Controllers
                 return StatusCode(500, new { success = false, message = "Ошибка сервера" });
             }
         }
+
+        // POST: api/favorites/hotel/add
+        [HttpPost("hotel/add")]
+        public async Task<IActionResult> AddFavoriteHotel([FromBody] AddFavoriteHotelRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Unauthorized(new { success = false, message = "Требуется авторизация" });
+
+                var favorite = new FavoriteHotel
+                {
+                    UserId = userId.Value,
+                    HotelId = request.HotelId,
+                    HotelName = request.HotelName,
+                    HotelAddress = request.HotelAddress,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
+                    AccommodationType = request.AccommodationType,
+                    Stars = request.Stars,
+                    Phone = request.Phone,
+                    Website = request.Website,
+                    PricePerNight = request.PricePerNight,
+                    Currency = request.Currency ?? "RUB",
+                    BookingUrl = request.BookingUrl,
+                    TagsJson = request.Tags != null ? JsonSerializer.Serialize(request.Tags) : null,
+                    AddedDate = DateTime.Now
+                };
+
+                var result = await _favoriteService.AddFavoriteHotelAsync(favorite);
+                return result
+                    ? Ok(new { success = true, message = "Отель добавлен в избранное" })
+                    : Ok(new { success = false, message = "Отель уже в избранном" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при добавлении отеля в избранное");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // POST: api/favorites/hotel/remove
+        [HttpPost("hotel/remove")]
+        public async Task<IActionResult> RemoveFavoriteHotel([FromBody] RemoveFavoriteHotelRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Unauthorized(new { success = false, message = "Требуется авторизация" });
+
+                var result = await _favoriteService.RemoveFavoriteHotelAsync(userId.Value, request.HotelId);
+                return result
+                    ? Ok(new { success = true, message = "Отель удален из избранного" })
+                    : NotFound(new { success = false, message = "Отель не найден в избранном" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении отеля из избранного");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // GET: api/favorites/hotel/list
+        [HttpGet("hotel/list")]
+        public async Task<IActionResult> GetFavoriteHotels()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Ok(new { success = true, favorites = new List<string>() });
+
+                var favorites = await _favoriteService.GetUserFavoriteHotelsAsync(userId.Value);
+                var favoriteIds = favorites.Select(f => f.HotelId).ToList();
+                return Ok(new { success = true, favorites = favoriteIds });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении списка избранных отелей");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // GET: api/favorites/hotel/check/{hotelId}
+        [HttpGet("hotel/check/{hotelId}")]
+        public async Task<IActionResult> CheckFavoriteHotel(string hotelId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Ok(new { success = true, isFavorite = false, isAuthenticated = false });
+
+                var isFavorite = await _favoriteService.IsHotelInFavoritesAsync(userId.Value, hotelId);
+                return Ok(new { success = true, isFavorite, isAuthenticated = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке отеля в избранном");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
     }
 
     public class AddFavoriteRequest
@@ -452,5 +556,27 @@ namespace TripWise.Controllers
     public class RemoveFavoriteTrainRequest
     {
         public string TrainGroupId { get; set; } = string.Empty;
+    }
+
+    public class AddFavoriteHotelRequest
+    {
+        public string HotelId { get; set; } = string.Empty;
+        public string HotelName { get; set; } = string.Empty;
+        public string? HotelAddress { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? AccommodationType { get; set; }
+        public int? Stars { get; set; }
+        public string? Phone { get; set; }
+        public string? Website { get; set; }
+        public decimal? PricePerNight { get; set; }
+        public string? Currency { get; set; }
+        public string? BookingUrl { get; set; }
+        public Dictionary<string, string>? Tags { get; set; }
+    }
+
+    public class RemoveFavoriteHotelRequest
+    {
+        public string HotelId { get; set; } = string.Empty;
     }
 }

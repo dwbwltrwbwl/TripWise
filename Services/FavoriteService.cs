@@ -17,6 +17,11 @@ namespace TripWise.Services
         Task<bool> RemoveFavoriteTrainAsync(int userId, string trainGroupId);
         Task<List<FavoriteTrain>> GetUserFavoriteTrainsAsync(int userId);
         Task<bool> IsTrainInFavoritesAsync(int userId, string trainGroupId);
+        // Для отелей
+        Task<bool> AddFavoriteHotelAsync(FavoriteHotel favorite);
+        Task<bool> RemoveFavoriteHotelAsync(int userId, string hotelId);
+        Task<List<FavoriteHotel>> GetUserFavoriteHotelsAsync(int userId);
+        Task<bool> IsHotelInFavoritesAsync(int userId, string hotelId);
     }
 
     public class FavoriteService : IFavoriteService
@@ -214,6 +219,101 @@ namespace TripWise.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при проверке поезда {TrainGroupId} в избранном", trainGroupId);
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Отели
+
+        public async Task<bool> AddFavoriteHotelAsync(FavoriteHotel favorite)
+        {
+            try
+            {
+                var existing = await _context.FavoriteHotels
+                    .FirstOrDefaultAsync(f => f.UserId == favorite.UserId && f.HotelId == favorite.HotelId);
+
+                if (existing != null)
+                {
+                    _logger.LogInformation("Отель {HotelId} уже в избранном у пользователя {UserId}",
+                        favorite.HotelId, favorite.UserId);
+                    return false;
+                }
+
+                _context.FavoriteHotels.Add(favorite);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Отель {HotelId} добавлен в избранное для пользователя {UserId}",
+                    favorite.HotelId, favorite.UserId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при добавлении отеля {HotelId} в избранное", favorite.HotelId);
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveFavoriteHotelAsync(int userId, string hotelId)
+        {
+            try
+            {
+                var favorite = await _context.FavoriteHotels
+                    .FirstOrDefaultAsync(f => f.UserId == userId && f.HotelId == hotelId);
+
+                if (favorite == null)
+                {
+                    _logger.LogWarning("Отель {HotelId} не найден в избранном у пользователя {UserId}",
+                        hotelId, userId);
+                    return false;
+                }
+
+                _context.FavoriteHotels.Remove(favorite);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Отель {HotelId} удален из избранного для пользователя {UserId}",
+                    hotelId, userId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении отеля {HotelId} из избранного", hotelId);
+                return false;
+            }
+        }
+
+        public async Task<List<FavoriteHotel>> GetUserFavoriteHotelsAsync(int userId)
+        {
+            try
+            {
+                return await _context.FavoriteHotels
+                    .Where(f => f.UserId == userId)
+                    .OrderByDescending(f => f.AddedDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении избранных отелей для пользователя {UserId}", userId);
+                return new List<FavoriteHotel>();
+            }
+        }
+
+        public async Task<bool> IsHotelInFavoritesAsync(int userId, string hotelId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(hotelId))
+                    return false;
+
+                return await _context.FavoriteHotels
+                    .AnyAsync(f => f.UserId == userId && f.HotelId == hotelId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке отеля {HotelId} в избранном", hotelId);
                 return false;
             }
         }
