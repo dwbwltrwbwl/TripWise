@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using TripWise.Models;
 using Microsoft.AspNetCore.Http;
+using TripWise.Services; // Добавьте этот using
 
 namespace TripWise.Controllers
 {
@@ -12,11 +13,16 @@ namespace TripWise.Controllers
     {
         private readonly TripWiseContext _context;
         private readonly ILogger<FavoritesController> _logger;
+        private readonly IFavoriteService _favoriteService; // Добавьте это поле
 
-        public FavoritesController(TripWiseContext context, ILogger<FavoritesController> logger)
+        public FavoritesController(
+            TripWiseContext context,
+            ILogger<FavoritesController> logger,
+            IFavoriteService favoriteService) // Добавьте параметр в конструктор
         {
             _context = context;
             _logger = logger;
+            _favoriteService = favoriteService; // Инициализируйте поле
         }
 
         // POST: api/favorites/add
@@ -52,17 +58,7 @@ namespace TripWise.Controllers
                     return BadRequest(new { success = false, message = "FlightId не может быть пустым" });
                 }
 
-                // Проверяем, не существует ли уже такой рейс
-                _logger.LogInformation("Проверка существующего рейса...");
-                var existing = await _context.FavoriteFlights
-                    .FirstOrDefaultAsync(f => f.UserId == userId.Value && f.FlightId == request.FlightId);
-
-                if (existing != null)
-                {
-                    _logger.LogInformation("Рейс уже в избранном");
-                    return Ok(new { success = false, message = "Рейс уже в избранном" });
-                }
-
+                // Используем сервис вместо прямого обращения к контексту
                 var favorite = new FavoriteFlight
                 {
                     UserId = userId.Value,
@@ -86,13 +82,17 @@ namespace TripWise.Controllers
                     AddedDate = DateTime.Now
                 };
 
-                _logger.LogInformation("Создан объект FavoriteFlight: {@Favorite}", favorite);
+                var result = await _favoriteService.AddFavoriteFlightAsync(favorite);
 
-                _context.FavoriteFlights.Add(favorite);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Рейс успешно добавлен в избранное. FlightId: {FlightId}", request.FlightId);
-                return Ok(new { success = true, message = "Рейс добавлен в избранное" });
+                if (result)
+                {
+                    _logger.LogInformation("Рейс успешно добавлен в избранное. FlightId: {FlightId}", request.FlightId);
+                    return Ok(new { success = true, message = "Рейс добавлен в избранное" });
+                }
+                else
+                {
+                    return Ok(new { success = false, message = "Рейс уже в избранном" });
+                }
             }
             catch (Exception ex)
             {
@@ -125,23 +125,17 @@ namespace TripWise.Controllers
                     return BadRequest(new { success = false, message = "FlightId не может быть пустым" });
                 }
 
-                _logger.LogInformation("Поиск рейса для удаления. UserId: {UserId}, FlightId: {FlightId}",
-                    userId.Value, request.FlightId);
+                var result = await _favoriteService.RemoveFavoriteFlightAsync(userId.Value, request.FlightId);
 
-                var favorite = await _context.FavoriteFlights
-                    .FirstOrDefaultAsync(f => f.UserId == userId.Value && f.FlightId == request.FlightId);
-
-                if (favorite == null)
+                if (result)
                 {
-                    _logger.LogWarning("Рейс не найден в избранном");
+                    _logger.LogInformation("Рейс успешно удален из избранного");
+                    return Ok(new { success = true, message = "Рейс удален из избранного" });
+                }
+                else
+                {
                     return NotFound(new { success = false, message = "Рейс не найден в избранном" });
                 }
-
-                _context.FavoriteFlights.Remove(favorite);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Рейс успешно удален из избранного");
-                return Ok(new { success = true, message = "Рейс удален из избранного" });
             }
             catch (Exception ex)
             {
@@ -178,8 +172,7 @@ namespace TripWise.Controllers
                     return BadRequest(new { success = false, message = "FlightId не может быть пустым" });
                 }
 
-                var isFavorite = await _context.FavoriteFlights
-                    .AnyAsync(f => f.UserId == userId.Value && f.FlightId == flightId);
+                var isFavorite = await _favoriteService.IsFlightInFavoritesAsync(userId.Value, flightId);
 
                 _logger.LogInformation("Результат проверки: {IsFavorite}", isFavorite);
 
@@ -214,14 +207,12 @@ namespace TripWise.Controllers
                     return Ok(new { success = true, favorites = new List<string>() });
                 }
 
-                var favorites = await _context.FavoriteFlights
-                    .Where(f => f.UserId == userId.Value)
-                    .Select(f => f.FlightId)
-                    .ToListAsync();
+                var favorites = await _favoriteService.GetUserFavoriteFlightsAsync(userId.Value);
+                var favoriteIds = favorites.Select(f => f.FlightId).ToList();
 
-                _logger.LogInformation("Найдено избранных рейсов: {Count}", favorites.Count);
+                _logger.LogInformation("Найдено избранных рейсов: {Count}", favoriteIds.Count);
 
-                return Ok(new { success = true, favorites });
+                return Ok(new { success = true, favorites = favoriteIds });
             }
             catch (Exception ex)
             {
@@ -229,7 +220,8 @@ namespace TripWise.Controllers
                 return StatusCode(500, new { success = false, message = "Ошибка сервера" });
             }
         }
-        // Добавьте этот метод в FavoritesController для проверки
+
+        // GET: api/favorites/test
         [HttpGet("test")]
         public IActionResult Test()
         {
@@ -238,14 +230,20 @@ namespace TripWise.Controllers
                 message = "FavoritesController работает",
                 timestamp = DateTime.Now,
                 routes = new[] {
-            "GET /api/favorites/test",
-            "GET /api/favorites/list",
-            "GET /api/favorites/check/{flightId}",
-            "POST /api/favorites/add",
-            "POST /api/favorites/remove"
-        }
+                    "GET /api/favorites/test",
+                    "GET /api/favorites/list",
+                    "GET /api/favorites/check/{flightId}",
+                    "POST /api/favorites/add",
+                    "POST /api/favorites/remove",
+                    "POST /api/favorites/train/add",
+                    "POST /api/favorites/train/remove",
+                    "GET /api/favorites/train/list",
+                    "GET /api/favorites/train/check/{trainGroupId}"
+                }
             });
         }
+
+        // GET: api/favorites/debug/{userId}
         [HttpGet("debug/{userId}")]
         public async Task<IActionResult> Debug(int userId)
         {
@@ -253,11 +251,7 @@ namespace TripWise.Controllers
             {
                 _logger.LogInformation("=== DEBUG: Прямой запрос к БД для пользователя {UserId} ===", userId);
 
-                // Прямой запрос к БД через контекст
-                var favorites = await _context.FavoriteFlights
-                    .Where(f => f.UserId == userId)
-                    .OrderByDescending(f => f.AddedDate)
-                    .ToListAsync();
+                var favorites = await _favoriteService.GetUserFavoriteFlightsAsync(userId);
 
                 _logger.LogInformation("DEBUG: Найдено {Count} рейсов", favorites.Count);
 
@@ -288,6 +282,120 @@ namespace TripWise.Controllers
                 return Ok(new { success = false, error = ex.Message });
             }
         }
+
+        // ==================== МЕТОДЫ ДЛЯ ЖД ====================
+
+        // POST: api/favorites/train/add
+        [HttpPost("train/add")]
+        public async Task<IActionResult> AddFavoriteTrain([FromBody] AddFavoriteTrainRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Unauthorized(new { success = false, message = "Требуется авторизация" });
+
+                var favorite = new FavoriteTrain
+                {
+                    UserId = userId.Value,
+                    TrainGroupId = request.TrainGroupId,
+                    ForwardTrainNumber = request.ForwardTrainNumber,
+                    ReturnTrainNumber = request.ReturnTrainNumber,
+                    DepartureStation = request.DepartureStation,
+                    ArrivalStation = request.ArrivalStation,
+                    DepartureStationId = request.DepartureStationId,
+                    ArrivalStationId = request.ArrivalStationId,
+                    DepartureDateTime = request.DepartureDateTime,
+                    ReturnDepartureDateTime = request.ReturnDepartureDateTime,
+                    ArrivalDateTime = request.ArrivalDateTime,
+                    ReturnArrivalDateTime = request.ReturnArrivalDateTime,
+                    Price = request.Price,
+                    Currency = request.Currency ?? "RUB",
+                    Duration = request.Duration,
+                    ReturnDuration = request.ReturnDuration,
+                    TrainBrand = request.TrainBrand,
+                    Carrier = request.Carrier,
+                    IsFirm = request.IsFirm,
+                    IsRoundTrip = request.IsRoundTrip,
+                    Passengers = request.Passengers,
+                    BookingUrl = request.BookingUrl,
+                    AddedDate = DateTime.Now
+                };
+
+                var result = await _favoriteService.AddFavoriteTrainAsync(favorite);
+                return result
+                    ? Ok(new { success = true, message = "Поезд добавлен в избранное" })
+                    : Ok(new { success = false, message = "Поезд уже в избранном" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при добавлении поезда в избранное");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // POST: api/favorites/train/remove
+        [HttpPost("train/remove")]
+        public async Task<IActionResult> RemoveFavoriteTrain([FromBody] RemoveFavoriteTrainRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Unauthorized(new { success = false, message = "Требуется авторизация" });
+
+                var result = await _favoriteService.RemoveFavoriteTrainAsync(userId.Value, request.TrainGroupId);
+                return result
+                    ? Ok(new { success = true, message = "Поезд удален из избранного" })
+                    : NotFound(new { success = false, message = "Поезд не найден в избранном" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении поезда из избранного");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // GET: api/favorites/train/list
+        [HttpGet("train/list")]
+        public async Task<IActionResult> GetFavoriteTrains()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Ok(new { success = true, favorites = new List<string>() });
+
+                var favorites = await _favoriteService.GetUserFavoriteTrainsAsync(userId.Value);
+                var favoriteIds = favorites.Select(f => f.TrainGroupId).ToList();
+                return Ok(new { success = true, favorites = favoriteIds });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении списка избранных поездов");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
+
+        // GET: api/favorites/train/check/{trainGroupId}
+        [HttpGet("train/check/{trainGroupId}")]
+        public async Task<IActionResult> CheckFavoriteTrain(string trainGroupId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (!userId.HasValue)
+                    return Ok(new { success = true, isFavorite = false, isAuthenticated = false });
+
+                var isFavorite = await _favoriteService.IsTrainInFavoritesAsync(userId.Value, trainGroupId);
+                return Ok(new { success = true, isFavorite, isAuthenticated = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке поезда в избранном");
+                return StatusCode(500, new { success = false, message = "Ошибка сервера" });
+            }
+        }
     }
 
     public class AddFavoriteRequest
@@ -314,5 +422,35 @@ namespace TripWise.Controllers
     public class RemoveFavoriteRequest
     {
         public string FlightId { get; set; }
+    }
+
+    public class AddFavoriteTrainRequest
+    {
+        public string TrainGroupId { get; set; } = string.Empty;
+        public string ForwardTrainNumber { get; set; } = string.Empty;
+        public string? ReturnTrainNumber { get; set; }
+        public string DepartureStation { get; set; } = string.Empty;
+        public string ArrivalStation { get; set; } = string.Empty;
+        public string? DepartureStationId { get; set; }
+        public string? ArrivalStationId { get; set; }
+        public DateTime DepartureDateTime { get; set; }
+        public DateTime? ReturnDepartureDateTime { get; set; }
+        public DateTime ArrivalDateTime { get; set; }
+        public DateTime? ReturnArrivalDateTime { get; set; }
+        public decimal Price { get; set; }
+        public string? Currency { get; set; }
+        public int Duration { get; set; }
+        public int? ReturnDuration { get; set; }
+        public string? TrainBrand { get; set; }
+        public string? Carrier { get; set; }
+        public bool IsFirm { get; set; }
+        public bool IsRoundTrip { get; set; }
+        public int Passengers { get; set; } = 1;
+        public string? BookingUrl { get; set; }
+    }
+
+    public class RemoveFavoriteTrainRequest
+    {
+        public string TrainGroupId { get; set; } = string.Empty;
     }
 }

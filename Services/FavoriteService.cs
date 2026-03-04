@@ -6,10 +6,17 @@ namespace TripWise.Services
 {
     public interface IFavoriteService
     {
+        // Для авиабилетов
         Task<bool> AddFavoriteFlightAsync(FavoriteFlight favorite);
         Task<bool> RemoveFavoriteFlightAsync(int userId, string flightId);
         Task<List<FavoriteFlight>> GetUserFavoriteFlightsAsync(int userId);
         Task<bool> IsFlightInFavoritesAsync(int userId, string flightId);
+
+        // Для ЖД билетов
+        Task<bool> AddFavoriteTrainAsync(FavoriteTrain favorite);
+        Task<bool> RemoveFavoriteTrainAsync(int userId, string trainGroupId);
+        Task<List<FavoriteTrain>> GetUserFavoriteTrainsAsync(int userId);
+        Task<bool> IsTrainInFavoritesAsync(int userId, string trainGroupId);
     }
 
     public class FavoriteService : IFavoriteService
@@ -23,11 +30,12 @@ namespace TripWise.Services
             _logger = logger;
         }
 
+        #region Авиабилеты
+
         public async Task<bool> AddFavoriteFlightAsync(FavoriteFlight favorite)
         {
             try
             {
-                // Проверяем, не добавлен ли уже этот рейс
                 var existing = await _context.FavoriteFlights
                     .FirstOrDefaultAsync(f => f.UserId == favorite.UserId && f.FlightId == favorite.FlightId);
 
@@ -86,38 +94,14 @@ namespace TripWise.Services
         {
             try
             {
-                _logger.LogInformation("=== FavoriteService.GetUserFavoriteFlightsAsync ===");
-                _logger.LogInformation("Поиск избранного для пользователя {UserId}", userId);
-
-                // Сначала проверим, есть ли вообще записи в таблице для этого пользователя
-                var any = await _context.FavoriteFlights.AnyAsync(f => f.UserId == userId);
-                _logger.LogInformation("Есть ли записи в таблице для пользователя {UserId}? {Any}", userId, any);
-
-                if (!any)
-                {
-                    _logger.LogInformation("Нет записей для пользователя {UserId}", userId);
-                    return new List<FavoriteFlight>();
-                }
-
-                var favorites = await _context.FavoriteFlights
+                return await _context.FavoriteFlights
                     .Where(f => f.UserId == userId)
                     .OrderByDescending(f => f.AddedDate)
                     .ToListAsync();
-
-                _logger.LogInformation("Найдено {Count} рейсов в БД", favorites.Count);
-
-                // Логируем все записи
-                foreach (var flight in favorites)
-                {
-                    _logger.LogInformation("Рейс: ID={FlightId}, {Airline} {FlightNumber}, {DepartureCity}→{ArrivalCity}, Цена={Price}",
-                        flight.FlightId, flight.Airline, flight.FlightNumber, flight.DepartureCity, flight.ArrivalCity, flight.Price);
-                }
-
-                return favorites;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ОШИБКА при получении избранных рейсов для пользователя {UserId}", userId);
+                _logger.LogError(ex, "Ошибка при получении избранных рейсов для пользователя {UserId}", userId);
                 return new List<FavoriteFlight>();
             }
         }
@@ -127,15 +111,10 @@ namespace TripWise.Services
             try
             {
                 if (string.IsNullOrEmpty(flightId))
-                {
-                    _logger.LogWarning("flightId пустой или null для пользователя {UserId}", userId);
                     return false;
-                }
 
-                var exists = await _context.FavoriteFlights
+                return await _context.FavoriteFlights
                     .AnyAsync(f => f.UserId == userId && f.FlightId == flightId);
-
-                return exists;
             }
             catch (Exception ex)
             {
@@ -143,5 +122,102 @@ namespace TripWise.Services
                 return false;
             }
         }
+
+        #endregion
+
+        #region ЖД билеты
+
+        public async Task<bool> AddFavoriteTrainAsync(FavoriteTrain favorite)
+        {
+            try
+            {
+                var existing = await _context.FavoriteTrains
+                    .FirstOrDefaultAsync(f => f.UserId == favorite.UserId && f.TrainGroupId == favorite.TrainGroupId);
+
+                if (existing != null)
+                {
+                    _logger.LogInformation("Поезд {TrainGroupId} уже в избранном у пользователя {UserId}",
+                        favorite.TrainGroupId, favorite.UserId);
+                    return false;
+                }
+
+                _context.FavoriteTrains.Add(favorite);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Поезд {TrainGroupId} добавлен в избранное для пользователя {UserId}",
+                    favorite.TrainGroupId, favorite.UserId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при добавлении поезда {TrainGroupId} в избранное", favorite.TrainGroupId);
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveFavoriteTrainAsync(int userId, string trainGroupId)
+        {
+            try
+            {
+                var favorite = await _context.FavoriteTrains
+                    .FirstOrDefaultAsync(f => f.UserId == userId && f.TrainGroupId == trainGroupId);
+
+                if (favorite == null)
+                {
+                    _logger.LogWarning("Поезд {TrainGroupId} не найден в избранном у пользователя {UserId}",
+                        trainGroupId, userId);
+                    return false;
+                }
+
+                _context.FavoriteTrains.Remove(favorite);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Поезд {TrainGroupId} удален из избранного для пользователя {UserId}",
+                    trainGroupId, userId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении поезда {TrainGroupId} из избранного", trainGroupId);
+                return false;
+            }
+        }
+
+        public async Task<List<FavoriteTrain>> GetUserFavoriteTrainsAsync(int userId)
+        {
+            try
+            {
+                return await _context.FavoriteTrains
+                    .Where(f => f.UserId == userId)
+                    .OrderByDescending(f => f.AddedDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении избранных поездов для пользователя {UserId}", userId);
+                return new List<FavoriteTrain>();
+            }
+        }
+
+        public async Task<bool> IsTrainInFavoritesAsync(int userId, string trainGroupId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(trainGroupId))
+                    return false;
+
+                return await _context.FavoriteTrains
+                    .AnyAsync(f => f.UserId == userId && f.TrainGroupId == trainGroupId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке поезда {TrainGroupId} в избранном", trainGroupId);
+                return false;
+            }
+        }
+
+        #endregion
     }
 }
