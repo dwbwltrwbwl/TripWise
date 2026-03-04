@@ -27,8 +27,6 @@ public partial class TripWiseContext : DbContext
 
     public virtual DbSet<ExpenseShare> ExpenseShares { get; set; }
 
-    public virtual DbSet<FavoriteFlight> FavoriteFlights { get; set; } // <-- ДОБАВЛЕНО
-
     public virtual DbSet<InterestCategory> InterestCategories { get; set; }
 
     public virtual DbSet<ParticipantRole> ParticipantRoles { get; set; }
@@ -63,6 +61,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<Friend> Friends { get; set; }
     public DbSet<FriendRequest> FriendRequests { get; set; }
     public DbSet<PlannedActivity> PlannedActivities { get; set; }
+    public DbSet<FavoriteFlight> FavoriteFlights { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -74,66 +73,10 @@ public partial class TripWiseContext : DbContext
         modelBuilder.Entity<FavoriteFlight>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.FlightId);
+            entity.HasIndex(e => new { e.UserId, e.FlightId }).IsUnique();
 
-            entity.HasIndex(e => e.UserId, "IX_FavoriteFlights_UserId");
-            entity.HasIndex(e => e.FlightId, "IX_FavoriteFlights_FlightId");
-
-            entity.Property(e => e.Id).HasColumnName("Id");
-            entity.Property(e => e.UserId).HasColumnName("UserId");
-            entity.Property(e => e.FlightId)
-                .HasMaxLength(100)
-                .HasColumnName("FlightId");
-            entity.Property(e => e.Airline)
-                .HasMaxLength(200)
-                .HasColumnName("Airline");
-            entity.Property(e => e.AirlineCode)
-                .HasMaxLength(10)
-                .HasColumnName("AirlineCode");
-            entity.Property(e => e.FlightNumber)
-                .HasMaxLength(50)
-                .HasColumnName("FlightNumber");
-            entity.Property(e => e.DepartureCity)
-                .HasMaxLength(200)
-                .HasColumnName("DepartureCity");
-            entity.Property(e => e.ArrivalCity)
-                .HasMaxLength(200)
-                .HasColumnName("ArrivalCity");
-            entity.Property(e => e.DepartureAirport)
-                .HasMaxLength(10)
-                .HasColumnName("DepartureAirport");
-            entity.Property(e => e.ArrivalAirport)
-                .HasMaxLength(10)
-                .HasColumnName("ArrivalAirport");
-            entity.Property(e => e.DepartureTime).HasColumnName("DepartureTime");
-            entity.Property(e => e.ArrivalTime).HasColumnName("ArrivalTime");
-            entity.Property(e => e.Price)
-                .HasColumnType("decimal(18,2)")
-                .HasColumnName("Price");
-            entity.Property(e => e.Currency)
-                .HasMaxLength(10)
-                .HasColumnName("Currency")
-                .HasDefaultValue("RUB");
-            entity.Property(e => e.Transfers).HasColumnName("Transfers");
-            entity.Property(e => e.Duration).HasColumnName("Duration");
-            entity.Property(e => e.Aircraft)
-                .HasMaxLength(100)
-                .HasColumnName("Aircraft");
-            entity.Property(e => e.IsReturn).HasColumnName("IsReturn");
-            entity.Property(e => e.BookingUrl)
-                .HasMaxLength(500)
-                .HasColumnName("BookingUrl");
-            entity.Property(e => e.SearchParameters).HasColumnName("SearchParameters");
-            entity.Property(e => e.AddedDate).HasColumnName("AddedDate");
-            entity.Property(e => e.TripDate).HasColumnName("TripDate");
-            entity.Property(e => e.Notes)
-                .HasMaxLength(1000)
-                .HasColumnName("Notes");
-
-            base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<FavoriteFlight>()
-                .HasIndex(f => new { f.UserId, f.FlightId })
-                .IsUnique();
+            entity.Property(e => e.AddedDate).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<Chat>(entity =>

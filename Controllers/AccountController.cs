@@ -49,6 +49,17 @@ namespace TripWise.Controllers
             return Content("Письмо отправлено");
         }
 
+        [HttpGet]
+        public IActionResult GetAuthStatus()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            return Json(new
+            {
+                isAuthenticated = userId.HasValue,
+                userId = userId
+            });
+        }
+
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login()

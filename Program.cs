@@ -152,7 +152,10 @@ app.Use(async (context, next) =>
 
     await next();
 });
-
+app.MapControllerRoute(
+    name: "favorites",
+    pattern: "Favorites",
+    defaults: new { controller = "FavoritesPage", action = "Index" });
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

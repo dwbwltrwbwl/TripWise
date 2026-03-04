@@ -1,5 +1,4 @@
-﻿// Services/FavoriteService.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
 using System.Text.Json;
 
@@ -34,7 +33,9 @@ namespace TripWise.Services
 
                 if (existing != null)
                 {
-                    return false; // Уже в избранном
+                    _logger.LogInformation("Рейс {FlightId} уже в избранном у пользователя {UserId}",
+                        favorite.FlightId, favorite.UserId);
+                    return false;
                 }
 
                 _context.FavoriteFlights.Add(favorite);
@@ -47,7 +48,7 @@ namespace TripWise.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при добавлении рейса в избранное");
+                _logger.LogError(ex, "Ошибка при добавлении рейса {FlightId} в избранное", favorite.FlightId);
                 return false;
             }
         }
@@ -60,7 +61,11 @@ namespace TripWise.Services
                     .FirstOrDefaultAsync(f => f.UserId == userId && f.FlightId == flightId);
 
                 if (favorite == null)
+                {
+                    _logger.LogWarning("Рейс {FlightId} не найден в избранном у пользователя {UserId}",
+                        flightId, userId);
                     return false;
+                }
 
                 _context.FavoriteFlights.Remove(favorite);
                 await _context.SaveChangesAsync();
@@ -72,7 +77,7 @@ namespace TripWise.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при удалении рейса из избранного");
+                _logger.LogError(ex, "Ошибка при удалении рейса {FlightId} из избранного", flightId);
                 return false;
             }
         }
@@ -81,14 +86,38 @@ namespace TripWise.Services
         {
             try
             {
-                return await _context.FavoriteFlights
+                _logger.LogInformation("=== FavoriteService.GetUserFavoriteFlightsAsync ===");
+                _logger.LogInformation("Поиск избранного для пользователя {UserId}", userId);
+
+                // Сначала проверим, есть ли вообще записи в таблице для этого пользователя
+                var any = await _context.FavoriteFlights.AnyAsync(f => f.UserId == userId);
+                _logger.LogInformation("Есть ли записи в таблице для пользователя {UserId}? {Any}", userId, any);
+
+                if (!any)
+                {
+                    _logger.LogInformation("Нет записей для пользователя {UserId}", userId);
+                    return new List<FavoriteFlight>();
+                }
+
+                var favorites = await _context.FavoriteFlights
                     .Where(f => f.UserId == userId)
                     .OrderByDescending(f => f.AddedDate)
                     .ToListAsync();
+
+                _logger.LogInformation("Найдено {Count} рейсов в БД", favorites.Count);
+
+                // Логируем все записи
+                foreach (var flight in favorites)
+                {
+                    _logger.LogInformation("Рейс: ID={FlightId}, {Airline} {FlightNumber}, {DepartureCity}→{ArrivalCity}, Цена={Price}",
+                        flight.FlightId, flight.Airline, flight.FlightNumber, flight.DepartureCity, flight.ArrivalCity, flight.Price);
+                }
+
+                return favorites;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при получении избранных рейсов");
+                _logger.LogError(ex, "ОШИБКА при получении избранных рейсов для пользователя {UserId}", userId);
                 return new List<FavoriteFlight>();
             }
         }
@@ -97,12 +126,20 @@ namespace TripWise.Services
         {
             try
             {
-                return await _context.FavoriteFlights
+                if (string.IsNullOrEmpty(flightId))
+                {
+                    _logger.LogWarning("flightId пустой или null для пользователя {UserId}", userId);
+                    return false;
+                }
+
+                var exists = await _context.FavoriteFlights
                     .AnyAsync(f => f.UserId == userId && f.FlightId == flightId);
+
+                return exists;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при проверке рейса в избранном");
+                _logger.LogError(ex, "Ошибка при проверке рейса {FlightId} в избранном", flightId);
                 return false;
             }
         }

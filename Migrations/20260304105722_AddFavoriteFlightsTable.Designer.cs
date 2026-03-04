@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TripWise.Models;
 
@@ -11,9 +12,11 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    partial class TripWiseContextModelSnapshot : ModelSnapshot
+    [Migration("20260304105722_AddFavoriteFlightsTable")]
+    partial class AddFavoriteFlightsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -473,6 +476,7 @@ namespace TripWise.Migrations
                         .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Aircraft")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -482,10 +486,12 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("AirlineCode")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("ArrivalAirport")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
@@ -498,13 +504,16 @@ namespace TripWise.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("BookingUrl")
+                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Currency")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DepartureAirport")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
@@ -533,6 +542,7 @@ namespace TripWise.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Notes")
+                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
@@ -540,6 +550,7 @@ namespace TripWise.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SearchParameters")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Transfers")

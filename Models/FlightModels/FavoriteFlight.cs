@@ -1,5 +1,4 @@
-﻿// Models/FavoriteFlight.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripWise.Models
@@ -13,36 +12,36 @@ namespace TripWise.Models
         public int UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public User? User { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string FlightId { get; set; }
+        public string FlightId { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        public string Airline { get; set; }
+        public string Airline { get; set; } = string.Empty;
 
         [MaxLength(10)]
-        public string AirlineCode { get; set; }
+        public string? AirlineCode { get; set; }
 
         [Required]
         [MaxLength(50)]
-        public string FlightNumber { get; set; }
+        public string FlightNumber { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        public string DepartureCity { get; set; }
+        public string DepartureCity { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        public string ArrivalCity { get; set; }
+        public string ArrivalCity { get; set; } = string.Empty;
 
         [MaxLength(10)]
-        public string DepartureAirport { get; set; }
+        public string? DepartureAirport { get; set; }
 
         [MaxLength(10)]
-        public string ArrivalAirport { get; set; }
+        public string? ArrivalAirport { get; set; }
 
         [Required]
         public DateTime DepartureTime { get; set; }
@@ -54,21 +53,21 @@ namespace TripWise.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
-        public string Currency { get; set; } = "RUB";
+        public string? Currency { get; set; } = "RUB";
 
         public int Transfers { get; set; }
 
         public int Duration { get; set; }
 
         [MaxLength(100)]
-        public string Aircraft { get; set; }
+        public string? Aircraft { get; set; }
 
         public bool IsReturn { get; set; }
 
         [MaxLength(500)]
-        public string BookingUrl { get; set; }
+        public string? BookingUrl { get; set; }
 
-        public string SearchParameters { get; set; }
+        public string? SearchParameters { get; set; }
 
         [Required]
         public DateTime AddedDate { get; set; } = DateTime.Now;
@@ -76,6 +75,6 @@ namespace TripWise.Models
         public DateTime? TripDate { get; set; }
 
         [MaxLength(1000)]
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
     }
 }
