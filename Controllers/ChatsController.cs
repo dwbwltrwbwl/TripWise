@@ -20,7 +20,6 @@ namespace TripWise.Controllers
             _logger = logger;
         }
 
-        // GET: /Chats/Index
         public IActionResult Index()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -31,7 +30,6 @@ namespace TripWise.Controllers
             return View();
         }
 
-        // GET: /Chats/GetUserChats
         [HttpGet]
         public async Task<IActionResult> GetUserChats()
         {
