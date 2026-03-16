@@ -12,8 +12,8 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    [Migration("20260304202258_AddFavoriteHotelsTable")]
-    partial class AddFavoriteHotelsTable
+    [Migration("20260316142457_RemoveTripPointFields")]
+    partial class RemoveTripPointFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,12 +27,12 @@ namespace TripWise.Migrations
 
             modelBuilder.Entity("TripWise.Models.Chat", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("IdChat")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("idChat");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdChat"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -49,6 +49,10 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
+                    b.Property<int?>("IdTrip")
+                        .HasColumnType("int")
+                        .HasColumnName("idTrip");
+
                     b.Property<DateTime?>("LastMessageAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("lastMessageAt");
@@ -59,10 +63,6 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("TripId")
-                        .HasColumnType("int")
-                        .HasColumnName("idTrip");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -71,16 +71,16 @@ namespace TripWise.Migrations
                         .HasDefaultValue("private")
                         .HasColumnName("type");
 
-                    b.HasKey("Id");
+                    b.HasKey("IdChat");
 
                     b.HasIndex("CreatedById")
                         .HasDatabaseName("IX_Chats_createdById");
 
+                    b.HasIndex("IdTrip")
+                        .HasDatabaseName("IX_Chats_idTrip");
+
                     b.HasIndex("LastMessageAt")
                         .HasDatabaseName("IX_Chats_lastMessageAt");
-
-                    b.HasIndex("TripId")
-                        .HasDatabaseName("IX_Chats_idTrip");
 
                     b.ToTable("Chats");
                 });
@@ -205,8 +205,6 @@ namespace TripWise.Migrations
 
                     b.HasIndex("ChatId")
                         .HasDatabaseName("IX_ChatMessages_idChat");
-
-                    b.HasIndex("IdPoint");
 
                     b.HasIndex("IdTrip")
                         .HasDatabaseName("IX_ChatMessages_idTrip");
@@ -2084,7 +2082,7 @@ namespace TripWise.Migrations
 
                     b.HasOne("TripWise.Models.Trip", "Trip")
                         .WithMany()
-                        .HasForeignKey("TripId")
+                        .HasForeignKey("IdTrip")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Creator");
@@ -2120,18 +2118,6 @@ namespace TripWise.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_ChatMessages_Chats");
 
-                    b.HasOne("TripWise.Models.PointsOfInterest", "Point")
-                        .WithMany()
-                        .HasForeignKey("IdPoint")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Points");
-
-                    b.HasOne("TripWise.Models.Trip", "Trip")
-                        .WithMany()
-                        .HasForeignKey("IdTrip")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Trips");
-
                     b.HasOne("TripWise.Models.PointsOfInterest", null)
                         .WithMany("ChatMessages")
                         .HasForeignKey("PointsOfInterestIdPoint");
@@ -2155,13 +2141,9 @@ namespace TripWise.Migrations
 
                     b.Navigation("Chat");
 
-                    b.Navigation("Point");
-
                     b.Navigation("ReplyTo");
 
                     b.Navigation("Sender");
-
-                    b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("TripWise.Models.ChatMessageRead", b =>

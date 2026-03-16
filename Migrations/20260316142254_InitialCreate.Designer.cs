@@ -12,8 +12,8 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    [Migration("20260217122431_AddHotelAndTrainBookings")]
-    partial class AddHotelAndTrainBookings
+    [Migration("20260316142254_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,12 +27,12 @@ namespace TripWise.Migrations
 
             modelBuilder.Entity("TripWise.Models.Chat", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("IdChat")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("idChat");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdChat"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -49,6 +49,10 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
+                    b.Property<int?>("IdTrip")
+                        .HasColumnType("int")
+                        .HasColumnName("idTrip");
+
                     b.Property<DateTime?>("LastMessageAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("lastMessageAt");
@@ -59,10 +63,6 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("TripId")
-                        .HasColumnType("int")
-                        .HasColumnName("idTrip");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -71,16 +71,16 @@ namespace TripWise.Migrations
                         .HasDefaultValue("private")
                         .HasColumnName("type");
 
-                    b.HasKey("Id");
+                    b.HasKey("IdChat");
 
                     b.HasIndex("CreatedById")
                         .HasDatabaseName("IX_Chats_createdById");
 
+                    b.HasIndex("IdTrip")
+                        .HasDatabaseName("IX_Chats_idTrip");
+
                     b.HasIndex("LastMessageAt")
                         .HasDatabaseName("IX_Chats_lastMessageAt");
-
-                    b.HasIndex("TripId")
-                        .HasDatabaseName("IX_Chats_idTrip");
 
                     b.ToTable("Chats");
                 });
@@ -205,8 +205,6 @@ namespace TripWise.Migrations
 
                     b.HasIndex("ChatId")
                         .HasDatabaseName("IX_ChatMessages_idChat");
-
-                    b.HasIndex("IdPoint");
 
                     b.HasIndex("IdTrip")
                         .HasDatabaseName("IX_ChatMessages_idTrip");
@@ -466,251 +464,105 @@ namespace TripWise.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("Id");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("AddedDate")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasColumnName("AddedDate");
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Aircraft")
-                        .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("Aircraft");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Airline")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("Airline");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("AirlineCode")
-                        .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("AirlineCode");
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("ArrivalAirport")
-                        .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("ArrivalAirport");
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("ArrivalCity")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("ArrivalCity");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("ArrivalTime")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("ArrivalTime");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("BookingUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("BookingUrl");
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Currency")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasDefaultValue("RUB")
-                        .HasColumnName("Currency");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DepartureAirport")
-                        .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("DepartureAirport");
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("DepartureCity")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("DepartureCity");
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("DepartureTime")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("DepartureTime");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("int")
-                        .HasColumnName("Duration");
+                        .HasColumnType("int");
 
                     b.Property<string>("FlightId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("FlightId");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("FlightNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("FlightNumber");
-
-                    b.Property<bool>("IsReturn")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsReturn");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .HasColumnName("Notes");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Price");
-
-                    b.Property<string>("SearchParameters")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SearchParameters");
-
-                    b.Property<int>("Transfers")
-                        .HasColumnType("int")
-                        .HasColumnName("Transfers");
-
-                    b.Property<DateTime?>("TripDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("TripDate");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("UserId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "FlightId")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "FlightId" }, "IX_FavoriteFlights_FlightId");
-
-                    b.HasIndex(new[] { "UserId" }, "IX_FavoriteFlights_UserId");
-
-                    b.ToTable("FavoriteFlights");
-                });
-
-            modelBuilder.Entity("TripWise.Models.FlightOrder", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Airline")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ArrivalAirport")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ArrivalCity")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ArrivalTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("BookingReference")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ConfirmedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ContactEmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContactPhone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DepartureAirport")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DepartureCity")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("DepartureTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FlightId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FlightNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("IsReturn")
                         .HasColumnType("bit");
 
                     b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OrderNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentMethod")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("SearchId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TicketNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TransactionId")
-                        .IsRequired()
+                    b.Property<string>("SearchParameters")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Transfers")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("TripDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("FlightId");
 
-                    b.ToTable("FlightOrders");
+                    b.HasIndex("UserId", "FlightId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteFlights");
                 });
 
-            modelBuilder.Entity("TripWise.Models.FlightPassenger", b =>
+            modelBuilder.Entity("TripWise.Models.FavoriteHotel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -718,59 +570,484 @@ namespace TripWise.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Baggage")
+                    b.Property<string>("AccommodationType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("BookingUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Currency")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("RUB");
+
+                    b.Property<string>("HotelAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("HotelId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HotelName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("PricePerNight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TagsJson")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
-                    b.Property<string>("DocumentNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gender")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("nvarchar(1)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MealPreference")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MiddleName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Nationality")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OrderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SeatNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Website")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("HotelId");
 
-                    b.ToTable("FlightPassengers");
+                    b.HasIndex("UserId", "HotelId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteHotels");
+                });
+
+            modelBuilder.Entity("TripWise.Models.FavoriteTrain", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime>("ArrivalDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ArrivalStation")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ArrivalStationId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BookingUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Carrier")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("RUB");
+
+                    b.Property<DateTime>("DepartureDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DepartureStation")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DepartureStationId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ForwardTrainNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsFirm")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRoundTrip")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Passengers")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ReturnArrivalDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReturnDepartureDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReturnDuration")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReturnTrainNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TrainBrand")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TrainGroupId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrainGroupId");
+
+                    b.HasIndex("UserId", "TrainGroupId")
+                        .IsUnique();
+
+                    b.ToTable("FavoriteTrains");
+                });
+
+            modelBuilder.Entity("TripWise.Models.FlightBooking", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Aircraft")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Airline")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AirlineCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("AirlineLogo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ArrivalAirport")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("ArrivalCity")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("ArrivalDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Baggage")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BookingNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BookingReference")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("CancellationReason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ContactName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ContactPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("RUB");
+
+                    b.Property<string>("DepartureAirport")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("DepartureCity")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("DepartureDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FlightClass")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("economy");
+
+                    b.Property<string>("FlightId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FlightNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("HandLuggage")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsRoundTrip")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Meal")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Passengers")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PassengersJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ReturnAirline")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("ReturnArrivalDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReturnDepartureDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReturnDuration")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReturnFlightId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReturnFlightNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("ReturnTransfers")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SeatNumbers")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TicketNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Transfers")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingNumber")
+                        .IsUnique();
+
+                    b.HasIndex("BookingReference");
+
+                    b.HasIndex("DepartureDateTime");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TicketNumber");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("FlightBookings");
+                });
+
+            modelBuilder.Entity("TripWise.Models.Friend", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FriendId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FriendId");
+
+                    b.HasIndex("UserId", "FriendId")
+                        .IsUnique();
+
+                    b.ToTable("Friends");
+                });
+
+            modelBuilder.Entity("TripWise.Models.FriendRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId", "ReceiverId")
+                        .IsUnique();
+
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("TripWise.Models.HotelBooking", b =>
@@ -995,6 +1272,86 @@ namespace TripWise.Migrations
                     b.HasKey("IdParticipantRole");
 
                     b.ToTable("ParticipantRoles");
+                });
+
+            modelBuilder.Entity("TripWise.Models.PlannedActivity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActivityId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ActivityId");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("Address");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Description");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float")
+                        .HasColumnName("Latitude");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float")
+                        .HasColumnName("Longitude");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Name");
+
+                    b.Property<string>("Tags")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Tags");
+
+                    b.Property<TimeSpan>("Time")
+                        .HasColumnType("time")
+                        .HasColumnName("Time");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Category" }, "IX_PlannedActivities_Category");
+
+                    b.HasIndex(new[] { "Date" }, "IX_PlannedActivities_Date");
+
+                    b.HasIndex(new[] { "UserId" }, "IX_PlannedActivities_UserId");
+
+                    b.ToTable("PlannedActivities");
                 });
 
             modelBuilder.Entity("TripWise.Models.PointsOfInterest", b =>
@@ -1467,6 +1824,9 @@ namespace TripWise.Migrations
                         .HasColumnType("int")
                         .HasColumnName("age");
 
+                    b.Property<string>("AvatarPath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("createdAt");
@@ -1722,7 +2082,7 @@ namespace TripWise.Migrations
 
                     b.HasOne("TripWise.Models.Trip", "Trip")
                         .WithMany()
-                        .HasForeignKey("TripId")
+                        .HasForeignKey("IdTrip")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Creator");
@@ -1758,18 +2118,6 @@ namespace TripWise.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_ChatMessages_Chats");
 
-                    b.HasOne("TripWise.Models.PointsOfInterest", "Point")
-                        .WithMany()
-                        .HasForeignKey("IdPoint")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Points");
-
-                    b.HasOne("TripWise.Models.Trip", "Trip")
-                        .WithMany()
-                        .HasForeignKey("IdTrip")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("FK_ChatMessages_Trips");
-
                     b.HasOne("TripWise.Models.PointsOfInterest", null)
                         .WithMany("ChatMessages")
                         .HasForeignKey("PointsOfInterestIdPoint");
@@ -1793,13 +2141,9 @@ namespace TripWise.Migrations
 
                     b.Navigation("Chat");
 
-                    b.Navigation("Point");
-
                     b.Navigation("ReplyTo");
 
                     b.Navigation("Sender");
-
-                    b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("TripWise.Models.ChatMessageRead", b =>
@@ -1911,7 +2255,7 @@ namespace TripWise.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TripWise.Models.FlightOrder", b =>
+            modelBuilder.Entity("TripWise.Models.FavoriteHotel", b =>
                 {
                     b.HasOne("TripWise.Models.User", "User")
                         .WithMany()
@@ -1922,21 +2266,81 @@ namespace TripWise.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TripWise.Models.FlightPassenger", b =>
+            modelBuilder.Entity("TripWise.Models.FavoriteTrain", b =>
                 {
-                    b.HasOne("TripWise.Models.FlightOrder", "Order")
-                        .WithMany("Passengers")
-                        .HasForeignKey("OrderId")
+                    b.HasOne("TripWise.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Order");
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.FlightBooking", b =>
+                {
+                    b.HasOne("TripWise.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.Friend", b =>
+                {
+                    b.HasOne("TripWise.Models.User", "FriendUser")
+                        .WithMany()
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TripWise.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FriendUser");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.FriendRequest", b =>
+                {
+                    b.HasOne("TripWise.Models.User", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TripWise.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("TripWise.Models.HotelBooking", b =>
                 {
                     b.HasOne("TripWise.Models.User", "User")
                         .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.PlannedActivity", b =>
+                {
+                    b.HasOne("TripWise.Models.User", "User")
+                        .WithMany("PlannedActivities")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2160,11 +2564,6 @@ namespace TripWise.Migrations
                     b.Navigation("Expenses");
                 });
 
-            modelBuilder.Entity("TripWise.Models.FlightOrder", b =>
-                {
-                    b.Navigation("Passengers");
-                });
-
             modelBuilder.Entity("TripWise.Models.InterestCategory", b =>
                 {
                     b.Navigation("PointsOfInterests");
@@ -2223,6 +2622,8 @@ namespace TripWise.Migrations
                     b.Navigation("FavoriteFlights");
 
                     b.Navigation("MessageReads");
+
+                    b.Navigation("PlannedActivities");
 
                     b.Navigation("PointsOfInterests");
 

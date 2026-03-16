@@ -6,29 +6,29 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TripWise.Models;
 
 [Table("Chats")]
-public partial class Chat
+public class Chat
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("idChat")]
-    public int Id { get; set; }
+    public int IdChat { get; set; }
 
     [Required]
-    [StringLength(200)]
     [Column("name")]
+    [StringLength(200)]
     public string Name { get; set; } = null!;
 
-    [StringLength(500)]
     [Column("description")]
+    [StringLength(500)]
     public string? Description { get; set; }
 
     [Required]
-    [StringLength(20)]
     [Column("type")]
-    public string Type { get; set; } = null!; // private, group, trip
+    [StringLength(20)]
+    public string Type { get; set; } = "group";
 
     [Column("idTrip")]
-    public int? TripId { get; set; }
+    public int? IdTrip { get; set; }
 
     [Column("createdById")]
     public int CreatedById { get; set; }
@@ -39,14 +39,17 @@ public partial class Chat
     [Column("lastMessageAt")]
     public DateTime? LastMessageAt { get; set; }
 
+    // ======================
     // Навигационные свойства
-    [ForeignKey("TripId")]
-    public virtual Trip? Trip { get; set; }
+    // ======================
 
-    [ForeignKey("CreatedById")]
-    public virtual User Creator { get; set; } = null!;
+    public virtual ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 
     public virtual ICollection<ChatMember> Members { get; set; } = new List<ChatMember>();
 
-    public virtual ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+    [ForeignKey(nameof(CreatedById))]
+    public virtual User? Creator { get; set; }
+
+    [ForeignKey(nameof(IdTrip))]
+    public virtual Trip? Trip { get; set; }
 }

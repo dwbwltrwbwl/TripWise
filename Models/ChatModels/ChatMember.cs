@@ -1,21 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripWise.Models;
 
 [Table("ChatMembers")]
-public partial class ChatMember
+public class ChatMember
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("idChatMember")]
     public int Id { get; set; }
 
+    [Required]
     [Column("idChat")]
     public int ChatId { get; set; }
 
+    [Required]
     [Column("idUser")]
     public int UserId { get; set; }
 
@@ -28,12 +29,15 @@ public partial class ChatMember
     [Required]
     [StringLength(20)]
     [Column("role")]
-    public string Role { get; set; } = "member"; // admin, member
+    public string Role { get; set; } = "member";
 
+    // =====================
     // Навигационные свойства
-    [ForeignKey("ChatId")]
-    public virtual Chat Chat { get; set; } = null!;
+    // =====================
 
-    [ForeignKey("UserId")]
-    public virtual User User { get; set; } = null!;
+    [ForeignKey(nameof(ChatId))]
+    public virtual Chat? Chat { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public virtual User? User { get; set; }
 }

@@ -99,8 +99,8 @@ public partial class TripWiseContext : DbContext
         });
         modelBuilder.Entity<Chat>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("idChat");
+            entity.HasKey(e => e.IdChat);
+            entity.Property(e => e.IdChat).HasColumnName("idChat");
 
             entity.Property(e => e.Name)
                 .IsRequired()
@@ -117,7 +117,7 @@ public partial class TripWiseContext : DbContext
                 .HasColumnName("type")
                 .HasDefaultValue("private");
 
-            entity.Property(e => e.TripId)
+            entity.Property(e => e.IdTrip)
                 .HasColumnName("idTrip");
 
             entity.Property(e => e.CreatedById)
@@ -134,7 +134,7 @@ public partial class TripWiseContext : DbContext
 
             entity.HasOne(d => d.Trip)
                 .WithMany()
-                .HasForeignKey(d => d.TripId)
+                .HasForeignKey(d => d.IdTrip)
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(d => d.Creator)
@@ -142,7 +142,7 @@ public partial class TripWiseContext : DbContext
                 .HasForeignKey(d => d.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasIndex(e => e.TripId).HasDatabaseName("IX_Chats_idTrip");
+            entity.HasIndex(e => e.IdTrip).HasDatabaseName("IX_Chats_idTrip");
             entity.HasIndex(e => e.CreatedById).HasDatabaseName("IX_Chats_createdById");
             entity.HasIndex(e => e.LastMessageAt).HasDatabaseName("IX_Chats_lastMessageAt");
         });
@@ -238,26 +238,25 @@ public partial class TripWiseContext : DbContext
             entity.Property(e => e.AttachmentSize)
                 .HasColumnName("attachmentSize");
 
-            // Обратная совместимость
+            // Простые поля, без связей
             entity.Property(e => e.IdTrip)
                 .HasColumnName("idTrip");
 
             entity.Property(e => e.IdPoint)
                 .HasColumnName("idPoint");
 
-            // Связи - ТОЛЬКО ОДИН РАЗ для каждого foreign key
+            // Настройка связей - ТОЛЬКО для реально существующих внешних ключей
             entity.HasOne(d => d.Chat)
                 .WithMany(p => p.Messages)
                 .HasForeignKey(d => d.ChatId)
                 .HasConstraintName("FK_ChatMessages_Chats")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ОДИН РАЗ для пользователя
             entity.HasOne(d => d.Sender)
-    .WithMany(p => p.ChatMessages)  // ИСПРАВЛЕНО: SentMessages -> ChatMessages
-    .HasForeignKey(d => d.SenderId)
-    .HasConstraintName("FK_ChatMessages_Users")
-    .OnDelete(DeleteBehavior.Restrict);
+                .WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.SenderId)
+                .HasConstraintName("FK_ChatMessages_Users")
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(d => d.ReplyTo)
                 .WithMany(p => p.Replies)
@@ -265,18 +264,9 @@ public partial class TripWiseContext : DbContext
                 .HasConstraintName("FK_ChatMessages_ReplyTo")
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Связи для обратной совместимости
-            entity.HasOne(d => d.Trip)
-                .WithMany()
-                .HasForeignKey(d => d.IdTrip)
-                .HasConstraintName("FK_ChatMessages_Trips")
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(d => d.Point)
-                .WithMany()
-                .HasForeignKey(d => d.IdPoint)
-                .HasConstraintName("FK_ChatMessages_Points")
-                .OnDelete(DeleteBehavior.SetNull);
+            // УДАЛЯЕМ эти строки - их больше нет
+            // entity.HasOne(d => d.Trip)...  
+            // entity.HasOne(d => d.Point)...
 
             entity.HasMany(d => d.Reads)
                 .WithOne(p => p.Message)

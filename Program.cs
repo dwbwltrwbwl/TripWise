@@ -152,6 +152,12 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
+// Сначала все маршруты
+app.MapControllerRoute(
+    name: "chats",
+    pattern: "Chats/{action=Index}/{id?}",
+    defaults: new { controller = "Chats", action = "Index" });
 app.MapControllerRoute(
     name: "favorites",
     pattern: "Favorites",
@@ -160,6 +166,8 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// А ТОЛЬКО ПОТОМ MapControllers()
 app.MapControllers();
+
 
 app.Run();

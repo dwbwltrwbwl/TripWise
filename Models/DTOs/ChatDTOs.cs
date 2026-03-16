@@ -106,7 +106,7 @@ namespace TripWise.Models.DTOs
     public class SendMessageRequest
     {
         public int ChatId { get; set; }
-        public string Text { get; set; } = string.Empty;
+        public string Text { get; set; } = "";
         public int? ReplyToId { get; set; }
     }
 

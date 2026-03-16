@@ -3,76 +3,66 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TripWise.Models;
-
-[Table("ChatMessages")]
-public partial class ChatMessage
+namespace TripWise.Models
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [Column("idMessage")]
-    public int IdMessage { get; set; }
+    [Table("ChatMessages")]
+    public class ChatMessage
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Column("idMessage")]
+        public int IdMessage { get; set; }
 
-    [Column("idChat")]
-    public int ChatId { get; set; }
+        [Required]
+        [Column("message")]
+        public string Message { get; set; } = null!;
 
-    [Column("idUser")]
-    public int SenderId { get; set; }
+        [Column("sentAt")]
+        public DateTime SentAt { get; set; }
 
-    [Required]
-    [Column("message")]
-    public string Message { get; set; } = null!;
+        [Column("idTrip")]  // Это просто поле, не навигационное свойство
+        public int? IdTrip { get; set; }
 
-    [Column("sentAt")]
-    public DateTime SentAt { get; set; }
+        [Column("idUser")]
+        public int SenderId { get; set; }
 
-    [Column("editedAt")]
-    public DateTime? EditedAt { get; set; }
+        [Column("idPoint")]  // Это просто поле, не навигационное свойство
+        public int? IdPoint { get; set; }
 
-    [Column("replyToId")]
-    public int? ReplyToId { get; set; }
+        [Column("attachmentName")]
+        [StringLength(255)]
+        public string? AttachmentName { get; set; }
 
-    [Column("attachmentType")]
-    [StringLength(50)]
-    public string? AttachmentType { get; set; }
+        [Column("attachmentSize")]
+        public long? AttachmentSize { get; set; }
 
-    [Column("attachmentUrl")]
-    [StringLength(500)]
-    public string? AttachmentUrl { get; set; }
+        [Column("attachmentType")]
+        [StringLength(50)]
+        public string? AttachmentType { get; set; }
 
-    [Column("attachmentName")]
-    [StringLength(255)]
-    public string? AttachmentName { get; set; }
+        [Column("attachmentUrl")]
+        [StringLength(500)]
+        public string? AttachmentUrl { get; set; }
 
-    [Column("attachmentSize")]
-    public long? AttachmentSize { get; set; }
+        [Column("editedAt")]
+        public DateTime? EditedAt { get; set; }
 
-    // Старые поля для обратной совместимости
-    [Column("idTrip")]
-    public int? IdTrip { get; set; }
+        [Column("idChat")]
+        public int ChatId { get; set; }
 
-    [Column("idPoint")]
-    public int? IdPoint { get; set; }
+        [Column("replyToId")]
+        public int? ReplyToId { get; set; }
 
-    // Навигационные свойства - УБИРАЕМ ДУБЛИРОВАНИЕ
-    [ForeignKey("ChatId")]
-    public virtual Chat? Chat { get; set; }
+        // ТОЛЬКО эти навигационные свойства - БЕЗ атрибутов ForeignKey
+        public virtual Chat? Chat { get; set; }
+        public virtual User? Sender { get; set; }
+        public virtual ChatMessage? ReplyTo { get; set; }
 
-    // ОДИН навигационный property для пользователя
-    [ForeignKey("SenderId")]
-    public virtual User? Sender { get; set; }  // Только это, удалите IdUserNavigation!
+        // ПОЛНОСТЬЮ УДАЛЯЕМ эти свойства
+        // public virtual Trip? Trip { get; set; }
+        // public virtual PointsOfInterest? Point { get; set; }
 
-    [ForeignKey("ReplyToId")]
-    public virtual ChatMessage? ReplyTo { get; set; }
-
-    public virtual ICollection<ChatMessage> Replies { get; set; } = new List<ChatMessage>();
-
-    public virtual ICollection<ChatMessageRead> Reads { get; set; } = new List<ChatMessageRead>();
-
-    // Старые навигационные свойства - переименовываем или удаляем
-    [ForeignKey("IdTrip")]
-    public virtual Trip? Trip { get; set; }  // Было IdTripNavigation
-
-    [ForeignKey("IdPoint")]
-    public virtual PointsOfInterest? Point { get; set; }  // Было IdPointNavigation
+        public virtual ICollection<ChatMessage> Replies { get; set; } = new List<ChatMessage>();
+        public virtual ICollection<ChatMessageRead> Reads { get; set; } = new List<ChatMessageRead>();
+    }
 }
