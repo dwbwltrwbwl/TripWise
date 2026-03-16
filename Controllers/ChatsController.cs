@@ -426,7 +426,6 @@ namespace TripWise.Controllers
             }
         }
 
-        // Альтернативный метод с прямым SQL запросом
         // POST: /Chats/SendMessage
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -443,9 +442,7 @@ namespace TripWise.Controllers
                         Message = "Пользователь не авторизован"
                     });
 
-                _logger.LogInformation("SendMessage: chatId={ChatId}, userId={UserId}, text={Text}",
-                    request.ChatId, userId, request.Text);
-
+                // Проверяем доступ
                 var isMember = await _context.ChatMembers
                     .AnyAsync(cm => cm.ChatId == request.ChatId && cm.UserId == userId);
 
@@ -456,26 +453,30 @@ namespace TripWise.Controllers
                         Message = "Нет доступа к чату"
                     });
 
-                // Используем прямой SQL запрос с правильными параметрами
+                // Прямой SQL запрос
                 var sql = @"
             INSERT INTO [ChatMessages] 
-            ([message], [sentAt], [idUser], [idChat], [replyToId])
+            ([message], [sentAt], [idUser], [idChat], [replyToId], [attachmentName], [attachmentSize], [attachmentType], [attachmentUrl])
             VALUES 
-            (@p0, @p1, @p2, @p3, @p4);
+            (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new[]
                 {
-            new SqlParameter("@p0", request.Text ?? ""),
-            new SqlParameter("@p1", DateTime.UtcNow),
-            new SqlParameter("@p2", userId.Value),
-            new SqlParameter("@p3", request.ChatId),
-            new SqlParameter("@p4", request.ReplyToId.HasValue ? (object)request.ReplyToId.Value : DBNull.Value)
+            new Microsoft.Data.SqlClient.SqlParameter("@p0", request.Text ?? ""),
+            new Microsoft.Data.SqlClient.SqlParameter("@p1", DateTime.UtcNow),
+            new Microsoft.Data.SqlClient.SqlParameter("@p2", userId.Value),
+            new Microsoft.Data.SqlClient.SqlParameter("@p3", request.ChatId),
+            new Microsoft.Data.SqlClient.SqlParameter("@p4", request.ReplyToId ?? (object)DBNull.Value),
+            new Microsoft.Data.SqlClient.SqlParameter("@p5", request.AttachmentName ?? (object)DBNull.Value),
+            new Microsoft.Data.SqlClient.SqlParameter("@p6", request.AttachmentSize ?? (object)DBNull.Value),
+            new Microsoft.Data.SqlClient.SqlParameter("@p7", request.AttachmentType ?? (object)DBNull.Value),
+            new Microsoft.Data.SqlClient.SqlParameter("@p8", request.AttachmentUrl ?? (object)DBNull.Value)
         };
 
                 var messageId = await _context.Database.ExecuteSqlRawAsync(sql, parameters);
 
-                // Обновляем время последнего сообщения в чате
+                // Обновляем время последнего сообщения
                 var chat = await _context.Chats.FindAsync(request.ChatId);
                 if (chat != null)
                 {
@@ -491,7 +492,11 @@ namespace TripWise.Controllers
                         messageId = messageId,
                         text = request.Text,
                         senderId = userId.Value,
-                        sentAt = DateTime.UtcNow
+                        sentAt = DateTime.UtcNow,
+                        attachmentName = request.AttachmentName,
+                        attachmentUrl = request.AttachmentUrl,
+                        attachmentSize = request.AttachmentSize,
+                        attachmentType = request.AttachmentType
                     }
                 });
             }
@@ -1369,6 +1374,257 @@ namespace TripWise.Controllers
                 {
                     Success = false,
                     Message = "Ошибка при удалении чата: " + ex.Message
+                });
+            }
+        }
+        // POST: /Chats/UploadFile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<FileUploadResponse>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                if (file == null || file.Length == 0)
+                {
+                    return Json(new ApiResponse<FileUploadResponse>
+                    {
+                        Success = false,
+                        Message = "Файл не выбран или пуст"
+                    });
+                }
+
+                _logger.LogInformation("UploadFile: userId={UserId}, fileName={FileName}, fileSize={FileSize}, contentType={ContentType}",
+                    userId, file.FileName, file.Length, file.ContentType);
+
+                // Проверка размера файла (максимум 10 МБ)
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    return Json(new ApiResponse<FileUploadResponse>
+                    {
+                        Success = false,
+                        Message = "Размер файла не должен превышать 10 МБ"
+                    });
+                }
+
+                // Получаем расширение файла
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                // Проверка типа файла (разрешенные расширения)
+                var allowedExtensions = new[] {
+            ".jpg", ".jpeg", ".png", ".gif", ".webp",  // изображения
+            ".pdf",                                     // документы
+            ".doc", ".docx",                            // Word
+            ".xls", ".xlsx",                             // Excel
+            ".txt",                                      // текст
+            ".zip", ".rar", ".7z"                        // архивы
+        };
+
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return Json(new ApiResponse<FileUploadResponse>
+                    {
+                        Success = false,
+                        Message = "Недопустимый тип файла. Разрешены: " + string.Join(", ", allowedExtensions)
+                    });
+                }
+
+                // Определяем КОРОТКИЙ тип файла по расширению (максимум 20 символов)
+                string fileType = fileExtension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".gif" => "image/gif",
+                    ".webp" => "image/webp",
+                    ".pdf" => "application/pdf",
+                    ".doc" => "application/msword",
+                    ".docx" => "application/docx",  // Короткий вариант
+                    ".xls" => "application/xls",
+                    ".xlsx" => "application/xlsx",   // Короткий вариант
+                    ".txt" => "text/plain",
+                    ".zip" => "application/zip",
+                    ".rar" => "application/rar",
+                    ".7z" => "application/7z",
+                    _ => "application/octet-stream"
+                };
+
+                // Создаем уникальное имя файла
+                var fileName = $"{Guid.NewGuid()}{fileExtension}";
+
+                // Путь для сохранения (папка Uploads в wwwroot)
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "chat");
+
+                // Создаем папку, если её нет
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                    _logger.LogInformation("Created upload directory: {UploadsFolder}", uploadsFolder);
+                }
+
+                var filePath = Path.Combine(uploadsFolder, fileName);
+                _logger.LogInformation("Saving file to: {FilePath}", filePath);
+
+                // Сохраняем файл
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Проверяем, что файл действительно создан
+                if (!System.IO.File.Exists(filePath))
+                {
+                    throw new Exception("Файл не был сохранен");
+                }
+
+                // Формируем URL для доступа к файлу
+                var fileUrl = $"/uploads/chat/{fileName}";
+
+                var response = new FileUploadResponse
+                {
+                    FileName = file.FileName,
+                    FileUrl = fileUrl,
+                    FileSize = file.Length,
+                    FileType = fileType  // Используем КОРОТКИЙ тип
+                };
+
+                _logger.LogInformation("File uploaded successfully: {FileName}, URL: {FileUrl}, Type: {FileType}",
+                    file.FileName, fileUrl, fileType);
+
+                return Json(new ApiResponse<FileUploadResponse>
+                {
+                    Success = true,
+                    Data = response
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при загрузке файла");
+                return Json(new ApiResponse<FileUploadResponse>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке файла: " + ex.Message
+                });
+            }
+        }
+        // POST: /Chats/RenameChat
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RenameChat([FromBody] RenameChatRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("RenameChat: chatId={ChatId}, userId={UserId}, newName={NewName}",
+                    request.ChatId, userId, request.NewName);
+
+                // Проверяем, что новое название не пустое
+                if (string.IsNullOrWhiteSpace(request.NewName))
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Название чата не может быть пустым"
+                    });
+                }
+
+                // Проверяем длину названия
+                if (request.NewName.Length > 200)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Название чата не должно превышать 200 символов"
+                    });
+                }
+
+                // Находим чат
+                var chat = await _context.Chats
+                    .Include(c => c.Members)
+                    .FirstOrDefaultAsync(c => c.IdChat == request.ChatId);
+
+                if (chat == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Чат не найден"
+                    });
+                }
+
+                // Проверяем, является ли пользователь участником чата
+                var isMember = chat.Members?.Any(m => m.UserId == userId) ?? false;
+                if (!isMember)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Вы не являетесь участником этого чата"
+                    });
+                }
+
+                // Разрешаем переименовывать любые чаты, кроме системных
+                // Если это групповой чат, проверяем права администратора
+                if (chat.Type == "group")
+                {
+                    var isAdmin = chat.Members?.Any(m => m.UserId == userId && m.Role == "admin") ?? false;
+                    if (!isAdmin)
+                    {
+                        return Json(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Message = "Только администратор может переименовать групповой чат"
+                        });
+                    }
+                }
+                // Для приватных чатов разрешаем переименовывать обоим участникам
+                else if (chat.Type == "private")
+                {
+                    // В приватном чате любой участник может переименовать
+                    _logger.LogInformation("Private chat rename allowed for user {UserId}", userId);
+                }
+
+                // Сохраняем старое название для логирования
+                var oldName = chat.Name;
+
+                // Обновляем название
+                chat.Name = request.NewName.Trim();
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Chat renamed successfully: ChatId={ChatId}, OldName={OldName}, NewName={NewName}",
+                    chat.IdChat, oldName, chat.Name);
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Название чата успешно изменено",
+                    Data = new { newName = chat.Name }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при переименовании чата");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при переименовании чата: " + ex.Message
                 });
             }
         }

@@ -20,13 +20,13 @@ namespace TripWise.Models
         [Column("sentAt")]
         public DateTime SentAt { get; set; }
 
-        [Column("idTrip")]  // Это просто поле, не навигационное свойство
+        [Column("idTrip")]
         public int? IdTrip { get; set; }
 
         [Column("idUser")]
         public int SenderId { get; set; }
 
-        [Column("idPoint")]  // Это просто поле, не навигационное свойство
+        [Column("idPoint")]
         public int? IdPoint { get; set; }
 
         [Column("attachmentName")]
@@ -53,12 +53,12 @@ namespace TripWise.Models
         [Column("replyToId")]
         public int? ReplyToId { get; set; }
 
-        // ТОЛЬКО эти навигационные свойства - БЕЗ атрибутов ForeignKey
+        // ТОЛЬКО эти навигационные свойства
         public virtual Chat? Chat { get; set; }
         public virtual User? Sender { get; set; }
         public virtual ChatMessage? ReplyTo { get; set; }
 
-        // ПОЛНОСТЬЮ УДАЛЯЕМ эти свойства
+        // Этих свойств НЕ ДОЛЖНО БЫТЬ:
         // public virtual Trip? Trip { get; set; }
         // public virtual PointsOfInterest? Point { get; set; }
 

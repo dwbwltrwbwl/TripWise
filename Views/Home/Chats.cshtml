@@ -159,6 +159,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item" href="#" onclick="showChatInfo()"><i class="fas fa-info-circle me-2"></i>Информация</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="renameChat()"><i class="fas fa-edit me-2"></i>Переименовать</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="addMembersToChat()"><i class="fas fa-user-plus me-2"></i>Добавить участников</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="leaveChat()"><i class="fas fa-sign-out-alt me-2"></i>Покинуть чат</a></li>
@@ -537,6 +538,81 @@
             font-size: 0.85em;
             color: #6c757d;
         }
+
+    /* Стили для вложений */
+    .attachment-container {
+        max-width: 100%;
+    }
+
+    .attachment-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+        .attachment-actions .btn {
+            padding: 2px 8px;
+            font-size: 0.8rem;
+        }
+
+    .image-preview {
+        display: block;
+        position: relative;
+    }
+
+        .image-preview:hover::after {
+            content: '👁️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    .file-attachment {
+        color: #333;
+        transition: all 0.2s ease;
+        border: 1px solid #dee2e6;
+    }
+
+        .file-attachment:hover {
+            background-color: #e9ecef !important;
+            text-decoration: none;
+            color: #0379D9;
+        }
+
+    /* Иконки для разных типов файлов */
+    .fa-file-pdf {
+        color: #dc3545;
+    }
+
+    .fa-file-word {
+        color: #0d6efd;
+    }
+
+    .fa-file-excel {
+        color: #198754;
+    }
+
+    .fa-file-image {
+        color: #6f42c1;
+    }
+
+    .fa-file-archive {
+        color: #fd7e14;
+    }
+
+    .fa-file-alt {
+        color: #6c757d;
+    }
 </style>
 
 @section Scripts {
@@ -737,7 +813,10 @@
                             <!-- Информация о чате с обработчиком выбора -->
                             <div class="flex-grow-1" onclick="selectChat(${chat.id}, event, this)" style="min-width: 0;">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-1 text-truncate" style="max-width: 140px;">${escapeHtml(chatName)}</h6>
+                                            <h6 class="mb-1 text-truncate" style="max-width: 140px;"
+            ondblclick="${chat.type === 'group' && chat.createdById === currentUserId ? 'enableChatRename(' + chat.id + ', this)' : ''}">
+            ${escapeHtml(chatName)}
+        </h6>
                                     <small class="text-muted flex-shrink-0 ms-2">${lastMessageTime}</small>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
@@ -1118,11 +1197,16 @@
                 const isOutgoing = msg.senderId === currentUserId;
                 const senderName = isOutgoing ? 'Вы' : msg.senderName;
 
-                        html += `
+                                html += `
             <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
                 <div class="message-content">
                     ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
                     <div class="message-text">${escapeHtml(msg.text)}</div>
+                    ${msg.attachmentUrl ? `
+                        <div class="message-attachment mt-2">
+                            ${renderAttachment(msg)}
+                        </div>
+                    ` : ''}
                     <div class="message-time">${formatTime(msg.sentAt)}</div>
                 </div>
             </div>
@@ -1132,7 +1216,72 @@
             messagesList.innerHTML = html;
             scrollToBottom();
         }
+                                function renderAttachment(msg) {
+            if (!msg.attachmentUrl) return '';
 
+            const fileExt = msg.attachmentName?.split('.').pop()?.toLowerCase();
+            const fileType = msg.attachmentType || '';
+
+            // Определяем, является ли файл изображением
+            const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+
+            // Создаем URL для скачивания (тот же URL, но с атрибутом download)
+            const downloadUrl = msg.attachmentUrl;
+            const fileName = encodeURIComponent(msg.attachmentName || 'file');
+
+            if (isImage) {
+                return `
+                    <div class="attachment-container">
+                        <a href="${msg.attachmentUrl}" target="_blank" class="image-preview">
+                            <img src="${msg.attachmentUrl}" alt="${escapeHtml(msg.attachmentName)}"
+                                 style="max-width: 200px; max-height: 200px; border-radius: 5px; cursor: pointer;">
+                        </a>
+                        <div class="attachment-actions mt-1">
+                            <a href="${msg.attachmentUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                <i class="fas fa-download"></i> Скачать
+                            </a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Определяем иконку по расширению или типу
+                let fileIcon = 'fa-file';
+                let fileColor = '';
+
+                if (fileType.includes('pdf') || fileExt === 'pdf') {
+                    fileIcon = 'fa-file-pdf';
+                    fileColor = 'text-danger';
+                } else if (fileType.includes('doc') || ['doc', 'docx'].includes(fileExt)) {
+                    fileIcon = 'fa-file-word';
+                    fileColor = 'text-primary';
+                } else if (fileType.includes('xls') || ['xls', 'xlsx'].includes(fileExt)) {
+                    fileIcon = 'fa-file-excel';
+                    fileColor = 'text-success';
+                } else if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') ||
+                           ['zip', 'rar', '7z'].includes(fileExt)) {
+                    fileIcon = 'fa-file-archive';
+                    fileColor = 'text-warning';
+                } else if (fileType.includes('text') || fileExt === 'txt') {
+                    fileIcon = 'fa-file-alt';
+                    fileColor = 'text-secondary';
+                }
+
+                return `
+                    <div class="attachment-container">
+                        <a href="${msg.attachmentUrl}" target="_blank" class="file-attachment d-flex align-items-center p-2 bg-light rounded text-decoration-none">
+                            <i class="fas ${fileIcon} ${fileColor} me-2 fa-lg"></i>
+                            <span class="flex-grow-1 text-truncate">${escapeHtml(msg.attachmentName)}</span>
+                            <small class="text-muted ms-2">${formatFileSize(msg.attachmentSize)}</small>
+                        </a>
+                        <div class="attachment-actions mt-1">
+                            <a href="${msg.attachmentUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                <i class="fas fa-download"></i> Скачать
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
         // Отправка сообщения
                 async function sendMessage() {
             const input = document.getElementById('messageInput');
@@ -1191,7 +1340,7 @@
         }
 
         // Добавление сообщения в UI
-        function appendMessageToUI(message) {
+                function appendMessageToUI(message) {
             const messagesList = document.getElementById('messagesList');
 
             if (messagesList.children.length === 1 &&
@@ -1199,7 +1348,14 @@
                 messagesList.innerHTML = '';
             }
 
-            const msgDate = new Date(message.sentAt).toLocaleDateString('ru-RU');
+            // Проверяем, что дата валидная
+            let sentAt = message.sentAt;
+            if (typeof sentAt === 'string') {
+                // Убеждаемся, что строка содержит дату в правильном формате
+                sentAt = sentAt.replace(' ', 'T'); // Заменяем пробел на T, если нужно
+            }
+
+            const msgDate = new Date(sentAt).toLocaleDateString('ru-RU');
             const currentDate = new Date().toLocaleDateString('ru-RU');
 
             if (!messagesList.querySelector('.date-separator:last-child span')?.textContent.includes(msgDate) &&
@@ -1210,16 +1366,24 @@
                 messagesList.appendChild(dateSeparator);
             }
 
-                    const messageDiv = document.createElement('div');
-        messageDiv.className = 'message message-outgoing';
-        messageDiv.setAttribute('data-message-id', message.id || Date.now()); // Используем ID или временный
-        messageDiv.innerHTML = `
-            <div class="message-content">
-                <div class="message-text">${escapeHtml(message.text)}</div>
-                <div class="message-time">${formatTime(message.sentAt)}</div>
-            </div>
-        `;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-outgoing';
+            messageDiv.setAttribute('data-message-id', message.id || Date.now());
 
+            // Добавляем содержимое сообщения
+            let content = `
+                <div class="message-content">
+                    <div class="message-text">${escapeHtml(message.text || '')}</div>
+            `;
+
+            // Если есть вложение, добавляем его
+            if (message.attachmentUrl) {
+                content += `<div class="message-attachment mt-2">${renderAttachment(message)}</div>`;
+            }
+
+            content += `<div class="message-time">${formatTime(message.sentAt)}</div></div>`;
+
+            messageDiv.innerHTML = content;
             messagesList.appendChild(messageDiv);
             scrollToBottom();
         }
@@ -1639,45 +1803,81 @@
             return parts[0][0].toUpperCase();
         }
 
-        function formatTime(dateString) {
+                function formatTime(dateString) {
             if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        }
 
-        function formatMessageTime(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 0) {
+            try {
+                const date = new Date(dateString);
+                // Проверяем, валидная ли дата
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', dateString);
+                    return '';
+                }
                 return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            } else if (diffDays === 1) {
-                return 'Вчера';
-            } else if (diffDays < 7) {
-                return date.toLocaleDateString('ru-RU', { weekday: 'short' });
-            } else {
-                return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+            } catch (e) {
+                console.error('Error formatting time:', e);
+                return '';
             }
         }
 
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+                function formatMessageTime(dateString) {
+            if (!dateString) return '';
 
-            if (date.toDateString() === today.toDateString()) {
-                return 'Сегодня';
-            } else if (date.toDateString() === yesterday.toDateString()) {
-                return 'Вчера';
-            } else {
-                return date.toLocaleDateString('ru-RU', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
-                });
+            try {
+                const date = new Date(dateString);
+                // Проверяем, валидная ли дата
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', dateString);
+                    return '';
+                }
+
+                const now = new Date();
+                const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
+                    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                } else if (diffDays === 1) {
+                    return 'Вчера';
+                } else if (diffDays < 7) {
+                    return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+                } else {
+                    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+                }
+            } catch (e) {
+                console.error('Error formatting message time:', e);
+                return '';
+            }
+        }
+
+                function formatDate(dateStr) {
+            if (!dateStr) return '';
+
+            try {
+                const date = new Date(dateStr);
+                // Проверяем, валидная ли дата
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', dateStr);
+                    return '';
+                }
+
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                if (date.toDateString() === today.toDateString()) {
+                    return 'Сегодня';
+                } else if (date.toDateString() === yesterday.toDateString()) {
+                    return 'Вчера';
+                } else {
+                    return date.toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+                    });
+                }
+            } catch (e) {
+                console.error('Error formatting date:', e);
+                return '';
             }
         }
 
@@ -1731,6 +1931,381 @@
                     setTimeout(() => alertDiv.remove(), 150);
                 }
             }, 3000);
+        }
+
+                // ==================== РАБОТА С ФАЙЛАМИ ====================
+
+        let selectedFile = null;
+
+        // Выбор файла
+        function attachFile() {
+            // Создаем скрытый input для выбора файла
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.style.display = 'none';
+            fileInput.accept = '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip';
+            fileInput.onchange = handleFileSelect;
+
+            document.body.appendChild(fileInput);
+            fileInput.click();
+
+            // Удаляем input после выбора
+            setTimeout(() => {
+                document.body.removeChild(fileInput);
+            }, 1000);
+        }
+
+        // Обработка выбора файла
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Проверка размера (10 МБ)
+            if (file.size > 10 * 1024 * 1024) {
+                showNotification('Размер файла не должен превышать 10 МБ', 'danger');
+                return;
+            }
+
+            // Показываем индикатор загрузки
+            showNotification('Загрузка файла...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/UploadFile', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    selectedFile = data.data;
+                    showNotification(`Файл "${selectedFile.fileName}" готов к отправке`, 'success');
+
+                    // Показываем индикатор выбранного файла
+                    showSelectedFileIndicator();
+                } else {
+                    showNotification(data.message || 'Ошибка при загрузке файла', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке файла:', error);
+                showNotification('Не удалось загрузить файл: ' + error.message, 'danger');
+            }
+        }
+
+        // Отображение индикатора выбранного файла
+        function showSelectedFileIndicator() {
+            const container = document.getElementById('messageInputContainer');
+            if (!container) return;
+
+            // Удаляем старый индикатор, если есть
+            const oldIndicator = document.getElementById('selectedFileIndicator');
+            if (oldIndicator) oldIndicator.remove();
+
+            const indicator = document.createElement('div');
+            indicator.id = 'selectedFileIndicator';
+            indicator.className = 'selected-file-indicator';
+            indicator.innerHTML = `
+                <div class="d-flex align-items-center p-2 bg-light rounded mt-2">
+                    <i class="fas fa-file me-2"></i>
+                    <span class="flex-grow-1 text-truncate">${escapeHtml(selectedFile.fileName)}</span>
+                    <small class="text-muted me-2">${formatFileSize(selectedFile.fileSize)}</small>
+                    <button class="btn btn-sm btn-link text-danger" onclick="clearSelectedFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            container.appendChild(indicator);
+        }
+
+        // Очистка выбранного файла
+        function clearSelectedFile() {
+            selectedFile = null;
+            const indicator = document.getElementById('selectedFileIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        // Форматирование размера файла
+                function formatFileSize(bytes) {
+            if (bytes === 0 || !bytes) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Обновленная функция отправки сообщения с файлом
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if ((!text || text === '') && !selectedFile) {
+                console.log('Нет текста и не выбран файл');
+                return;
+            }
+
+            if (!currentChatId) {
+                console.log('Не выбран чат');
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                if (!token) {
+                    console.error('Token не найден');
+                    showNotification('Ошибка аутентификации', 'danger');
+                    return;
+                }
+
+                // Формируем запрос с данными файла
+                const messageData = {
+                    chatId: currentChatId,
+                    text: text || ''
+                };
+
+                // Добавляем информацию о файле, если он есть
+                if (selectedFile) {
+                    messageData.attachmentName = selectedFile.fileName;
+                    messageData.attachmentUrl = selectedFile.fileUrl;
+                    messageData.attachmentSize = selectedFile.fileSize;
+                    messageData.attachmentType = selectedFile.fileType;
+                }
+
+                console.log('Отправка сообщения с файлом:', messageData);
+
+                const response = await fetch('/Chats/SendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(messageData)
+                });
+
+                console.log('Статус ответа:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Ошибка ответа:', response.status, errorText);
+                    throw new Error(`HTTP ошибка: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Ответ сервера:', data);
+
+                if (data.success) {
+                    input.value = '';
+                    // Очищаем выбранный файл
+                    clearSelectedFile();
+                    // Сообщение придет через checkNewMessages
+                } else {
+                    showNotification(data.message || 'Ошибка при отправке', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка отправки сообщения:', error);
+                showNotification('Не удалось отправить сообщение: ' + error.message, 'danger');
+            }
+        }
+                // ==================== ПЕРЕИМЕНОВАНИЕ ЧАТА ====================
+
+                async function renameChat() {
+            if (!currentChatId) return;
+
+            // Получаем текущее название чата
+            const currentTitle = document.getElementById('chatTitle').textContent;
+
+            // Создаем модальное окно для ввода нового названия
+            const modalHtml = `
+                <div class="modal fade" id="renameChatModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Переименовать чат</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Новое название чата</label>
+                                    <input type="text" class="form-control" id="newChatNameInput"
+                                           value="${escapeHtml(currentTitle)}" maxlength="200" placeholder="Введите название чата">
+                                    <small class="text-muted">Максимум 200 символов</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="button" class="btn btn-primary" onclick="submitRenameChat()">Сохранить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Добавляем модальное окно в DOM
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer);
+
+            // Показываем модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('renameChatModal'));
+            modal.show();
+
+            // Обработчик закрытия модального окна
+            document.getElementById('renameChatModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+
+            // Автоматически выделяем текст для удобства
+            setTimeout(() => {
+                const input = document.getElementById('newChatNameInput');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 500);
+        }
+
+
+
+        async function submitRenameChat() {
+            const newName = document.getElementById('newChatNameInput').value.trim();
+
+            if (!newName) {
+                showNotification('Введите название чата', 'warning');
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/RenameChat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        chatId: currentChatId,
+                        newName: newName
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Результат переименования:', data);
+
+                if (data.success) {
+                    showNotification('Название чата изменено', 'success');
+
+                    // Обновляем название в заголовке
+                    document.getElementById('chatTitle').textContent = newName;
+
+                    // Обновляем название в списке чатов
+                    updateChatNameInList(currentChatId, newName);
+
+                    // Закрываем модальное окно
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('renameChatModal'));
+                    modal.hide();
+                } else {
+                    showNotification(data.message || 'Ошибка при переименовании', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при переименовании:', error);
+                showNotification('Не удалось переименовать чат: ' + error.message, 'danger');
+            }
+        }
+
+        // Функция для обновления названия в списке чатов
+        function updateChatNameInList(chatId, newName) {
+            const chatElement = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+            if (chatElement) {
+                const nameElement = chatElement.querySelector('h6');
+                if (nameElement) {
+                    nameElement.textContent = newName;
+                }
+            }
+        }
+                // Функция для быстрого переименования из списка (двойной клик по названию)
+        function enableChatRename(chatId, element) {
+            const currentName = element.textContent;
+
+            // Создаем input для редактирования
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control form-control-sm';
+            input.value = currentName;
+            input.style.width = '140px';
+
+            // Заменяем текст на input
+            element.style.display = 'none';
+            element.parentNode.insertBefore(input, element.nextSibling);
+
+            input.focus();
+
+            // Обработчик потери фокуса
+            input.addEventListener('blur', function() {
+                submitQuickRename(chatId, input.value, element, input);
+            });
+
+            // Обработчик нажатия Enter
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitQuickRename(chatId, input.value, element, input);
+                }
+            });
+        }
+
+        async function submitQuickRename(chatId, newName, textElement, inputElement) {
+            if (!newName.trim()) {
+                // Если название пустое, возвращаем старое
+                textElement.style.display = 'block';
+                inputElement.remove();
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/RenameChat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        chatId: chatId,
+                        newName: newName.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    textElement.textContent = newName.trim();
+                    showNotification('Название изменено', 'success');
+
+                    // Если это текущий открытый чат, обновляем и заголовок
+                    if (currentChatId === chatId) {
+                        document.getElementById('chatTitle').textContent = newName.trim();
+                    }
+                } else {
+                    showNotification(data.message || 'Ошибка при переименовании', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при переименовании:', error);
+                showNotification('Не удалось переименовать чат', 'danger');
+            }
+
+            // Возвращаем обычное отображение
+            textElement.style.display = 'block';
+            inputElement.remove();
         }
     </script>
 }

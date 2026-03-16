@@ -108,6 +108,10 @@ namespace TripWise.Models.DTOs
         public int ChatId { get; set; }
         public string Text { get; set; } = "";
         public int? ReplyToId { get; set; }
+        public string? AttachmentName { get; set; }
+        public string? AttachmentUrl { get; set; }
+        public long? AttachmentSize { get; set; }
+        public string? AttachmentType { get; set; }
     }
 
     public class AddMemberRequest

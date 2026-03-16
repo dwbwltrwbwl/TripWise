@@ -238,14 +238,14 @@ public partial class TripWiseContext : DbContext
             entity.Property(e => e.AttachmentSize)
                 .HasColumnName("attachmentSize");
 
-            // Простые поля, без связей
+            // Просто поля, без связей
             entity.Property(e => e.IdTrip)
                 .HasColumnName("idTrip");
 
             entity.Property(e => e.IdPoint)
                 .HasColumnName("idPoint");
 
-            // Настройка связей - ТОЛЬКО для реально существующих внешних ключей
+            // ТОЛЬКО эти связи
             entity.HasOne(d => d.Chat)
                 .WithMany(p => p.Messages)
                 .HasForeignKey(d => d.ChatId)
@@ -264,8 +264,8 @@ public partial class TripWiseContext : DbContext
                 .HasConstraintName("FK_ChatMessages_ReplyTo")
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // УДАЛЯЕМ эти строки - их больше нет
-            // entity.HasOne(d => d.Trip)...  
+            // НЕ ДОЛЖНО БЫТЬ:
+            // entity.HasOne(d => d.Trip)...
             // entity.HasOne(d => d.Point)...
 
             entity.HasMany(d => d.Reads)
