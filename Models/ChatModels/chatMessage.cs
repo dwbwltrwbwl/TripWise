@@ -29,6 +29,10 @@ namespace TripWise.Models
         [Column("idPoint")]
         public int? IdPoint { get; set; }
 
+        [Column("attachmentsJson")]
+        public string? AttachmentsJson { get; set; } // JSON с массивом файлов
+
+        // Старые поля оставляем для обратной совместимости
         [Column("attachmentName")]
         [StringLength(255)]
         public string? AttachmentName { get; set; }

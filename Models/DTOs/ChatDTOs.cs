@@ -58,18 +58,23 @@ namespace TripWise.Models.DTOs
     public class ChatMessageDto
     {
         public int Id { get; set; }
-        public string Text { get; set; } = string.Empty;
+        public string Text { get; set; } = "";
         public int SenderId { get; set; }
-        public string SenderName { get; set; } = string.Empty;
+        public string SenderName { get; set; } = "";
         public DateTime SentAt { get; set; }
         public DateTime? EditedAt { get; set; }
         public int? ReplyToId { get; set; }
         public ReplyMessageDto? ReplyTo { get; set; }
+
+        // Для обратной совместимости (один файл)
         public string? AttachmentType { get; set; }
         public string? AttachmentUrl { get; set; }
         public string? AttachmentName { get; set; }
         public long? AttachmentSize { get; set; }
-        public bool IsRead { get; set; }
+
+        // Новое поле для множественных файлов
+        public List<AttachmentDto>? Attachments { get; set; }
+
         public bool IsOutgoing { get; set; }
         public List<int> ReadBy { get; set; } = new();
     }
@@ -77,12 +82,20 @@ namespace TripWise.Models.DTOs
     public class ReplyMessageDto
     {
         public int Id { get; set; }
-        public string Text { get; set; } = string.Empty;
+        public string Text { get; set; } = "";
         public int SenderId { get; set; }
-        public string SenderName { get; set; } = string.Empty;
+        public string SenderName { get; set; } = "";
         public string? AttachmentType { get; set; }
+        public List<AttachmentDto>? Attachments { get; set; }
+        public bool HasAttachment { get; set; }
     }
-
+    public class AttachmentDto
+    {
+        public string FileName { get; set; } = "";
+        public string FileUrl { get; set; } = "";
+        public long FileSize { get; set; }
+        public string FileType { get; set; } = "";
+    }
     public class UserDto
     {
         public int Id { get; set; }
@@ -108,10 +121,17 @@ namespace TripWise.Models.DTOs
         public int ChatId { get; set; }
         public string Text { get; set; } = "";
         public int? ReplyToId { get; set; }
-        public string? AttachmentName { get; set; }
-        public string? AttachmentUrl { get; set; }
-        public long? AttachmentSize { get; set; }
-        public string? AttachmentType { get; set; }
+
+        // Для нескольких файлов
+        public List<FileAttachment>? Attachments { get; set; }
+    }
+
+    public class FileAttachment
+    {
+        public string FileName { get; set; } = "";
+        public string FileUrl { get; set; } = "";
+        public long FileSize { get; set; }
+        public string FileType { get; set; } = "";
     }
 
     public class AddMemberRequest

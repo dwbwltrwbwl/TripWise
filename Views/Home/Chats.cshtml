@@ -613,6 +613,82 @@
     .fa-file-alt {
         color: #6c757d;
     }
+
+    /* Стили для нескольких файлов */
+    .selected-files-indicator {
+        animation: slideIn 0.3s ease-out;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+    }
+
+    .file-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+        .file-list div:last-child {
+            border-bottom: none !important;
+        }
+
+    .message-attachments {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .message-attachments .attachment-container {
+            margin-bottom: 5px;
+        }
+
+    /* Стили для меню сообщения */
+    .message-content .dropdown {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .message-content:hover .dropdown {
+        opacity: 1;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background-color: #dc3545;
+        color: white !important;
+    }
+
+        .dropdown-item.text-danger:hover i {
+            color: white !important;
+        }
+
+    /* Убедимся, что меню не перекрывает сообщение */
+    .dropdown-menu {
+        min-width: 120px;
+        font-size: 0.9rem;
+    }
+
+    /* Стили для закрепленного сообщения */
+    .pinned-message-container {
+        animation: slideDown 0.3s ease-out;
+        border-left: 3px solid #0379D9;
+    }
+
+    @@keyframes slideDown {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .pinned-message-container .fa-thumbtack {
+        font-size: 1.1rem;
+    }
 </style>
 
 @section Scripts {
@@ -971,7 +1047,7 @@
                 throw error;
             }
         }
-                // Выбор чата
+                        // Выбор чата
         async function selectChat(chatId, event, element) {
             // Защита от повторных вызовов
             if (isSelectingChat) {
@@ -1059,8 +1135,15 @@
                     return;
                 }
 
-                // Загружаем сообщения только если чат доступен
-                await loadChatMessages(chatId);
+                // Проверяем, существует ли функция loadChatMessages
+                if (typeof loadChatMessages === 'function') {
+                    console.log('Загружаем сообщения...');
+                    await loadChatMessages(chatId);
+                    await loadPinnedMessage(chatId);
+                } else {
+                    console.error('Функция loadChatMessages не определена!');
+                    showNotification('Ошибка: функция загрузки сообщений не найдена', 'danger');
+                }
 
                 // Начинаем периодическое обновление сообщений
                 startMessagesRefresh(chatId);
@@ -1081,7 +1164,38 @@
                 }, 500);
             }
         }
+                // Загрузка сообщений чата
+        async function loadChatMessages(chatId) {
+            try {
+                console.log('Загрузка сообщений чата:', chatId);
+                const response = await fetch(`/Chats/GetChatMessages?chatId=${chatId}`);
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Сообщения чата:', data);
+
+                if (data.success) {
+                    renderMessages(data.data || []);
+
+                    // Обновляем lastMessageId
+                    if (data.data && data.data.length > 0) {
+                        lastMessageId = Math.max(...data.data.map(m => m.id));
+                    }
+
+                    markMessagesAsRead(chatId);
+                    return { success: true };
+                } else {
+                    console.error('Ошибка загрузки сообщений:', data.message);
+                    return { success: false, message: data.message };
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки сообщений:', error);
+                return { success: false, message: error.message };
+            }
+        }
         // Загрузка информации о чате - ИСПРАВЛЕНО: query string параметр
         async function loadChatInfo(chatId) {
             try {
@@ -1132,40 +1246,7 @@
         }
         // Загрузка сообщений чата - ИСПРАВЛЕНО: query string параметр
                 // В функции loadChatMessages, после renderMessages:
-        async function loadChatMessages(chatId) {
-            try {
-                console.log('Загрузка сообщений чата:', chatId);
-                const response = await fetch(`/Chats/GetChatMessages?chatId=${chatId}`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ошибка: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('Сообщения чата:', data);
-
-                if (data.success) {
-                    renderMessages(data.data || []);
-
-                    // Обновляем lastMessageId
-                    if (data.data && data.data.length > 0) {
-                        lastMessageId = Math.max(...data.data.map(m => m.id));
-                    }
-
-                    markMessagesAsRead(chatId);
-                    return { success: true };
-                } else {
-                    console.error('Ошибка загрузки сообщений:', data.message);
-                    return { success: false, message: data.message };
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки сообщений:', error);
-                return { success: false, message: error.message };
-            }
-        }
-
-        // Отображение сообщений
-        function renderMessages(messages) {
+                function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList');
 
             if (!messages || messages.length === 0) {
@@ -1197,90 +1278,56 @@
                 const isOutgoing = msg.senderId === currentUserId;
                 const senderName = isOutgoing ? 'Вы' : msg.senderName;
 
-                                html += `
-            <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
-                <div class="message-content">
-                    ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
-                    <div class="message-text">${escapeHtml(msg.text)}</div>
-                    ${msg.attachmentUrl ? `
-                        <div class="message-attachment mt-2">
-                            ${renderAttachment(msg)}
-                        </div>
-                    ` : ''}
-                    <div class="message-time">${formatTime(msg.sentAt)}</div>
-                </div>
+                // Получаем файлы для отображения
+                let attachments = msg.attachments || [];
+
+                // Для обратной совместимости
+                if (attachments.length === 0 && msg.attachmentUrl) {
+                    attachments = [{
+                        fileName: msg.attachmentName,
+                        fileUrl: msg.attachmentUrl,
+                        fileSize: msg.attachmentSize,
+                        fileType: msg.attachmentType
+                    }];
+                }
+
+                html += `
+                    <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
+                        <div class="message-content">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
+                                    <div class="message-text">${escapeHtml(msg.text || '')}</div>
+                                </div>
+                                        ${isOutgoing ? `
+            <div class="dropdown ms-2">
+                <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
+                        <i class="fas fa-thumbtack me-2"></i>Закрепить для всех
+                    </a></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
+                        <i class="fas fa-trash me-2"></i>Удалить
+                    </a></li>
+                </ul>
             </div>
-        `;
+        ` : ''}
+                            </div>
+                            ${attachments.length > 0 ? `
+                                <div class="message-attachments mt-2">
+                                    ${attachments.map(att => renderAttachment(att)).join('<hr class="my-1">')}
+                                </div>
+                            ` : ''}
+                            <div class="message-time">${formatTime(msg.sentAt)}</div>
+                        </div>
+                    </div>
+                `;
             });
 
             messagesList.innerHTML = html;
             scrollToBottom();
-        }
-                                function renderAttachment(msg) {
-            if (!msg.attachmentUrl) return '';
-
-            const fileExt = msg.attachmentName?.split('.').pop()?.toLowerCase();
-            const fileType = msg.attachmentType || '';
-
-            // Определяем, является ли файл изображением
-            const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
-
-            // Создаем URL для скачивания (тот же URL, но с атрибутом download)
-            const downloadUrl = msg.attachmentUrl;
-            const fileName = encodeURIComponent(msg.attachmentName || 'file');
-
-            if (isImage) {
-                return `
-                    <div class="attachment-container">
-                        <a href="${msg.attachmentUrl}" target="_blank" class="image-preview">
-                            <img src="${msg.attachmentUrl}" alt="${escapeHtml(msg.attachmentName)}"
-                                 style="max-width: 200px; max-height: 200px; border-radius: 5px; cursor: pointer;">
-                        </a>
-                        <div class="attachment-actions mt-1">
-                            <a href="${msg.attachmentUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
-                                <i class="fas fa-download"></i> Скачать
-                            </a>
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Определяем иконку по расширению или типу
-                let fileIcon = 'fa-file';
-                let fileColor = '';
-
-                if (fileType.includes('pdf') || fileExt === 'pdf') {
-                    fileIcon = 'fa-file-pdf';
-                    fileColor = 'text-danger';
-                } else if (fileType.includes('doc') || ['doc', 'docx'].includes(fileExt)) {
-                    fileIcon = 'fa-file-word';
-                    fileColor = 'text-primary';
-                } else if (fileType.includes('xls') || ['xls', 'xlsx'].includes(fileExt)) {
-                    fileIcon = 'fa-file-excel';
-                    fileColor = 'text-success';
-                } else if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') ||
-                           ['zip', 'rar', '7z'].includes(fileExt)) {
-                    fileIcon = 'fa-file-archive';
-                    fileColor = 'text-warning';
-                } else if (fileType.includes('text') || fileExt === 'txt') {
-                    fileIcon = 'fa-file-alt';
-                    fileColor = 'text-secondary';
-                }
-
-                return `
-                    <div class="attachment-container">
-                        <a href="${msg.attachmentUrl}" target="_blank" class="file-attachment d-flex align-items-center p-2 bg-light rounded text-decoration-none">
-                            <i class="fas ${fileIcon} ${fileColor} me-2 fa-lg"></i>
-                            <span class="flex-grow-1 text-truncate">${escapeHtml(msg.attachmentName)}</span>
-                            <small class="text-muted ms-2">${formatFileSize(msg.attachmentSize)}</small>
-                        </a>
-                        <div class="attachment-actions mt-1">
-                            <a href="${msg.attachmentUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
-                                <i class="fas fa-download"></i> Скачать
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
         }
         // Отправка сообщения
                 async function sendMessage() {
@@ -1340,7 +1387,7 @@
         }
 
         // Добавление сообщения в UI
-                function appendMessageToUI(message) {
+                                function appendMessageToUI(message) {
             const messagesList = document.getElementById('messagesList');
 
             if (messagesList.children.length === 1 &&
@@ -1351,8 +1398,7 @@
             // Проверяем, что дата валидная
             let sentAt = message.sentAt;
             if (typeof sentAt === 'string') {
-                // Убеждаемся, что строка содержит дату в правильном формате
-                sentAt = sentAt.replace(' ', 'T'); // Заменяем пробел на T, если нужно
+                sentAt = sentAt.replace(' ', 'T');
             }
 
             const msgDate = new Date(sentAt).toLocaleDateString('ru-RU');
@@ -1370,15 +1416,46 @@
             messageDiv.className = 'message message-outgoing';
             messageDiv.setAttribute('data-message-id', message.id || Date.now());
 
-            // Добавляем содержимое сообщения
+            // Получаем файлы для отображения
+            let attachments = message.attachments || [];
+
+            // Для обратной совместимости
+            if (attachments.length === 0 && message.attachmentUrl) {
+                attachments = [{
+                    fileName: message.attachmentName,
+                    fileUrl: message.attachmentUrl,
+                    fileSize: message.attachmentSize,
+                    fileType: message.attachmentType
+                }];
+            }
+
+            // Добавляем содержимое сообщения с кнопкой удаления
             let content = `
                 <div class="message-content">
-                    <div class="message-text">${escapeHtml(message.text || '')}</div>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="message-text">${escapeHtml(message.text || '')}</div>
+                        </div>
+                        <div class="dropdown ms-2">
+                            <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${message.id}, event)">
+                                    <i class="fas fa-trash me-2"></i>Удалить
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
             `;
 
-            // Если есть вложение, добавляем его
-            if (message.attachmentUrl) {
-                content += `<div class="message-attachment mt-2">${renderAttachment(message)}</div>`;
+            // Если есть вложения, добавляем их
+            if (attachments.length > 0) {
+                content += `<div class="message-attachments mt-2">`;
+                attachments.forEach(att => {
+                    content += renderAttachment(att);
+                });
+                content += `</div>`;
             }
 
             content += `<div class="message-time">${formatTime(message.sentAt)}</div></div>`;
@@ -1422,7 +1499,7 @@
         }
 
                 // Проверка новых сообщений
-        async function checkNewMessages(chatId) {
+                        async function checkNewMessages(chatId) {
             try {
                 const response = await fetch(`/Chats/GetNewMessages?chatId=${chatId}&lastMessageId=${lastMessageId}`);
                 const data = await response.json();
@@ -1438,7 +1515,21 @@
                     // Добавляем только новые сообщения, которых еще нет в UI
                     const newMessages = data.data.filter(msg => !existingMessageIds.has(msg.id));
 
-                    newMessages.forEach(msg => appendMessageToUI(msg));
+                    newMessages.forEach(msg => {
+                        // Подготавливаем attachments для отображения
+                        if (msg.attachments) {
+                            // Уже в правильном формате
+                        } else if (msg.attachmentUrl) {
+                            msg.attachments = [{
+                                fileName: msg.attachmentName,
+                                fileUrl: msg.attachmentUrl,
+                                fileSize: msg.attachmentSize,
+                                fileType: msg.attachmentType
+                            }];
+                        }
+                        appendMessageToUI(msg);
+                    });
+
                     await markMessagesAsRead(chatId);
 
                     // Обновляем lastMessageId
@@ -1935,39 +2026,60 @@
 
                 // ==================== РАБОТА С ФАЙЛАМИ ====================
 
-        let selectedFile = null;
+               let selectedFiles = []; // Массив выбранных файлов
+        const MAX_FILES = 10;
 
         // Выбор файла
-        function attachFile() {
-            // Создаем скрытый input для выбора файла
+                function attachFile() {
+            if (selectedFiles.length >= MAX_FILES) {
+                showNotification(`Максимум можно прикрепить ${MAX_FILES} файлов`, 'warning');
+                return;
+            }
+
+            // Создаем input для выбора файлов
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.style.display = 'none';
-            fileInput.accept = '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip';
+            fileInput.multiple = true; // Разрешаем множественный выбор
+            fileInput.accept = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.7z';
             fileInput.onchange = handleFileSelect;
 
             document.body.appendChild(fileInput);
             fileInput.click();
 
-            // Удаляем input после выбора
             setTimeout(() => {
                 document.body.removeChild(fileInput);
             }, 1000);
         }
 
         // Обработка выбора файла
-        async function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+                async function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
 
-            // Проверка размера (10 МБ)
-            if (file.size > 10 * 1024 * 1024) {
-                showNotification('Размер файла не должен превышать 10 МБ', 'danger');
+            if (files.length === 0) return;
+
+            // Проверяем общее количество
+            if (selectedFiles.length + files.length > MAX_FILES) {
+                showNotification(`Максимум можно прикрепить ${MAX_FILES} файлов (сейчас ${selectedFiles.length})`, 'warning');
                 return;
             }
 
+            // Проверяем каждый файл
+            for (const file of files) {
+                // Проверка размера (10 МБ)
+                if (file.size > 10 * 1024 * 1024) {
+                    showNotification(`Файл "${file.name}" слишком большой (макс. 10 МБ)`, 'danger');
+                    continue;
+                }
+
+                // Загружаем файл
+                await uploadFile(file);
+            }
+        }
+                // Загрузка одного файла
+        async function uploadFile(file) {
             // Показываем индикатор загрузки
-            showNotification('Загрузка файла...', 'info');
+            showNotification(`Загрузка "${file.name}"...`, 'info');
 
             const formData = new FormData();
             formData.append('file', file);
@@ -1986,20 +2098,73 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    selectedFile = data.data;
-                    showNotification(`Файл "${selectedFile.fileName}" готов к отправке`, 'success');
-
-                    // Показываем индикатор выбранного файла
-                    showSelectedFileIndicator();
+                    selectedFiles.push(data.data);
+                    showNotification(`Файл "${data.data.fileName}" загружен`, 'success');
+                    updateSelectedFilesIndicator();
                 } else {
-                    showNotification(data.message || 'Ошибка при загрузке файла', 'danger');
+                    showNotification(data.message || `Ошибка при загрузке "${file.name}"`, 'danger');
                 }
             } catch (error) {
                 console.error('Ошибка при загрузке файла:', error);
-                showNotification('Не удалось загрузить файл: ' + error.message, 'danger');
+                showNotification(`Не удалось загрузить "${file.name}": ` + error.message, 'danger');
             }
         }
+                function updateSelectedFilesIndicator() {
+            const container = document.getElementById('messageInputContainer');
+            if (!container) return;
 
+            // Удаляем старый индикатор
+            const oldIndicator = document.getElementById('selectedFilesIndicator');
+            if (oldIndicator) oldIndicator.remove();
+
+            if (selectedFiles.length === 0) return;
+
+            const indicator = document.createElement('div');
+            indicator.id = 'selectedFilesIndicator';
+            indicator.className = 'selected-files-indicator mt-2';
+
+            let html = '<div class="bg-light rounded p-2">';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += `<span class="fw-bold">Прикреплено файлов: ${selectedFiles.length}/${MAX_FILES}</span>`;
+            html += '<button class="btn btn-sm btn-link text-danger" onclick="clearAllFiles()">Очистить все</button>';
+            html += '</div>';
+            html += '<div class="file-list" style="max-height: 200px; overflow-y: auto;">';
+
+            selectedFiles.forEach((file, index) => {
+                const fileExt = file.fileName.split('.').pop()?.toLowerCase();
+                let fileIcon = 'fa-file';
+
+                if (file.fileType.includes('image')) fileIcon = 'fa-file-image';
+                else if (file.fileType.includes('pdf')) fileIcon = 'fa-file-pdf';
+                else if (file.fileType.includes('doc')) fileIcon = 'fa-file-word';
+                else if (file.fileType.includes('xls')) fileIcon = 'fa-file-excel';
+                else if (file.fileType.includes('zip') || file.fileType.includes('rar')) fileIcon = 'fa-file-archive';
+
+                html += `
+                    <div class="d-flex align-items-center p-1 border-bottom">
+                        <i class="fas ${fileIcon} me-2"></i>
+                        <span class="flex-grow-1 text-truncate" style="max-width: 200px;">${escapeHtml(file.fileName)}</span>
+                        <small class="text-muted me-2">${formatFileSize(file.fileSize)}</small>
+                        <button class="btn btn-sm btn-link text-danger" onclick="removeFile(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += '</div></div>';
+            indicator.innerHTML = html;
+            container.appendChild(indicator);
+        }
+                // Удаление одного файла
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateSelectedFilesIndicator();
+        }
+                function clearAllFiles() {
+            selectedFiles = [];
+            updateSelectedFilesIndicator();
+        }
         // Отображение индикатора выбранного файла
         function showSelectedFileIndicator() {
             const container = document.getElementById('messageInputContainer');
@@ -2041,14 +2206,80 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
+                // ==================== ОТОБРАЖЕНИЕ ВЛОЖЕНИЙ ====================
 
+        function renderAttachment(file) {
+            if (!file || !file.fileUrl) return '';
+
+            const fileExt = file.fileName?.split('.').pop()?.toLowerCase();
+            const fileType = file.fileType || '';
+
+            // Определяем, является ли файл изображением
+            const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+
+            // Создаем URL для скачивания
+            const fileName = encodeURIComponent(file.fileName || 'file');
+
+            if (isImage) {
+                return `
+                    <div class="attachment-container">
+                        <a href="${file.fileUrl}" target="_blank" class="image-preview">
+                            <img src="${file.fileUrl}" alt="${escapeHtml(file.fileName)}"
+                                 style="max-width: 200px; max-height: 200px; border-radius: 5px; cursor: pointer;">
+                        </a>
+                        <div class="attachment-actions mt-1">
+                            <a href="${file.fileUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                <i class="fas fa-download"></i> Скачать
+                            </a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Определяем иконку по расширению или типу
+                let fileIcon = 'fa-file';
+                let fileColor = '';
+
+                if (fileType.includes('pdf') || fileExt === 'pdf') {
+                    fileIcon = 'fa-file-pdf';
+                    fileColor = 'text-danger';
+                } else if (fileType.includes('doc') || ['doc', 'docx'].includes(fileExt)) {
+                    fileIcon = 'fa-file-word';
+                    fileColor = 'text-primary';
+                } else if (fileType.includes('xls') || ['xls', 'xlsx'].includes(fileExt)) {
+                    fileIcon = 'fa-file-excel';
+                    fileColor = 'text-success';
+                } else if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') ||
+                           ['zip', 'rar', '7z'].includes(fileExt)) {
+                    fileIcon = 'fa-file-archive';
+                    fileColor = 'text-warning';
+                } else if (fileType.includes('text') || fileExt === 'txt') {
+                    fileIcon = 'fa-file-alt';
+                    fileColor = 'text-secondary';
+                }
+
+                return `
+                    <div class="attachment-container">
+                        <a href="${file.fileUrl}" target="_blank" class="file-attachment d-flex align-items-center p-2 bg-light rounded text-decoration-none">
+                            <i class="fas ${fileIcon} ${fileColor} me-2 fa-lg"></i>
+                            <span class="flex-grow-1 text-truncate">${escapeHtml(file.fileName)}</span>
+                            <small class="text-muted ms-2">${formatFileSize(file.fileSize)}</small>
+                        </a>
+                        <div class="attachment-actions mt-1">
+                            <a href="${file.fileUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                <i class="fas fa-download"></i> Скачать
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
         // Обновленная функция отправки сообщения с файлом
-        async function sendMessage() {
+                async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
 
-            if ((!text || text === '') && !selectedFile) {
-                console.log('Нет текста и не выбран файл');
+            if ((!text || text === '') && selectedFiles.length === 0) {
+                console.log('Нет текста и не выбрано файлов');
                 return;
             }
 
@@ -2066,21 +2297,13 @@
                     return;
                 }
 
-                // Формируем запрос с данными файла
                 const messageData = {
                     chatId: currentChatId,
-                    text: text || ''
+                    text: text || '',
+                    attachments: selectedFiles // Отправляем все файлы
                 };
 
-                // Добавляем информацию о файле, если он есть
-                if (selectedFile) {
-                    messageData.attachmentName = selectedFile.fileName;
-                    messageData.attachmentUrl = selectedFile.fileUrl;
-                    messageData.attachmentSize = selectedFile.fileSize;
-                    messageData.attachmentType = selectedFile.fileType;
-                }
-
-                console.log('Отправка сообщения с файлом:', messageData);
+                console.log('Отправка сообщения с файлами:', messageData);
 
                 const response = await fetch('/Chats/SendMessage', {
                     method: 'POST',
@@ -2091,21 +2314,15 @@
                     body: JSON.stringify(messageData)
                 });
 
-                console.log('Статус ответа:', response.status);
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Ошибка ответа:', response.status, errorText);
                     throw new Error(`HTTP ошибка: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Ответ сервера:', data);
 
                 if (data.success) {
                     input.value = '';
-                    // Очищаем выбранный файл
-                    clearSelectedFile();
+                    clearAllFiles(); // Очищаем все файлы
                     // Сообщение придет через checkNewMessages
                 } else {
                     showNotification(data.message || 'Ошибка при отправке', 'danger');
@@ -2306,6 +2523,194 @@
             // Возвращаем обычное отображение
             textElement.style.display = 'block';
             inputElement.remove();
+        }
+                // ==================== УДАЛЕНИЕ СООБЩЕНИЯ ====================
+
+        async function deleteMessage(messageId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            if (!confirm('Вы уверены, что хотите удалить это сообщение?')) {
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/DeleteMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ messageId: messageId })
+                });
+
+                const data = await response.json();
+                console.log('Результат удаления сообщения:', data);
+
+                if (data.success) {
+                    showNotification('Сообщение удалено', 'success');
+
+                    // Удаляем сообщение из DOM
+                    const messageElement = document.querySelector(`.message[data-message-id="${messageId}"]`);
+                    if (messageElement) {
+                        messageElement.remove();
+
+                        // Если после удаления не осталось сообщений, показываем заглушку
+                        const messagesList = document.getElementById('messagesList');
+                        if (messagesList.children.length === 0) {
+                            messagesList.innerHTML = `
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-comment-dots fa-3x mb-3"></i>
+                                    <p>Здесь пока нет сообщений</p>
+                                    <p class="small">Напишите что-нибудь, чтобы начать общение</p>
+                                </div>
+                            `;
+                        }
+                    }
+                } else {
+                    showNotification(data.message || 'Ошибка при удалении сообщения', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении сообщения:', error);
+                showNotification('Не удалось удалить сообщение: ' + error.message, 'danger');
+            }
+        }
+                // ==================== ЗАКРЕПЛЕНИЕ СООБЩЕНИЙ ====================
+
+        async function pinMessage(messageId, pinForAll, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/PinMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        messageId: messageId,
+                        pinForAll: pinForAll
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Результат закрепления:', data);
+
+                if (data.success) {
+                    showNotification(data.message || 'Сообщение закреплено', 'success');
+
+                    // Обновляем отображение закрепленного сообщения
+                    await loadPinnedMessage(currentChatId);
+                } else {
+                    showNotification(data.message || 'Ошибка при закреплении', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при закреплении сообщения:', error);
+                showNotification('Не удалось закрепить сообщение: ' + error.message, 'danger');
+            }
+        }
+
+        async function unpinMessage(chatId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            if (!confirm('Открепить сообщение?')) return;
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/UnpinMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ chatId: chatId })
+                });
+
+                const data = await response.json();
+                console.log('Результат открепления:', data);
+
+                if (data.success) {
+                    showNotification('Сообщение откреплено', 'success');
+
+                    // Удаляем блок с закрепленным сообщением
+                    const pinnedContainer = document.getElementById('pinnedMessageContainer');
+                    if (pinnedContainer) {
+                        pinnedContainer.remove();
+                    }
+                } else {
+                    showNotification(data.message || 'Ошибка при откреплении', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при откреплении сообщения:', error);
+                showNotification('Не удалось открепить сообщение: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadPinnedMessage(chatId) {
+            try {
+                const response = await fetch(`/Chats/GetPinnedMessage?chatId=${chatId}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    displayPinnedMessage(data.data);
+                } else {
+                    // Удаляем блок, если он есть
+                    const pinnedContainer = document.getElementById('pinnedMessageContainer');
+                    if (pinnedContainer) {
+                        pinnedContainer.remove();
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке закрепленного сообщения:', error);
+            }
+        }
+
+        function displayPinnedMessage(message) {
+            // Удаляем старый блок, если есть
+            const oldContainer = document.getElementById('pinnedMessageContainer');
+            if (oldContainer) {
+                oldContainer.remove();
+            }
+
+            const chatHeader = document.getElementById('chatHeader');
+            if (!chatHeader) return;
+
+            const pinnedContainer = document.createElement('div');
+            pinnedContainer.id = 'pinnedMessageContainer';
+            pinnedContainer.className = 'pinned-message-container bg-light p-2 border-bottom';
+            pinnedContainer.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-thumbtack text-primary me-2" style="transform: rotate(45deg);"></i>
+                    <div class="flex-grow-1">
+                        <small class="text-muted">Закрепленное сообщение</small>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold me-2">${escapeHtml(message.senderName)}:</span>
+                            <span class="text-truncate" style="max-width: 300px;">${escapeHtml(message.text || 'Файл')}</span>
+                        </div>
+                        <small class="text-muted">
+                            Закрепил(а) ${escapeHtml(message.pinnedBy)} • ${formatTime(message.pinnedAt)}
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-link text-danger" onclick="unpinMessage(${currentChatId}, event)" title="Открепить">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            chatHeader.after(pinnedContainer);
         }
     </script>
 }

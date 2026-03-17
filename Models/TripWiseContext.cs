@@ -222,6 +222,9 @@ public partial class TripWiseContext : DbContext
 
             entity.Property(e => e.ReplyToId)
                 .HasColumnName("replyToId");
+            entity.Property(e => e.AttachmentsJson)
+    .HasColumnName("attachmentsJson")
+    .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.AttachmentType)
                 .HasMaxLength(50)

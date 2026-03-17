@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TripWise.Models;
 
@@ -11,9 +12,11 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    partial class TripWiseContextModelSnapshot : ModelSnapshot
+    [Migration("20260317100927_AddAttachmentsJson")]
+    partial class AddAttachmentsJson
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,18 +63,6 @@ namespace TripWise.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
-                    b.Property<DateTime?>("PinnedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("pinnedAt");
-
-                    b.Property<int?>("PinnedById")
-                        .HasColumnType("int")
-                        .HasColumnName("pinnedById");
-
-                    b.Property<int?>("PinnedMessageId")
-                        .HasColumnType("int")
-                        .HasColumnName("pinnedMessageId");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -90,10 +81,6 @@ namespace TripWise.Migrations
 
                     b.HasIndex("LastMessageAt")
                         .HasDatabaseName("IX_Chats_lastMessageAt");
-
-                    b.HasIndex("PinnedById");
-
-                    b.HasIndex("PinnedMessageId");
 
                     b.ToTable("Chats");
                 });
@@ -2102,19 +2089,7 @@ namespace TripWise.Migrations
                         .HasForeignKey("IdTrip")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("TripWise.Models.User", "PinnedBy")
-                        .WithMany()
-                        .HasForeignKey("PinnedById");
-
-                    b.HasOne("TripWise.Models.ChatMessage", "PinnedMessage")
-                        .WithMany()
-                        .HasForeignKey("PinnedMessageId");
-
                     b.Navigation("Creator");
-
-                    b.Navigation("PinnedBy");
-
-                    b.Navigation("PinnedMessage");
 
                     b.Navigation("Trip");
                 });

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 
 namespace TripWise.Controllers
 {
@@ -321,7 +322,7 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Загружаем все сообщения - БЕЗ Include и навигационных свойств
+                // Загружаем все сообщения
                 var messages = await _context.ChatMessages
                     .Where(m => m.ChatId == chatId)
                     .OrderBy(m => m.SentAt)
@@ -336,7 +337,8 @@ namespace TripWise.Controllers
                         m.AttachmentType,
                         m.AttachmentUrl,
                         m.AttachmentName,
-                        m.AttachmentSize
+                        m.AttachmentSize,
+                        m.AttachmentsJson
                     })
                     .ToListAsync();
 
@@ -349,16 +351,16 @@ namespace TripWise.Controllers
 
                 // Загружаем информацию о reply-to сообщениях
                 var replyToIds = messages.Where(m => m.ReplyToId.HasValue).Select(m => m.ReplyToId.Value).Distinct().ToList();
-                var replyMessages = new Dictionary<int, (string Text, int SenderId, string? AttachmentType)>();
+                var replyMessages = new Dictionary<int, (string Text, int SenderId, string? AttachmentType, string? AttachmentsJson)>();
 
                 if (replyToIds.Any())
                 {
                     replyMessages = await _context.ChatMessages
                         .Where(m => replyToIds.Contains(m.IdMessage))
-                        .Select(m => new { m.IdMessage, m.Message, m.SenderId, m.AttachmentType })
+                        .Select(m => new { m.IdMessage, m.Message, m.SenderId, m.AttachmentType, m.AttachmentsJson })
                         .ToDictionaryAsync(
                             m => m.IdMessage,
-                            m => (m.Message, m.SenderId, m.AttachmentType));
+                            m => (m.Message, m.SenderId, m.AttachmentType, m.AttachmentsJson));
                 }
 
                 // Загружаем информацию об отправителях reply-to сообщений
@@ -375,36 +377,90 @@ namespace TripWise.Controllers
                     .ToListAsync();
 
                 // Формируем DTO
-                var messageDtos = messages.Select(m => new ChatMessageDto
+                var messageDtos = messages.Select(m =>
                 {
-                    Id = m.IdMessage,
-                    Text = m.Message,
-                    SenderId = m.SenderId,
-                    SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
-                    SentAt = m.SentAt,
-                    EditedAt = m.EditedAt,
-                    ReplyToId = m.ReplyToId,
-                    ReplyTo = m.ReplyToId.HasValue && replyMessages.ContainsKey(m.ReplyToId.Value)
-                        ? new ReplyMessageDto
+                    // Десериализуем вложения из JSON, если они есть
+                    List<AttachmentDto>? attachments = null;
+                    if (!string.IsNullOrEmpty(m.AttachmentsJson))
+                    {
+                        try
+                        {
+                            attachments = System.Text.Json.JsonSerializer.Deserialize<List<AttachmentDto>>(m.AttachmentsJson);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Ошибка десериализации attachments для сообщения {MessageId}", m.IdMessage);
+                        }
+                    }
+
+                    // Для обратной совместимости: если нет attachments в JSON, но есть старые поля, создаем один attachment
+                    if ((attachments == null || attachments.Count == 0) && !string.IsNullOrEmpty(m.AttachmentUrl))
+                    {
+                        attachments = new List<AttachmentDto>
+                {
+                    new AttachmentDto
+                    {
+                        FileName = m.AttachmentName ?? "Файл",
+                        FileUrl = m.AttachmentUrl,
+                        FileSize = m.AttachmentSize ?? 0,
+                        FileType = m.AttachmentType ?? "application/octet-stream"
+                    }
+                };
+                    }
+
+                    // Получаем информацию о reply-to сообщении
+                    ReplyMessageDto? replyTo = null;
+                    if (m.ReplyToId.HasValue && replyMessages.ContainsKey(m.ReplyToId.Value))
+                    {
+                        var replyMsg = replyMessages[m.ReplyToId.Value];
+
+                        // Десериализуем вложения reply-to сообщения
+                        List<AttachmentDto>? replyAttachments = null;
+                        if (!string.IsNullOrEmpty(replyMsg.AttachmentsJson))
+                        {
+                            try
+                            {
+                                replyAttachments = System.Text.Json.JsonSerializer.Deserialize<List<AttachmentDto>>(replyMsg.AttachmentsJson);
+                            }
+                            catch { }
+                        }
+
+                        replyTo = new ReplyMessageDto
                         {
                             Id = m.ReplyToId.Value,
-                            Text = replyMessages[m.ReplyToId.Value].Text,
-                            SenderId = replyMessages[m.ReplyToId.Value].SenderId,
-                            SenderName = replySenders.ContainsKey(replyMessages[m.ReplyToId.Value].SenderId)
-                                ? replySenders[replyMessages[m.ReplyToId.Value].SenderId]
-                                : "",
-                            AttachmentType = replyMessages[m.ReplyToId.Value].AttachmentType
-                        }
-                        : null,
-                    AttachmentType = m.AttachmentType,
-                    AttachmentUrl = m.AttachmentUrl,
-                    AttachmentName = m.AttachmentName,
-                    AttachmentSize = m.AttachmentSize,
-                    IsOutgoing = m.SenderId == userId,
-                    ReadBy = readMessages
-                        .Where(r => r.MessageId == m.IdMessage)
-                        .Select(r => r.UserId)
-                        .ToList()
+                            Text = replyMsg.Text,
+                            SenderId = replyMsg.SenderId,
+                            SenderName = replySenders.ContainsKey(replyMsg.SenderId)
+                                ? replySenders[replyMsg.SenderId]
+                                : "Пользователь",
+                            AttachmentType = replyMsg.AttachmentType,
+                            Attachments = replyAttachments,
+                            HasAttachment = !string.IsNullOrEmpty(replyMsg.AttachmentType) ||
+                                           (replyAttachments != null && replyAttachments.Count > 0)
+                        };
+                    }
+
+                    return new ChatMessageDto
+                    {
+                        Id = m.IdMessage,
+                        Text = m.Message,
+                        SenderId = m.SenderId,
+                        SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
+                        SentAt = m.SentAt,
+                        EditedAt = m.EditedAt,
+                        ReplyToId = m.ReplyToId,
+                        ReplyTo = replyTo,
+                        AttachmentType = m.AttachmentType,
+                        AttachmentUrl = m.AttachmentUrl,
+                        AttachmentName = m.AttachmentName,
+                        AttachmentSize = m.AttachmentSize,
+                        Attachments = attachments,
+                        IsOutgoing = m.SenderId == userId,
+                        ReadBy = readMessages
+                            .Where(r => r.MessageId == m.IdMessage)
+                            .Select(r => r.UserId)
+                            .ToList()
+                    };
                 }).ToList();
 
                 _logger.LogInformation("Найдено сообщений: {Count}", messageDtos.Count);
@@ -426,7 +482,7 @@ namespace TripWise.Controllers
             }
         }
 
-        // POST: /Chats/SendMessage
+        // POST: /Chats/SendMessage - версия с прямым SQL
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
@@ -442,6 +498,9 @@ namespace TripWise.Controllers
                         Message = "Пользователь не авторизован"
                     });
 
+                _logger.LogInformation("SendMessage: chatId={ChatId}, userId={UserId}, text={Text}, attachmentsCount={AttachmentsCount}",
+                    request.ChatId, userId, request.Text, request.Attachments?.Count ?? 0);
+
                 // Проверяем доступ
                 var isMember = await _context.ChatMembers
                     .AnyAsync(cm => cm.ChatId == request.ChatId && cm.UserId == userId);
@@ -453,28 +512,57 @@ namespace TripWise.Controllers
                         Message = "Нет доступа к чату"
                     });
 
-                // Прямой SQL запрос
+                // Сериализуем attachments в JSON
+                string? attachmentsJson = null;
+                if (request.Attachments != null && request.Attachments.Any())
+                {
+                    attachmentsJson = System.Text.Json.JsonSerializer.Serialize(request.Attachments);
+                }
+
+                // Для обратной совместимости - первый файл (если есть)
+                var firstAttachment = request.Attachments?.FirstOrDefault();
+
+                // Прямой SQL запрос с OUTPUT
                 var sql = @"
-            INSERT INTO [ChatMessages] 
-            ([message], [sentAt], [idUser], [idChat], [replyToId], [attachmentName], [attachmentSize], [attachmentType], [attachmentUrl])
-            VALUES 
-            (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
-            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+    DECLARE @InsertedIds TABLE (Id INT);
+    
+    INSERT INTO [ChatMessages] 
+    ([message], [sentAt], [idUser], [idChat], [replyToId], 
+     [attachmentName], [attachmentSize], [attachmentType], [attachmentUrl], [attachmentsJson])
+    OUTPUT INSERTED.idMessage INTO @InsertedIds
+    VALUES 
+    (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+    
+    SELECT Id FROM @InsertedIds;";
 
                 var parameters = new[]
                 {
-            new Microsoft.Data.SqlClient.SqlParameter("@p0", request.Text ?? ""),
-            new Microsoft.Data.SqlClient.SqlParameter("@p1", DateTime.UtcNow),
-            new Microsoft.Data.SqlClient.SqlParameter("@p2", userId.Value),
-            new Microsoft.Data.SqlClient.SqlParameter("@p3", request.ChatId),
-            new Microsoft.Data.SqlClient.SqlParameter("@p4", request.ReplyToId ?? (object)DBNull.Value),
-            new Microsoft.Data.SqlClient.SqlParameter("@p5", request.AttachmentName ?? (object)DBNull.Value),
-            new Microsoft.Data.SqlClient.SqlParameter("@p6", request.AttachmentSize ?? (object)DBNull.Value),
-            new Microsoft.Data.SqlClient.SqlParameter("@p7", request.AttachmentType ?? (object)DBNull.Value),
-            new Microsoft.Data.SqlClient.SqlParameter("@p8", request.AttachmentUrl ?? (object)DBNull.Value)
+            new SqlParameter("@p0", request.Text ?? ""),
+            new SqlParameter("@p1", DateTime.UtcNow),
+            new SqlParameter("@p2", userId.Value),
+            new SqlParameter("@p3", request.ChatId),
+            new SqlParameter("@p4", request.ReplyToId ?? (object)DBNull.Value),
+            new SqlParameter("@p5", firstAttachment?.FileName ?? (object)DBNull.Value),
+            new SqlParameter("@p6", firstAttachment?.FileSize ?? (object)DBNull.Value),
+            new SqlParameter("@p7", firstAttachment?.FileType ?? (object)DBNull.Value),
+            new SqlParameter("@p8", firstAttachment?.FileUrl ?? (object)DBNull.Value),
+            new SqlParameter("@p9", attachmentsJson ?? (object)DBNull.Value)
         };
 
-                var messageId = await _context.Database.ExecuteSqlRawAsync(sql, parameters);
+                // Выполняем SQL и получаем результат
+                int messageId = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = sql;
+                    command.Parameters.AddRange(parameters);
+
+                    await _context.Database.OpenConnectionAsync();
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        messageId = Convert.ToInt32(result);
+                    }
+                }
 
                 // Обновляем время последнего сообщения
                 var chat = await _context.Chats.FindAsync(request.ChatId);
@@ -493,10 +581,7 @@ namespace TripWise.Controllers
                         text = request.Text,
                         senderId = userId.Value,
                         sentAt = DateTime.UtcNow,
-                        attachmentName = request.AttachmentName,
-                        attachmentUrl = request.AttachmentUrl,
-                        attachmentSize = request.AttachmentSize,
-                        attachmentType = request.AttachmentType
+                        attachments = request.Attachments
                     }
                 });
             }
@@ -596,7 +681,8 @@ namespace TripWise.Controllers
                         m.AttachmentType,
                         m.AttachmentUrl,
                         m.AttachmentName,
-                        m.AttachmentSize
+                        m.AttachmentSize,
+                        m.AttachmentsJson
                     })
                     .ToListAsync();
 
@@ -617,20 +703,50 @@ namespace TripWise.Controllers
                     .ToDictionaryAsync(u => u.IdUser, u => $"{u.LastName} {u.FirstName}".Trim());
 
                 // Формируем DTO
-                var messageDtos = messages.Select(m => new ChatMessageDto
+                var messageDtos = messages.Select(m =>
                 {
-                    Id = m.IdMessage,
-                    Text = m.Message,
-                    SenderId = m.SenderId,
-                    SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
-                    SentAt = m.SentAt,
-                    EditedAt = m.EditedAt,
-                    ReplyToId = m.ReplyToId,
-                    AttachmentType = m.AttachmentType,
-                    AttachmentUrl = m.AttachmentUrl,
-                    AttachmentName = m.AttachmentName,
-                    AttachmentSize = m.AttachmentSize,
-                    IsOutgoing = m.SenderId == userId
+                    // Десериализуем вложения из JSON
+                    List<AttachmentDto>? attachments = null;
+                    if (!string.IsNullOrEmpty(m.AttachmentsJson))
+                    {
+                        try
+                        {
+                            attachments = System.Text.Json.JsonSerializer.Deserialize<List<AttachmentDto>>(m.AttachmentsJson);
+                        }
+                        catch { }
+                    }
+
+                    // Для обратной совместимости
+                    if ((attachments == null || attachments.Count == 0) && !string.IsNullOrEmpty(m.AttachmentUrl))
+                    {
+                        attachments = new List<AttachmentDto>
+                {
+                    new AttachmentDto
+                    {
+                        FileName = m.AttachmentName ?? "Файл",
+                        FileUrl = m.AttachmentUrl,
+                        FileSize = m.AttachmentSize ?? 0,
+                        FileType = m.AttachmentType ?? "application/octet-stream"
+                    }
+                };
+                    }
+
+                    return new ChatMessageDto
+                    {
+                        Id = m.IdMessage,
+                        Text = m.Message,
+                        SenderId = m.SenderId,
+                        SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
+                        SentAt = m.SentAt,
+                        EditedAt = m.EditedAt,
+                        ReplyToId = m.ReplyToId,
+                        AttachmentType = m.AttachmentType,
+                        AttachmentUrl = m.AttachmentUrl,
+                        AttachmentName = m.AttachmentName,
+                        AttachmentSize = m.AttachmentSize,
+                        Attachments = attachments,
+                        IsOutgoing = m.SenderId == userId
+                    };
                 }).ToList();
 
                 return Json(new ApiResponse<List<ChatMessageDto>>
@@ -1625,6 +1741,414 @@ namespace TripWise.Controllers
                 {
                     Success = false,
                     Message = "Ошибка при переименовании чата: " + ex.Message
+                });
+            }
+        }
+        // POST: /Chats/DeleteMessage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMessage([FromBody] DeleteMessageRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("DeleteMessage: messageId={MessageId}, userId={UserId}", request.MessageId, userId);
+
+                // Проверяем существование сообщения и права через прямой SQL запрос с возвратом результата
+                var checkSql = @"
+            SELECT COUNT(*) 
+            FROM [ChatMessages] 
+            WHERE [idMessage] = @messageId AND [idUser] = @userId";
+
+                int exists = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkSql;
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                    await _context.Database.OpenConnectionAsync();
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        exists = Convert.ToInt32(result);
+                    }
+                }
+
+                if (exists == 0)
+                {
+                    _logger.LogWarning("Сообщение {MessageId} не найдено или пользователь {UserId} не является автором",
+                        request.MessageId, userId);
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Сообщение не найдено или вы не являетесь его автором"
+                    });
+                }
+
+                // Получаем chatId до удаления сообщения
+                var getChatIdSql = "SELECT [idChat] FROM [ChatMessages] WHERE [idMessage] = @messageId";
+                int chatId = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = getChatIdSql;
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        chatId = Convert.ToInt32(result);
+                    }
+                }
+
+                // Удаляем сообщение
+                var deleteSql = "DELETE FROM [ChatMessages] WHERE [idMessage] = @messageId";
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = deleteSql;
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                // Обновляем время последнего сообщения в чате
+                if (chatId > 0)
+                {
+                    var updateLastMessageSql = @"
+                UPDATE [Chats] 
+                SET [lastMessageAt] = (
+                    SELECT MAX([sentAt]) 
+                    FROM [ChatMessages] 
+                    WHERE [idChat] = @chatId
+                )
+                WHERE [idChat] = @chatId";
+
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = updateLastMessageSql;
+                        command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                _logger.LogInformation("Message deleted successfully: MessageId={MessageId}", request.MessageId);
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Сообщение удалено",
+                    Data = new { chatId }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении сообщения {MessageId}", request?.MessageId);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при удалении сообщения: " + ex.Message
+                });
+            }
+        }
+        // POST: /Chats/PinMessage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PinMessage([FromBody] PinMessageRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("PinMessage: messageId={MessageId}, userId={UserId}, pinForAll={PinForAll}",
+                    request.MessageId, userId, request.PinForAll);
+
+                // Проверяем существование сообщения и получаем chatId
+                var checkMessageSql = @"
+            SELECT [idChat] 
+            FROM [ChatMessages] 
+            WHERE [idMessage] = @messageId";
+
+                int chatId = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkMessageSql;
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+
+                    await _context.Database.OpenConnectionAsync();
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        chatId = Convert.ToInt32(result);
+                    }
+                }
+
+                if (chatId == 0)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Сообщение не найдено"
+                    });
+                }
+
+                // Проверяем права администратора
+                var checkAdminSql = @"
+            SELECT COUNT(*) 
+            FROM [ChatMembers] 
+            WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
+
+                int isAdmin = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkAdminSql;
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        isAdmin = Convert.ToInt32(result);
+                    }
+                }
+
+                if (isAdmin == 0)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только администратор может закреплять сообщения"
+                    });
+                }
+
+                // Обновляем чат - закрепляем сообщение
+                var updateSql = @"
+            UPDATE [Chats] 
+            SET [pinnedMessageId] = @messageId,
+                [pinnedAt] = @pinnedAt,
+                [pinnedById] = @userId
+            WHERE [idChat] = @chatId";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = updateSql;
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                    command.Parameters.Add(new SqlParameter("@pinnedAt", DateTime.UtcNow));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                _logger.LogInformation("Message pinned successfully: MessageId={MessageId}, ChatId={ChatId}",
+                    request.MessageId, chatId);
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Сообщение закреплено",
+                    Data = new
+                    {
+                        messageId = request.MessageId,
+                        pinnedAt = DateTime.UtcNow,
+                        pinnedBy = userId
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при закреплении сообщения {MessageId}", request?.MessageId);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при закреплении сообщения: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Chats/UnpinMessage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnpinMessage([FromBody] UnpinMessageRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("UnpinMessage: chatId={ChatId}, userId={UserId}", request.ChatId, userId);
+
+                // Проверяем права администратора
+                var checkAdminSql = @"
+            SELECT COUNT(*) 
+            FROM [ChatMembers] 
+            WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
+
+                int isAdmin = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkAdminSql;
+                    command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                    await _context.Database.OpenConnectionAsync();
+                    var result = await command.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        isAdmin = Convert.ToInt32(result);
+                    }
+                }
+
+                if (isAdmin == 0)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только администратор может откреплять сообщения"
+                    });
+                }
+
+                // Открепляем сообщение
+                var updateSql = @"
+            UPDATE [Chats] 
+            SET [pinnedMessageId] = NULL,
+                [pinnedAt] = NULL,
+                [pinnedById] = NULL
+            WHERE [idChat] = @chatId";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = updateSql;
+                    command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                _logger.LogInformation("Message unpinned successfully: ChatId={ChatId}", request.ChatId);
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Сообщение откреплено"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при откреплении сообщения");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при откреплении сообщения: " + ex.Message
+                });
+            }
+        }
+
+        // GET: /Chats/GetPinnedMessage?chatId=5
+        [HttpGet]
+        public async Task<IActionResult> GetPinnedMessage(int chatId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var sql = @"
+            SELECT 
+                c.pinnedMessageId,
+                c.pinnedAt,
+                c.pinnedById,
+                m.[idMessage],
+                m.[message],
+                m.[sentAt],
+                m.[idUser] as SenderId,
+                m.[attachmentType],
+                m.[attachmentUrl],
+                m.[attachmentName],
+                u.[last_name] as SenderLastName,
+                u.[first_name] as SenderFirstName,
+                pu.[last_name] as PinnedByLastName,
+                pu.[first_name] as PinnedByFirstName
+            FROM [Chats] c
+            LEFT JOIN [ChatMessages] m ON c.pinnedMessageId = m.[idMessage]
+            LEFT JOIN [Users] u ON m.[idUser] = u.[idUser]
+            LEFT JOIN [Users] pu ON c.pinnedById = pu.[idUser]
+            WHERE c.[idChat] = @chatId AND c.pinnedMessageId IS NOT NULL";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = sql;
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                    await _context.Database.OpenConnectionAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var pinnedMessage = new
+                            {
+                                id = reader["pinnedMessageId"],
+                                text = reader["message"] as string ?? "",
+                                senderId = reader["SenderId"],
+                                senderName = (reader["SenderLastName"] as string ?? "") + " " + (reader["SenderFirstName"] as string ?? ""),
+                                sentAt = reader["sentAt"],
+                                pinnedAt = reader["pinnedAt"],
+                                pinnedBy = (reader["PinnedByLastName"] as string ?? "") + " " + (reader["PinnedByFirstName"] as string ?? ""),
+                                attachmentType = reader["attachmentType"] as string,
+                                attachmentUrl = reader["attachmentUrl"] as string,
+                                attachmentName = reader["attachmentName"] as string
+                            };
+
+                            return Json(new ApiResponse<object>
+                            {
+                                Success = true,
+                                Data = pinnedMessage
+                            });
+                        }
+                    }
+                }
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = null
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении закрепленного сообщения");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке закрепленного сообщения: " + ex.Message
                 });
             }
         }
