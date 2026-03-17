@@ -160,6 +160,8 @@
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item" href="#" onclick="showChatInfo()"><i class="fas fa-info-circle me-2"></i>Информация</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="renameChat()"><i class="fas fa-edit me-2"></i>Переименовать</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="changeChatAvatar()"><i class="fas fa-camera me-2"></i>Изменить аватар</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="deleteChatAvatar()"><i class="fas fa-trash-alt me-2"></i>Удалить аватар</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="addMembersToChat()"><i class="fas fa-user-plus me-2"></i>Добавить участников</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="leaveChat()"><i class="fas fa-sign-out-alt me-2"></i>Покинуть чат</a></li>
@@ -665,30 +667,38 @@
         font-size: 0.9rem;
     }
 
-    /* Стили для закрепленного сообщения */
-    .pinned-message-container {
-        animation: slideDown 0.3s ease-out;
-        border-left: 3px solid #0379D9;
-    }
+    /* Стили для закрепленных сообщений */
+.pinned-message-container {
+    animation: slideDown 0.3s ease-out;
+    border-left: 3px solid;
+}
 
-    @@keyframes slideDown {
-        from
+.pinned-message-container.global-pin {
+    border-left-color: #0379D9;
+}
 
-    {
+.pinned-message-container.user-pin {
+    border-left-color: #28a745;
+}
+
+.pinned-message-container:not(:last-child) {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+@@keyframes slideDown {
+    from {
         opacity: 0;
         transform: translateY(-10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
+}
 
-    }
-
-    .pinned-message-container .fa-thumbtack {
-        font-size: 1.1rem;
-    }
+.pinned-message-container .fa-thumbtack {
+    font-size: 1.1rem;
+}
 </style>
 
 @section Scripts {
@@ -877,14 +887,18 @@
 
                 // Формируем HTML для каждого чата
                 html += `
-                    <div class="chat-item ${isActive ? 'active' : ''}" data-chat-id="${chat.id}">
+                    <div class="chat-item ${isActive ? 'active' : ''}" data-chat-id="${chat.id}"
+         data-chat-type="${chat.type}">
                         <div class="d-flex align-items-center">
-                            <!-- Аватар чата с обработчиком выбора -->
-                            <div class="chat-avatar me-3" onclick="selectChat(${chat.id}, event, this)">
-                                <div class="avatar-circle" style="background-color: ${getChatColor(chat.type)};">
-                                    <i class="fas ${getChatIcon(chat.type)}"></i>
-                                </div>
-                            </div>
+                                    <!-- Аватар чата с обработчиком выбора -->
+        <div class="chat-avatar me-3" onclick="selectChat(${chat.id}, event, this)">
+            ${chat.avatarPath ?
+                `<img src="${chat.avatarPath}" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">` :
+                `<div class="avatar-circle" style="background-color: ${getChatColor(chat.type)};">
+                    <i class="fas ${getChatIcon(chat.type)}"></i>
+                </div>`
+            }
+        </div>
 
                             <!-- Информация о чате с обработчиком выбора -->
                             <div class="flex-grow-1" onclick="selectChat(${chat.id}, event, this)" style="min-width: 0;">
@@ -1136,14 +1150,15 @@
                 }
 
                 // Проверяем, существует ли функция loadChatMessages
-                if (typeof loadChatMessages === 'function') {
-                    console.log('Загружаем сообщения...');
-                    await loadChatMessages(chatId);
-                    await loadPinnedMessage(chatId);
-                } else {
-                    console.error('Функция loadChatMessages не определена!');
-                    showNotification('Ошибка: функция загрузки сообщений не найдена', 'danger');
-                }
+                        // Проверяем, существует ли функция loadChatMessages
+        if (typeof loadChatMessages === 'function') {
+            console.log('Загружаем сообщения...');
+            await loadChatMessages(chatId);
+            await loadPinnedMessages(chatId);  // <--- ИСПРАВЛЕНО
+        } else {
+            console.error('Функция loadChatMessages не определена!');
+            showNotification('Ошибка: функция загрузки сообщений не найдена', 'danger');
+        }
 
                 // Начинаем периодическое обновление сообщений
                 startMessagesRefresh(chatId);
@@ -1197,7 +1212,7 @@
             }
         }
         // Загрузка информации о чате - ИСПРАВЛЕНО: query string параметр
-        async function loadChatInfo(chatId) {
+                async function loadChatInfo(chatId) {
             try {
                 // Добавьте проверку в самом начале
                 if (!chatId || chatId === undefined || chatId === null) {
@@ -1207,7 +1222,6 @@
 
                 console.log('Загрузка информации о чате:', chatId, 'тип:', typeof chatId);
 
-                // ИСПРАВЛЕНО: используем query string вместо path parameter
                 const response = await fetch(`/Chats/GetChatInfo?chatId=${chatId}`);
 
                 if (!response.ok) {
@@ -1223,10 +1237,23 @@
                     const memberNames = data.data.members ? data.data.members.map(m => m.fullName).join(', ') : '';
                     document.getElementById('chatMembers').textContent = memberNames;
 
-                    const avatarIcon = document.querySelector('#chatAvatar i');
-                    if (avatarIcon) {
-                        avatarIcon.className = `fas ${getChatIcon(data.data.type)}`;
+                    // ПОЛНОСТЬЮ ПЕРЕСОЗДАЕМ аватар, а не просто обновляем
+                    const chatAvatarContainer = document.querySelector('#chatInfo .chat-avatar');
+                    if (chatAvatarContainer) {
+                        if (data.data.avatarPath) {
+                            // Если есть аватар - показываем изображение
+                            chatAvatarContainer.innerHTML = `<img src="${data.data.avatarPath}" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">`;
+                        } else {
+                            // Если нет аватара - показываем иконку по типу чата
+                            const chatType = data.data.type || 'group';
+                            chatAvatarContainer.innerHTML = `
+                                <div class="avatar-circle" style="background-color: ${getChatColor(chatType)};">
+                                    <i class="fas ${getChatIcon(chatType)}"></i>
+                                </div>
+                            `;
+                        }
                     }
+
                     return { success: true, data: data.data };
                 } else {
                     console.error('Ошибка загрузки информации о чате:', data.message);
@@ -1246,7 +1273,7 @@
         }
         // Загрузка сообщений чата - ИСПРАВЛЕНО: query string параметр
                 // В функции loadChatMessages, после renderMessages:
-                function renderMessages(messages) {
+                        function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList');
 
             if (!messages || messages.length === 0) {
@@ -1264,7 +1291,7 @@
             let currentDate = null;
 
             messages.forEach(msg => {
-                const msgDate = new Date(msg.sentAt).toLocaleDateString('ru-RU');
+                const msgDate = formatDate(msg.sentAt);
 
                 if (currentDate !== msgDate) {
                     currentDate = msgDate;
@@ -1299,15 +1326,19 @@
                                     ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
                                     <div class="message-text">${escapeHtml(msg.text || '')}</div>
                                 </div>
-                                        ${isOutgoing ? `
+                                                ${isOutgoing ? `
             <div class="dropdown ms-2">
                 <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
-                        <i class="fas fa-thumbtack me-2"></i>Закрепить для всех
+                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
+                        <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
                     </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
+                        <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
                         <i class="fas fa-trash me-2"></i>Удалить
                     </a></li>
@@ -1401,7 +1432,7 @@
                 sentAt = sentAt.replace(' ', 'T');
             }
 
-            const msgDate = new Date(sentAt).toLocaleDateString('ru-RU');
+            const msgDate = formatDate(sentAt);
             const currentDate = new Date().toLocaleDateString('ru-RU');
 
             if (!messagesList.querySelector('.date-separator:last-child span')?.textContent.includes(msgDate) &&
@@ -1894,7 +1925,7 @@
             return parts[0][0].toUpperCase();
         }
 
-                function formatTime(dateString) {
+                                        function formatTime(dateString) {
             if (!dateString) return '';
 
             try {
@@ -1904,35 +1935,66 @@
                     console.error('Invalid date:', dateString);
                     return '';
                 }
-                return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+                const options = {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Europe/Moscow',
+                    hour12: false // 24-часовой формат
+                };
+
+                return date.toLocaleTimeString('ru-RU', options);
             } catch (e) {
                 console.error('Error formatting time:', e);
                 return '';
             }
         }
 
-                function formatMessageTime(dateString) {
+                                        function formatMessageTime(dateString) {
             if (!dateString) return '';
 
             try {
                 const date = new Date(dateString);
-                // Проверяем, валидная ли дата
                 if (isNaN(date.getTime())) {
                     console.error('Invalid date:', dateString);
                     return '';
                 }
 
                 const now = new Date();
-                const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+                // Обнуляем время для сравнения дат
+                const today = new Date(now);
+                today.setHours(0, 0, 0, 0);
+
+                const messageDate = new Date(date);
+                messageDate.setHours(0, 0, 0, 0);
+
+                const diffTime = today - messageDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                 if (diffDays === 0) {
-                    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    const options = {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'Europe/Moscow',
+                        hour12: false
+                    };
+                    return date.toLocaleTimeString('ru-RU', options);
                 } else if (diffDays === 1) {
                     return 'Вчера';
                 } else if (diffDays < 7) {
-                    return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+                    const options = {
+                        weekday: 'short',
+                        timeZone: 'Europe/Moscow'
+                    };
+                    return date.toLocaleDateString('ru-RU', options);
                 } else {
-                    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+                    const options = {
+                        day: 'numeric',
+                        month: 'short',
+                        timeZone: 'Europe/Moscow'
+                    };
+                    return date.toLocaleDateString('ru-RU', options);
                 }
             } catch (e) {
                 console.error('Error formatting message time:', e);
@@ -1940,8 +2002,14 @@
             }
         }
 
-                function formatDate(dateStr) {
+                                        function formatDate(dateStr) {
             if (!dateStr) return '';
+
+            // Если это уже отформатированная дата (Сегодня, Вчера или дата с точками)
+            if (typeof dateStr === 'string' &&
+                (dateStr === 'Сегодня' || dateStr === 'Вчера' || dateStr.includes('.'))) {
+                return dateStr;
+            }
 
             try {
                 const date = new Date(dateStr);
@@ -1952,19 +2020,31 @@
                 }
 
                 const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
+                today.setHours(0, 0, 0, 0);
 
-                if (date.toDateString() === today.toDateString()) {
+                const messageDate = new Date(date);
+                messageDate.setHours(0, 0, 0, 0);
+
+                const diffTime = today - messageDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
                     return 'Сегодня';
-                } else if (date.toDateString() === yesterday.toDateString()) {
+                } else if (diffDays === 1) {
                     return 'Вчера';
                 } else {
-                    return date.toLocaleDateString('ru-RU', {
+                    const options = {
                         day: 'numeric',
                         month: 'long',
-                        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
-                    });
+                        timeZone: 'Europe/Moscow'
+                    };
+
+                    // Добавляем год только если он отличается от текущего
+                    if (date.getFullYear() !== today.getFullYear()) {
+                        options.year = 'numeric';
+                    }
+
+                    return date.toLocaleDateString('ru-RU', options);
                 }
             } catch (e) {
                 console.error('Error formatting date:', e);
@@ -2581,7 +2661,7 @@
         }
                 // ==================== ЗАКРЕПЛЕНИЕ СООБЩЕНИЙ ====================
 
-        async function pinMessage(messageId, pinForAll, event) {
+                async function pinMessage(messageId, pinForAll, event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -2609,7 +2689,7 @@
                     showNotification(data.message || 'Сообщение закреплено', 'success');
 
                     // Обновляем отображение закрепленного сообщения
-                    await loadPinnedMessage(currentChatId);
+                    await loadPinnedMessages(currentChatId);
                 } else {
                     showNotification(data.message || 'Ошибка при закреплении', 'danger');
                 }
@@ -2619,13 +2699,17 @@
             }
         }
 
-        async function unpinMessage(chatId, event) {
+                async function unpinMessage(chatId, pinForAll, event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
 
-            if (!confirm('Открепить сообщение?')) return;
+            const confirmMessage = pinForAll
+                ? 'Открепить сообщение для всех участников?'
+                : 'Открепить сообщение?';
+
+            if (!confirm(confirmMessage)) return;
 
             try {
                 const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
@@ -2636,20 +2720,20 @@
                         'Content-Type': 'application/json',
                         'RequestVerificationToken': token
                     },
-                    body: JSON.stringify({ chatId: chatId })
+                    body: JSON.stringify({
+                        chatId: chatId,
+                        pinForAll: pinForAll
+                    })
                 });
 
                 const data = await response.json();
                 console.log('Результат открепления:', data);
 
                 if (data.success) {
-                    showNotification('Сообщение откреплено', 'success');
+                    showNotification(data.message || 'Сообщение откреплено', 'success');
 
-                    // Удаляем блок с закрепленным сообщением
-                    const pinnedContainer = document.getElementById('pinnedMessageContainer');
-                    if (pinnedContainer) {
-                        pinnedContainer.remove();
-                    }
+                    // Обновляем отображение
+                    await loadPinnedMessages(chatId);
                 } else {
                     showNotification(data.message || 'Ошибка при откреплении', 'danger');
                 }
@@ -2659,58 +2743,201 @@
             }
         }
 
-        async function loadPinnedMessage(chatId) {
+                                async function loadPinnedMessages(chatId) {
             try {
+                // Загружаем общее закрепленное сообщение
                 const response = await fetch(`/Chats/GetPinnedMessage?chatId=${chatId}`);
                 const data = await response.json();
 
-                if (data.success && data.data) {
-                    displayPinnedMessage(data.data);
-                } else {
-                    // Удаляем блок, если он есть
-                    const pinnedContainer = document.getElementById('pinnedMessageContainer');
-                    if (pinnedContainer) {
-                        pinnedContainer.remove();
-                    }
-                }
+                // Загружаем личное закрепленное сообщение
+                const userResponse = await fetch(`/Chats/GetUserPinnedMessage?chatId=${chatId}`);
+                const userData = await userResponse.json();
+
+                // Отображаем оба, если есть
+                displayPinnedMessages(data.data, userData.data);
             } catch (error) {
-                console.error('Ошибка при загрузке закрепленного сообщения:', error);
+                console.error('Ошибка при загрузке закрепленных сообщений:', error);
             }
         }
 
-        function displayPinnedMessage(message) {
-            // Удаляем старый блок, если есть
-            const oldContainer = document.getElementById('pinnedMessageContainer');
-            if (oldContainer) {
-                oldContainer.remove();
-            }
+                        function displayPinnedMessages(globalPin, userPin) {
+            const chatHeader = document.getElementById('chatHeader');
+            if (!chatHeader) return;
 
+            // Удаляем старые контейнеры
+            const oldContainers = document.querySelectorAll('.pinned-message-container');
+            oldContainers.forEach(container => container.remove());
+
+            // Если есть оба закрепленных сообщения, показываем оба
+            if (globalPin) {
+                displayPinnedMessage(globalPin, true);
+            }
+            if (userPin) {
+                displayPinnedMessage(userPin, false);
+            }
+        }
+
+        function displayPinnedMessage(message, isGlobal) {
             const chatHeader = document.getElementById('chatHeader');
             if (!chatHeader) return;
 
             const pinnedContainer = document.createElement('div');
-            pinnedContainer.id = 'pinnedMessageContainer';
-            pinnedContainer.className = 'pinned-message-container bg-light p-2 border-bottom';
+            pinnedContainer.className = `pinned-message-container bg-light p-2 border-bottom ${isGlobal ? 'global-pin' : 'user-pin'}`;
             pinnedContainer.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-thumbtack text-primary me-2" style="transform: rotate(45deg);"></i>
+                    <i class="fas fa-thumbtack ${isGlobal ? 'text-primary' : 'text-success'} me-2" style="transform: rotate(45deg);"></i>
                     <div class="flex-grow-1">
-                        <small class="text-muted">Закрепленное сообщение</small>
+                        <small class="text-muted">${isGlobal ? 'Закреплено для всех' : 'Закреплено для вас'}</small>
                         <div class="d-flex align-items-center">
                             <span class="fw-bold me-2">${escapeHtml(message.senderName)}:</span>
                             <span class="text-truncate" style="max-width: 300px;">${escapeHtml(message.text || 'Файл')}</span>
                         </div>
                         <small class="text-muted">
-                            Закрепил(а) ${escapeHtml(message.pinnedBy)} • ${formatTime(message.pinnedAt)}
+                            ${isGlobal ? `Закрепил(а) ${escapeHtml(message.pinnedBy)}` : 'Закреплено вами'} • ${formatTime(message.pinnedAt)}
                         </small>
                     </div>
-                    <button class="btn btn-sm btn-link text-danger" onclick="unpinMessage(${currentChatId}, event)" title="Открепить">
+                    <button class="btn btn-sm btn-link text-danger" onclick="unpinMessage(${currentChatId}, ${isGlobal}, event)" title="Открепить">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             `;
 
             chatHeader.after(pinnedContainer);
+        }
+
+                // ==================== АВАТАР ЧАТА ====================
+
+        async function changeChatAvatar() {
+            if (!currentChatId) return;
+
+            // Создаем input для выбора файла
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.style.display = 'none';
+            fileInput.accept = '.jpg,.jpeg,.png,.gif,.webp';
+            fileInput.onchange = handleChatAvatarSelect;
+
+            document.body.appendChild(fileInput);
+            fileInput.click();
+
+            setTimeout(() => {
+                document.body.removeChild(fileInput);
+            }, 1000);
+        }
+
+                async function handleChatAvatarSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Проверка размера (5 МБ)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Размер файла не должен превышать 5 МБ', 'danger');
+                return;
+            }
+
+            // Показываем индикатор загрузки
+            showNotification('Загрузка аватара...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch(`/Chats/UploadChatAvatar?chatId=${currentChatId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('Результат загрузки аватара:', data);
+
+                if (data.success) {
+                    showNotification('Аватар чата обновлен', 'success');
+
+                    // Просто перезагружаем информацию о чате - она сама обновит аватар
+                    await loadChatInfo(currentChatId);
+
+                    // Также обновляем аватар в списке чатов
+                    updateChatAvatarInList(currentChatId, data.data);
+
+                    // Перезагружаем список чатов для синхронизации
+                    await loadUserChats();
+                } else {
+                    showNotification(data.message || 'Ошибка при загрузке аватара', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке аватара:', error);
+                showNotification('Не удалось загрузить аватар: ' + error.message, 'danger');
+            }
+        }
+
+                async function deleteChatAvatar() {
+            if (!currentChatId) return;
+
+            if (!confirm('Удалить аватар чата?')) return;
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/DeleteChatAvatar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ chatId: currentChatId })
+                });
+
+                const data = await response.json();
+                console.log('Результат удаления аватара:', data);
+
+                if (data.success) {
+                    showNotification('Аватар удален', 'success');
+
+                    // Перезагружаем информацию о чате - она покажет стандартную иконку
+                    await loadChatInfo(currentChatId);
+
+                    // Обновляем аватар в списке чатов (убираем)
+                    updateChatAvatarInList(currentChatId, null);
+
+                    // Перезагружаем список чатов для синхронизации
+                    await loadUserChats();
+                } else {
+                    showNotification(data.message || 'Ошибка при удалении аватара', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении аватара:', error);
+                showNotification('Не удалось удалить аватар: ' + error.message, 'danger');
+            }
+        }
+
+
+                        function updateChatAvatarInList(chatId, avatarUrl) {
+            const chatElement = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+            if (!chatElement) {
+                console.error('Элемент чата не найден в списке');
+                return;
+            }
+
+            const avatarContainer = chatElement.querySelector('.chat-avatar');
+            if (!avatarContainer) return;
+
+            // Получаем тип чата из атрибута
+            const chatType = chatElement.getAttribute('data-chat-type') || 'group';
+
+            if (avatarUrl) {
+                avatarContainer.innerHTML = `<img src="${avatarUrl}" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">`;
+            } else {
+                avatarContainer.innerHTML = `
+                    <div class="avatar-circle" style="background-color: ${getChatColor(chatType)};">
+                        <i class="fas ${getChatIcon(chatType)}"></i>
+                    </div>
+                `;
+            }
         }
     </script>
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TripWise.Models;
 
@@ -11,9 +12,11 @@ using TripWise.Models;
 namespace TripWise.Migrations
 {
     [DbContext(typeof(TripWiseContext))]
-    partial class TripWiseContextModelSnapshot : ModelSnapshot
+    [Migration("20260317152929_AddUserPinnedMessages")]
+    partial class AddUserPinnedMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,11 +33,6 @@ namespace TripWise.Migrations
                         .HasColumnName("idChat");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdChat"));
-
-                    b.Property<string>("AvatarPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("avatarPath");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()

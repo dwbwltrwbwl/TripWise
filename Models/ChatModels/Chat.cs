@@ -49,6 +49,10 @@ namespace TripWise.Models
         [Column("pinnedById")]
         public int? PinnedById { get; set; }
 
+        [Column("avatarPath")]
+        [StringLength(500)]
+        public string? AvatarPath { get; set; }
+
         // Навигационные свойства
         public virtual ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
         public virtual ICollection<ChatMember> Members { get; set; } = new List<ChatMember>();

@@ -1,8 +1,7 @@
 ﻿namespace TripWise.Models.DTOs
 {
-    public class UnpinMessageRequest
+    public class DeleteChatAvatarRequest
     {
         public int ChatId { get; set; }
-        public bool PinForAll { get; set; }
     }
 }

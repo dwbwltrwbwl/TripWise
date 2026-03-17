@@ -64,6 +64,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<FavoriteFlight> FavoriteFlights { get; set; }
     public DbSet<FavoriteTrain> FavoriteTrains { get; set; }
     public DbSet<FavoriteHotel> FavoriteHotels { get; set; }
+    public virtual DbSet<UserPinnedMessage> UserPinnedMessages { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -1037,6 +1038,60 @@ public partial class TripWiseContext : DbContext
                 .WithMany(u => u.PlannedActivities) // Предполагая, что у User есть коллекция PlannedActivities
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<UserPinnedMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasColumnName("userId");
+
+            entity.Property(e => e.ChatId)
+                .IsRequired()
+                .HasColumnName("chatId");
+
+            entity.Property(e => e.MessageId)
+                .IsRequired()
+                .HasColumnName("messageId");
+
+            entity.Property(e => e.PinnedAt)
+                .IsRequired()
+                .HasColumnName("pinnedAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            // Индексы и уникальные ограничения
+            entity.HasIndex(e => e.ChatId)
+                .HasDatabaseName("IX_UserPinnedMessages_chatId");
+
+            entity.HasIndex(e => e.MessageId)
+                .HasDatabaseName("IX_UserPinnedMessages_messageId");
+
+            entity.HasIndex(e => new { e.UserId, e.ChatId })
+                .IsUnique()
+                .HasDatabaseName("IX_UserPinnedMessages_userId_chatId");
+
+            // Связи
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_UserPinnedMessages_Users_userId")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Chat)
+                .WithMany()
+                .HasForeignKey(d => d.ChatId)
+                .HasConstraintName("FK_UserPinnedMessages_Chats_chatId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Message)
+                .WithMany()
+                .HasForeignKey(d => d.MessageId)
+                .HasConstraintName("FK_UserPinnedMessages_ChatMessages_messageId")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         OnModelCreatingPartial(modelBuilder);

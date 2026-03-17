@@ -17,6 +17,7 @@ namespace TripWise.Models.DTOs
         public DateTime? LastMessageAt { get; set; }
         public int MemberCount { get; set; }
         public int UnreadCount { get; set; }
+        public string? AvatarPath { get; set; }
         public LastMessageDto? LastMessage { get; set; }
     }
 
@@ -41,6 +42,7 @@ namespace TripWise.Models.DTOs
         public string? TripName { get; set; }
         public DateTime CreatedAt { get; set; }
         public UserDto? Creator { get; set; }
+        public string? AvatarPath { get; set; }
         public List<ChatMemberDto> Members { get; set; } = new();
         public int TotalMessages { get; set; }
     }

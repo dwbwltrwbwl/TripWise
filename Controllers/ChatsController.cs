@@ -79,6 +79,7 @@ namespace TripWise.Controllers
                         c.CreatedAt,
                         c.CreatedById,
                         c.LastMessageAt,
+                        c.AvatarPath, // ДОБАВЬТЕ ЭТУ СТРОКУ
 
                         CreatorName = c.Creator != null
                             ? (c.Creator.LastName + " " + c.Creator.FirstName).Trim()
@@ -141,6 +142,7 @@ namespace TripWise.Controllers
                     LastMessageAt = c.LastMessageAt,
                     MemberCount = c.MemberCount,
                     UnreadCount = unreadCounts.ContainsKey(c.Id) ? unreadCounts[c.Id] : 0,
+                    AvatarPath = c.AvatarPath, // ДОБАВЬТЕ ЭТУ СТРОКУ
 
                     LastMessage = c.LastMessage != null
                         ? new LastMessageDto
@@ -240,6 +242,7 @@ namespace TripWise.Controllers
                     Name = chat.Name,
                     Description = chat.Description,
                     Type = chat.Type,
+                    AvatarPath = chat.AvatarPath,
                     TripId = chat.IdTrip,
                     TripName = chat.Trip?.Title,
                     CreatedAt = chat.CreatedAt,
@@ -446,7 +449,7 @@ namespace TripWise.Controllers
                         Text = m.Message,
                         SenderId = m.SenderId,
                         SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
-                        SentAt = m.SentAt,
+                        SentAt = DateTime.SpecifyKind(m.SentAt, DateTimeKind.Utc), // Явно указываем UTC
                         EditedAt = m.EditedAt,
                         ReplyToId = m.ReplyToId,
                         ReplyTo = replyTo,
@@ -580,7 +583,7 @@ namespace TripWise.Controllers
                         messageId = messageId,
                         text = request.Text,
                         senderId = userId.Value,
-                        sentAt = DateTime.UtcNow,
+                        sentAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), // Явно указываем UTC
                         attachments = request.Attachments
                     }
                 });
@@ -1879,22 +1882,24 @@ namespace TripWise.Controllers
                     request.MessageId, userId, request.PinForAll);
 
                 // Проверяем существование сообщения и получаем chatId
-                var checkMessageSql = @"
-            SELECT [idChat] 
-            FROM [ChatMessages] 
-            WHERE [idMessage] = @messageId";
-
                 int chatId = 0;
                 using (var command = _context.Database.GetDbConnection().CreateCommand())
                 {
-                    command.CommandText = checkMessageSql;
+                    command.CommandText = "SELECT [idChat] FROM [ChatMessages] WHERE [idMessage] = @messageId";
                     command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
 
                     await _context.Database.OpenConnectionAsync();
-                    var result = await command.ExecuteScalarAsync();
-                    if (result != null)
+                    try
                     {
-                        chatId = Convert.ToInt32(result);
+                        var result = await command.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            chatId = Convert.ToInt32(result);
+                        }
+                    }
+                    finally
+                    {
+                        await _context.Database.CloseConnectionAsync();
                     }
                 }
 
@@ -1907,68 +1912,166 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Проверяем права администратора
-                var checkAdminSql = @"
-            SELECT COUNT(*) 
-            FROM [ChatMembers] 
-            WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
-
-                int isAdmin = 0;
-                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                if (request.PinForAll)
                 {
-                    command.CommandText = checkAdminSql;
-                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
-                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                    // Закрепление для всех (только для администраторов)
 
-                    var result = await command.ExecuteScalarAsync();
-                    if (result != null)
+                    // Проверяем права администратора
+                    int isAdmin = 0;
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
                     {
-                        isAdmin = Convert.ToInt32(result);
-                    }
-                }
+                        command.CommandText = "SELECT COUNT(*) FROM [ChatMembers] WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
+                        command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
 
-                if (isAdmin == 0)
-                {
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            var result = await command.ExecuteScalarAsync();
+                            if (result != null)
+                            {
+                                isAdmin = Convert.ToInt32(result);
+                            }
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
+                    }
+
+                    if (isAdmin == 0)
+                    {
+                        return Json(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Message = "Только администратор может закреплять сообщения для всех"
+                        });
+                    }
+
+                    // Обновляем чат - закрепляем сообщение для всех
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = "UPDATE [Chats] SET [pinnedMessageId] = @messageId, [pinnedAt] = @pinnedAt, [pinnedById] = @userId WHERE [idChat] = @chatId";
+                        command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                        command.Parameters.Add(new SqlParameter("@pinnedAt", DateTime.UtcNow));
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                        command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            await command.ExecuteNonQueryAsync();
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
+                    }
+
+                    _logger.LogInformation("Message pinned for all: MessageId={MessageId}, ChatId={ChatId}",
+                        request.MessageId, chatId);
+
                     return Json(new ApiResponse<object>
                     {
-                        Success = false,
-                        Message = "Только администратор может закреплять сообщения"
+                        Success = true,
+                        Message = "Сообщение закреплено для всех",
+                        Data = new
+                        {
+                            messageId = request.MessageId,
+                            pinnedAt = DateTime.UtcNow,
+                            pinnedBy = userId,
+                            pinForAll = true
+                        }
                     });
                 }
-
-                // Обновляем чат - закрепляем сообщение
-                var updateSql = @"
-            UPDATE [Chats] 
-            SET [pinnedMessageId] = @messageId,
-                [pinnedAt] = @pinnedAt,
-                [pinnedById] = @userId
-            WHERE [idChat] = @chatId";
-
-                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                else
                 {
-                    command.CommandText = updateSql;
-                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
-                    command.Parameters.Add(new SqlParameter("@pinnedAt", DateTime.UtcNow));
-                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
-                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                    // Личное закрепление (доступно всем участникам)
 
-                    await command.ExecuteNonQueryAsync();
-                }
-
-                _logger.LogInformation("Message pinned successfully: MessageId={MessageId}, ChatId={ChatId}",
-                    request.MessageId, chatId);
-
-                return Json(new ApiResponse<object>
-                {
-                    Success = true,
-                    Message = "Сообщение закреплено",
-                    Data = new
+                    // Проверяем, не закреплено ли уже это сообщение пользователем
+                    int existingPin = 0;
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
                     {
-                        messageId = request.MessageId,
-                        pinnedAt = DateTime.UtcNow,
-                        pinnedBy = userId
+                        command.CommandText = "SELECT COUNT(*) FROM [UserPinnedMessages] WHERE [userId] = @userId AND [chatId] = @chatId";
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                        command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            var result = await command.ExecuteScalarAsync();
+                            if (result != null)
+                            {
+                                existingPin = Convert.ToInt32(result);
+                            }
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
                     }
-                });
+
+                    if (existingPin > 0)
+                    {
+                        // Обновляем существующее закрепление
+                        using (var command = _context.Database.GetDbConnection().CreateCommand())
+                        {
+                            command.CommandText = "UPDATE [UserPinnedMessages] SET [messageId] = @messageId, [pinnedAt] = @pinnedAt WHERE [userId] = @userId AND [chatId] = @chatId";
+                            command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                            command.Parameters.Add(new SqlParameter("@pinnedAt", DateTime.UtcNow));
+                            command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                            command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                            await _context.Database.OpenConnectionAsync();
+                            try
+                            {
+                                await command.ExecuteNonQueryAsync();
+                            }
+                            finally
+                            {
+                                await _context.Database.CloseConnectionAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Создаем новое закрепление
+                        using (var command = _context.Database.GetDbConnection().CreateCommand())
+                        {
+                            command.CommandText = "INSERT INTO [UserPinnedMessages] ([userId], [chatId], [messageId], [pinnedAt]) VALUES (@userId, @chatId, @messageId, @pinnedAt)";
+                            command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                            command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                            command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                            command.Parameters.Add(new SqlParameter("@pinnedAt", DateTime.UtcNow));
+
+                            await _context.Database.OpenConnectionAsync();
+                            try
+                            {
+                                await command.ExecuteNonQueryAsync();
+                            }
+                            finally
+                            {
+                                await _context.Database.CloseConnectionAsync();
+                            }
+                        }
+                    }
+
+                    _logger.LogInformation("Message pinned for user: MessageId={MessageId}, UserId={UserId}",
+                        request.MessageId, userId);
+
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = true,
+                        Message = "Сообщение закреплено в вашем чате",
+                        Data = new
+                        {
+                            messageId = request.MessageId,
+                            pinnedAt = DateTime.UtcNow,
+                            pinnedBy = userId,
+                            pinForAll = false
+                        }
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -1998,60 +2101,92 @@ namespace TripWise.Controllers
                     });
                 }
 
-                _logger.LogInformation("UnpinMessage: chatId={ChatId}, userId={UserId}", request.ChatId, userId);
+                _logger.LogInformation("UnpinMessage: chatId={ChatId}, userId={UserId}, pinForAll={PinForAll}",
+                    request.ChatId, userId, request.PinForAll);
 
-                // Проверяем права администратора
-                var checkAdminSql = @"
-            SELECT COUNT(*) 
-            FROM [ChatMembers] 
-            WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
-
-                int isAdmin = 0;
-                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                if (request.PinForAll)
                 {
-                    command.CommandText = checkAdminSql;
-                    command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
-                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                    // Открепление для всех (только для администраторов)
 
-                    await _context.Database.OpenConnectionAsync();
-                    var result = await command.ExecuteScalarAsync();
-                    if (result != null)
+                    // Проверяем права администратора
+                    int isAdmin = 0;
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
                     {
-                        isAdmin = Convert.ToInt32(result);
+                        command.CommandText = "SELECT COUNT(*) FROM [ChatMembers] WHERE [idChat] = @chatId AND [idUser] = @userId AND [role] = 'admin'";
+                        command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            var result = await command.ExecuteScalarAsync();
+                            if (result != null)
+                            {
+                                isAdmin = Convert.ToInt32(result);
+                            }
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
                     }
-                }
 
-                if (isAdmin == 0)
-                {
-                    return Json(new ApiResponse<object>
+                    if (isAdmin == 0)
                     {
-                        Success = false,
-                        Message = "Только администратор может откреплять сообщения"
-                    });
+                        return Json(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Message = "Только администратор может откреплять сообщения для всех"
+                        });
+                    }
+
+                    // Открепляем сообщение для всех
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = "UPDATE [Chats] SET [pinnedMessageId] = NULL, [pinnedAt] = NULL, [pinnedById] = NULL WHERE [idChat] = @chatId";
+                        command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            await command.ExecuteNonQueryAsync();
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
+                    }
+
+                    _logger.LogInformation("Message unpinned for all: ChatId={ChatId}", request.ChatId);
                 }
-
-                // Открепляем сообщение
-                var updateSql = @"
-            UPDATE [Chats] 
-            SET [pinnedMessageId] = NULL,
-                [pinnedAt] = NULL,
-                [pinnedById] = NULL
-            WHERE [idChat] = @chatId";
-
-                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                else
                 {
-                    command.CommandText = updateSql;
-                    command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+                    // Личное открепление (доступно всем)
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = "DELETE FROM [UserPinnedMessages] WHERE [userId] = @userId AND [chatId] = @chatId";
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                        command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
 
-                    await command.ExecuteNonQueryAsync();
+                        await _context.Database.OpenConnectionAsync();
+                        try
+                        {
+                            await command.ExecuteNonQueryAsync();
+                        }
+                        finally
+                        {
+                            await _context.Database.CloseConnectionAsync();
+                        }
+                    }
+
+                    _logger.LogInformation("Message unpinned for user: UserId={UserId}, ChatId={ChatId}",
+                        userId, request.ChatId);
                 }
-
-                _logger.LogInformation("Message unpinned successfully: ChatId={ChatId}", request.ChatId);
 
                 return Json(new ApiResponse<object>
                 {
                     Success = true,
-                    Message = "Сообщение откреплено"
+                    Message = request.PinForAll ? "Сообщение откреплено для всех" : "Сообщение откреплено"
                 });
             }
             catch (Exception ex)
@@ -2149,6 +2284,288 @@ namespace TripWise.Controllers
                 {
                     Success = false,
                     Message = "Ошибка при загрузке закрепленного сообщения: " + ex.Message
+                });
+            }
+        }
+        // GET: /Chats/GetUserPinnedMessage?chatId=5
+        [HttpGet]
+        public async Task<IActionResult> GetUserPinnedMessage(int chatId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var sql = @"
+            SELECT 
+                up.[messageId],
+                up.[pinnedAt],
+                m.[idMessage],
+                m.[message],
+                m.[sentAt],
+                m.[idUser] as SenderId,
+                m.[attachmentType],
+                m.[attachmentUrl],
+                m.[attachmentName],
+                u.[last_name] as SenderLastName,
+                u.[first_name] as SenderFirstName
+            FROM [UserPinnedMessages] up
+            INNER JOIN [ChatMessages] m ON up.[messageId] = m.[idMessage]
+            LEFT JOIN [Users] u ON m.[idUser] = u.[idUser]
+            WHERE up.[chatId] = @chatId AND up.[userId] = @userId";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = sql;
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                    await _context.Database.OpenConnectionAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var pinnedMessage = new
+                            {
+                                id = reader["messageId"],
+                                text = reader["message"] as string ?? "",
+                                senderId = reader["SenderId"],
+                                senderName = (reader["SenderLastName"] as string ?? "") + " " + (reader["SenderFirstName"] as string ?? ""),
+                                sentAt = reader["sentAt"],
+                                pinnedAt = reader["pinnedAt"],
+                                pinnedBy = "Вы",
+                                attachmentType = reader["attachmentType"] as string,
+                                attachmentUrl = reader["attachmentUrl"] as string,
+                                attachmentName = reader["attachmentName"] as string
+                            };
+
+                            return Json(new ApiResponse<object>
+                            {
+                                Success = true,
+                                Data = pinnedMessage
+                            });
+                        }
+                    }
+                }
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = null
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении личного закрепленного сообщения");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке личного закрепленного сообщения: " + ex.Message
+                });
+            }
+        }
+        // POST: /Chats/UploadChatAvatar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadChatAvatar(IFormFile file, [FromQuery] int chatId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("UploadChatAvatar: chatId={ChatId}, userId={UserId}, fileName={FileName}",
+                    chatId, userId, file?.FileName);
+
+                if (file == null || file.Length == 0)
+                {
+                    return Json(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "Файл не выбран или пуст"
+                    });
+                }
+
+                // Проверяем права (только администратор может менять аватар чата)
+                var isAdmin = await _context.ChatMembers
+                    .AnyAsync(cm => cm.ChatId == chatId && cm.UserId == userId && cm.Role == "admin");
+
+                if (!isAdmin)
+                {
+                    return Json(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "Только администратор может изменять аватар чата"
+                    });
+                }
+
+                // Проверка размера файла (максимум 5 МБ для аватаров)
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    return Json(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "Размер файла не должен превышать 5 МБ"
+                    });
+                }
+
+                // Проверка типа файла (только изображения)
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return Json(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "Недопустимый тип файла. Разрешены: " + string.Join(", ", allowedExtensions)
+                    });
+                }
+
+                // Создаем уникальное имя файла
+                var fileName = $"chat_{chatId}_{Guid.NewGuid()}{fileExtension}";
+
+                // Путь для сохранения
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "chat_avatars");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                // Удаляем старый аватар, если есть
+                var chat = await _context.Chats.FindAsync(chatId);
+                if (chat != null && !string.IsNullOrEmpty(chat.AvatarPath))
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", chat.AvatarPath.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                // Сохраняем новый файл
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Формируем URL для доступа к файлу
+                var avatarUrl = $"/uploads/chat_avatars/{fileName}";
+
+                // Обновляем путь в базе данных
+                if (chat != null)
+                {
+                    chat.AvatarPath = avatarUrl;
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation("Chat avatar uploaded successfully: ChatId={ChatId}, URL={AvatarUrl}",
+                    chatId, avatarUrl);
+
+                return Json(new ApiResponse<string>
+                {
+                    Success = true,
+                    Data = avatarUrl,
+                    Message = "Аватар чата успешно обновлен"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при загрузке аватара чата");
+                return Json(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке аватара: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Chats/DeleteChatAvatar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteChatAvatar([FromBody] DeleteChatAvatarRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("DeleteChatAvatar: chatId={ChatId}, userId={UserId}", request.ChatId, userId);
+
+                // Проверяем права (только администратор может удалить аватар)
+                var isAdmin = await _context.ChatMembers
+                    .AnyAsync(cm => cm.ChatId == request.ChatId && cm.UserId == userId && cm.Role == "admin");
+
+                if (!isAdmin)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только администратор может удалять аватар чата"
+                    });
+                }
+
+                var chat = await _context.Chats.FindAsync(request.ChatId);
+                if (chat == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Чат не найден"
+                    });
+                }
+
+                // Удаляем файл, если есть
+                if (!string.IsNullOrEmpty(chat.AvatarPath))
+                {
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", chat.AvatarPath.TrimStart('/'));
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+
+                // Обновляем базу данных
+                chat.AvatarPath = null;
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Аватар чата удален"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении аватара чата");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при удалении аватара: " + ex.Message
                 });
             }
         }
