@@ -1,16 +1,17 @@
 ﻿@{
     ViewData["Title"] = "Бюджет";
+    var userId = Context.Session.GetInt32("UserId");
 }
 
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #333; color: #0379D9;">
+            <h1 class="mb-4" style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 2.5rem; color: #0379D9;">
                 Бюджет путешествия
             </h1>
             <p class="lead">Планируйте и отслеживайте расходы для ваших поездок</p>
 
-            @if (Context.Session.GetInt32("UserId") == null)
+            @if (userId == null)
             {
                 <div class="alert alert-info">
                     <h5>Войдите в аккаунт</h5>
@@ -21,14 +22,23 @@
             }
             else
             {
+                <!-- Фильтр по поездкам -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <select class="form-select" id="tripFilter" onchange="loadBudgetData()">
+                            <option value="all">Все поездки</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-8">
                         <!-- Общая статистика -->
-                        <div class="row mb-4">
+                        <div class="row mb-4" id="summaryStats">
                             <div class="col-md-4">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h3 class="text-success">25 000 ₽</h3>
+                                        <h3 class="text-success" id="totalBudget">0 ₽</h3>
                                         <p class="text-muted mb-0">Общий бюджет</p>
                                     </div>
                                 </div>
@@ -36,7 +46,7 @@
                             <div class="col-md-4">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h3 class="text-warning">12 500 ₽</h3>
+                                        <h3 class="text-warning" id="totalSpent">0 ₽</h3>
                                         <p class="text-muted mb-0">Потрачено</p>
                                     </div>
                                 </div>
@@ -44,7 +54,7 @@
                             <div class="col-md-4">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h3 class="text-primary">12 500 ₽</h3>
+                                        <h3 class="text-primary" id="remainingBudget">0 ₽</h3>
                                         <p class="text-muted mb-0">Осталось</p>
                                     </div>
                                 </div>
@@ -59,47 +69,10 @@
                                     <i class="fas fa-plus me-1"></i>Добавить
                                 </button>
                             </div>
-                            <div class="card-body">
-                                <div class="category-item mb-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Транспорт</h6>
-                                            <div class="progress" style="height: 8px;">
-                                                <div class="progress-bar bg-success" style="width: 65%"></div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fw-bold">8 125 ₽ / 12 500 ₽</div>
-                                            <small class="text-muted">Осталось: 4 375 ₽</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="category-item mb-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Проживание</h6>
-                                            <div class="progress" style="height: 8px;">
-                                                <div class="progress-bar bg-warning" style="width: 40%"></div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fw-bold">4 000 ₽ / 10 000 ₽</div>
-                                            <small class="text-muted">Осталось: 6 000 ₽</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="category-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Питание</h6>
-                                            <div class="progress" style="height: 8px;">
-                                                <div class="progress-bar bg-info" style="width: 25%"></div>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fw-bold">375 ₽ / 1 500 ₽</div>
-                                            <small class="text-muted">Осталось: 1 125 ₽</small>
-                                        </div>
+                            <div class="card-body" id="categoriesContainer">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
                                     </div>
                                 </div>
                             </div>
@@ -107,38 +80,16 @@
 
                         <!-- История расходов -->
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">История расходов</h5>
+                                <button class="btn btn-sm btn-outline-primary" onclick="loadBudgetData()">
+                                    <i class="fas fa-sync me-1"></i>Обновить
+                                </button>
                             </div>
-                            <div class="card-body">
-                                <div class="expense-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <h6 class="mb-1">Авиабилеты Москва-Сочи</h6>
-                                        <small class="text-muted">Транспорт • 15 июл</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-danger">-7 500 ₽</div>
-                                        <small class="text-muted">2 пассажира</small>
-                                    </div>
-                                </div>
-                                <div class="expense-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <h6 class="mb-1">Отель на 7 ночей</h6>
-                                        <small class="text-muted">Проживание • 15 июл</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-danger">-4 000 ₽</div>
-                                        <small class="text-muted">Предоплата</small>
-                                    </div>
-                                </div>
-                                <div class="expense-item d-flex justify-content-between align-items-center py-2">
-                                    <div>
-                                        <h6 class="mb-1">Ужин в ресторане</h6>
-                                        <small class="text-muted">Питание • 16 июл</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-danger">-375 ₽</div>
-                                        <small class="text-muted">2 человека</small>
+                            <div class="card-body" id="expensesContainer">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
                                     </div>
                                 </div>
                             </div>
@@ -150,28 +101,53 @@
                         <div class="card mb-4">
                             <div class="card-body">
                                 <h5 class="card-title">Добавить расход</h5>
-                                <form id="addExpenseForm">
+                                <form id="addExpenseForm" onsubmit="addExpense(event)">
+                                    <div class="mb-3">
+                                        <label class="form-label">Поездка</label>
+                                        <select class="form-select" id="expenseTrip" required>
+                                            <option value="">Выберите поездку</option>
+                                        </select>
+                                    </div>
                                     <div class="mb-3">
                                         <label class="form-label">Сумма</label>
-                                        <input type="number" class="form-control" placeholder="0 ₽" required>
+                                        <input type="number" class="form-control" id="expenseAmount" placeholder="0 ₽" required min="0.01" step="0.01">
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Категория</label>
-                                        <select class="form-select" required>
+                                        <select class="form-select" id="expenseCategory" required>
                                             <option value="">Выберите категорию</option>
-                                            <option value="transport">Транспорт</option>
-                                            <option value="accommodation">Проживание</option>
-                                            <option value="food">Питание</option>
-                                            <option value="entertainment">Развлечения</option>
-                                            <option value="shopping">Шоппинг</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Описание</label>
-                                        <input type="text" class="form-control" placeholder="На что потратили?">
+                                        <input type="text" class="form-control" id="expenseTitle" placeholder="На что потратили?" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Дата</label>
+                                        <input type="date" class="form-control" id="expenseDate" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Разделить с</label>
+                                        <div id="participantsContainer" class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                            <div class="text-muted text-center py-2">Сначала выберите поездку</div>
+                                        </div>
+                                        <small class="text-muted">Сумма будет разделена поровну между выбранными участниками</small>
                                     </div>
                                     <button type="submit" class="btn btn-primary w-100">Добавить расход</button>
                                 </form>
+                            </div>
+                        </div>
+
+                        <!-- Долги и взаиморасчеты -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Долги и взаиморасчеты</h5>
+                            </div>
+                            <div class="card-body" id="debtsContainer">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-calculator fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Выберите поездку для просмотра долгов</p>
+                                </div>
                             </div>
                         </div>
 
@@ -215,20 +191,31 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="addCategoryForm" onsubmit="addCategory(event)">
                     <div class="mb-3">
                         <label class="form-label">Название категории</label>
-                        <input type="text" class="form-control" placeholder="Например: Экскурсии" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Бюджет</label>
-                        <input type="number" class="form-control" placeholder="0 ₽" required>
+                        <input type="text" class="form-control" id="categoryName" placeholder="Например: Экскурсии" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary">Добавить</button>
+                <button type="button" class="btn btn-primary" onclick="addCategory(event)">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно деталей расхода -->
+<div class="modal fade" id="expenseDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="expenseDetailsTitle">Детали расхода</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="expenseDetailsBody">
+                <!-- Загружается динамически -->
             </div>
         </div>
     </div>
@@ -239,13 +226,770 @@
         padding: 15px;
         border-radius: 8px;
         background: #f8f9fa;
+        transition: all 0.2s ease;
     }
 
-    .expense-item:hover {
-        background-color: #f8f9fa;
+        .category-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+    .expense-item {
+        padding: 12px 15px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
+
+        .expense-item:hover {
+            background-color: #f8f9fa;
+        }
 
     .progress {
         background-color: #e9ecef;
+        border-radius: 4px;
+    }
+
+    .progress-bar {
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .participant-checkbox {
+        padding: 8px;
+        border-radius: 5px;
+        transition: background-color 0.2s ease;
+    }
+
+        .participant-checkbox:hover {
+            background-color: #f8f9fa;
+        }
+
+    .debt-item {
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 8px;
+    }
+
+        .debt-item.positive {
+            background-color: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+
+        .debt-item.negative {
+            background-color: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+
+    .share-badge {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .share-badge:hover {
+            opacity: 0.8;
+        }
+
+        .share-badge.paid {
+            background-color: #28a745 !important;
+            color: white !important;
+        }
+
+        .share-badge.unpaid {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+
+    .badge-paid {
+        background-color: #28a745;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+    }
+
+    .badge-unpaid {
+        background-color: #dc3545;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
     }
 </style>
+
+@section Scripts {
+    <script>
+        let currentUserId = @Json.Serialize(userId);
+        let budgetData = null;
+        let selectedTripId = 'all';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Budget page loaded');
+            if (currentUserId) {
+                loadBudgetData();
+                loadTripsForSelect();
+                loadCategoriesForSelect();
+            }
+        });
+
+        // Загрузка данных бюджета
+        async function loadBudgetData() {
+            try {
+                selectedTripId = document.getElementById('tripFilter').value;
+                console.log('Loading budget data for trip:', selectedTripId);
+
+                const response = await fetch('/Budget/GetSummary');
+                const data = await response.json();
+
+                if (data.success) {
+                    budgetData = data.data;
+                    renderBudgetData();
+                } else {
+                    showNotification(data.message || 'Ошибка загрузки данных', 'danger');
+                }
+            } catch (error) {
+                console.error('Error loading budget data:', error);
+                showNotification('Не удалось загрузить данные бюджета', 'danger');
+            }
+        }
+
+        // Отображение данных бюджета
+        function renderBudgetData() {
+            if (!budgetData) return;
+
+            // Фильтруем данные по выбранной поездке
+            let filteredData = { ...budgetData };
+
+            if (selectedTripId !== 'all') {
+                const tripId = parseInt(selectedTripId);
+                const selectedTrip = budgetData.trips.find(t => t.id === tripId);
+
+                if (selectedTrip) {
+                    filteredData.totalBudget = selectedTrip.totalBudget;
+                    filteredData.totalSpent = selectedTrip.totalSpent;
+                    filteredData.categories = selectedTrip.categories;
+                    filteredData.recentExpenses = budgetData.recentExpenses.filter(e => e.tripId === tripId);
+                }
+            }
+
+            // Обновляем статистику
+            document.getElementById('totalBudget').textContent = formatMoney(filteredData.totalBudget);
+            document.getElementById('totalSpent').textContent = formatMoney(filteredData.totalSpent);
+            document.getElementById('remainingBudget').textContent = formatMoney(filteredData.totalBudget - filteredData.totalSpent);
+
+            // Отображаем категории
+            renderCategories(filteredData.categories);
+
+            // Отображаем последние расходы
+            renderExpenses(filteredData.recentExpenses);
+
+            // Отображаем долги для выбранной поездки
+            if (selectedTripId !== 'all') {
+                renderDebts(parseInt(selectedTripId));
+            }
+        }
+
+        // Отображение категорий
+        function renderCategories(categories) {
+            const container = document.getElementById('categoriesContainer');
+
+            if (!categories || categories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Нет данных о расходах</p>
+                        <p class="small">Добавьте первый расход, чтобы увидеть статистику по категориям</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            categories.forEach(cat => {
+                html += `
+                    <div class="category-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="flex: 1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-circle me-2" style="color: ${cat.color}; font-size: 0.8rem;"></i>
+                                        ${escapeHtml(cat.name)}
+                                    </h6>
+                                    <span class="badge bg-secondary">${cat.expenseCount} расход(ов)</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: ${cat.percentage}%; background-color: ${cat.color};"></div>
+                                </div>
+                            </div>
+                            <div class="text-end ms-3" style="min-width: 150px;">
+                                <div class="fw-bold">${formatMoney(cat.spent)} / ${formatMoney(cat.budget || cat.spent)}</div>
+                                <small class="text-muted">Осталось: ${formatMoney(cat.remaining)}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Отображение расходов
+        function renderExpenses(expenses) {
+            const container = document.getElementById('expensesContainer');
+
+            if (!expenses || expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Нет расходов</p>
+                        <p class="small">Добавьте первый расход, используя форму справа</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            expenses.forEach(exp => {
+                const date = new Date(exp.expenseDate);
+                const formattedDate = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+
+                html += `
+                    <div class="expense-item d-flex justify-content-between align-items-center border-bottom" onclick="showExpenseDetails(${exp.id})">
+                        <div style="flex: 1;">
+                            <div class="d-flex align-items-center mb-1">
+                                <h6 class="mb-0 me-2">${escapeHtml(exp.title)}</h6>
+                                <span class="badge bg-light text-dark">${escapeHtml(exp.categoryName)}</span>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(exp.tripName)}
+                                <span class="mx-2">•</span>
+                                <i class="far fa-calendar me-1"></i>${formattedDate}
+                            </small>
+                            ${exp.shares && exp.shares.length > 1 ? `
+                                <div class="mt-1">
+                                    ${exp.shares.map(share => `
+                                        <span class="badge ${share.userId === currentUserId ? 'bg-primary' : 'bg-secondary'} me-1 share-badge"
+                                              onclick="toggleSharePaid(${exp.id}, ${share.userId}, ${share.isPaid}, event)"
+                                              title="${share.isPaid ? 'Оплачено' : 'Не оплачено'}">
+                                            ${escapeHtml(getInitials(share.userName))}
+                                            <span class="ms-1">${share.isPaid ? '✓' : '○'}</span>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="text-end ms-3">
+                            <div class="fw-bold text-danger">-${formatMoney(exp.amount)} ₽</div>
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>${escapeHtml(exp.paidByName)}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Отображение долгов
+        function renderDebts(tripId) {
+            const container = document.getElementById('debtsContainer');
+
+            if (!budgetData || !tripId) {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-calculator fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Выберите поездку для просмотра долгов</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Получаем все расходы для этой поездки
+            const tripExpenses = budgetData.recentExpenses.filter(e => e.tripId === tripId);
+
+            // Собираем всех участников и их баланс
+            const balances = new Map();
+
+            tripExpenses.forEach(exp => {
+                if (exp.shares && exp.shares.length > 0) {
+                    exp.shares.forEach(share => {
+                        const currentBalance = balances.get(share.userId) || 0;
+                        if (share.userId === exp.paidById) {
+                            // Тот, кто заплатил, должен получить деньги от других
+                            balances.set(share.userId, currentBalance + (exp.amount - share.amount));
+                        } else {
+                            // Остальные должны заплатить свою долю
+                            balances.set(share.userId, currentBalance - share.amount);
+                        }
+                    });
+                }
+            });
+
+            // Формируем список долгов
+            const debts = [];
+            const users = Array.from(balances.entries()).map(([userId, balance]) => ({
+                userId,
+                balance,
+                userName: getParticipantName(userId, tripId)
+            }));
+
+            // Находим кто кому должен
+            for (let i = 0; i < users.length; i++) {
+                for (let j = i + 1; j < users.length; j++) {
+                    if (users[i].balance > 0 && users[j].balance < 0) {
+                        const amount = Math.min(users[i].balance, -users[j].balance);
+                        if (amount > 0.01) {
+                            debts.push({
+                                from: users[j].userId,
+                                fromName: users[j].userName,
+                                to: users[i].userId,
+                                toName: users[i].userName,
+                                amount: amount
+                            });
+                        }
+                    } else if (users[i].balance < 0 && users[j].balance > 0) {
+                        const amount = Math.min(-users[i].balance, users[j].balance);
+                        if (amount > 0.01) {
+                            debts.push({
+                                from: users[i].userId,
+                                fromName: users[i].userName,
+                                to: users[j].userId,
+                                toName: users[j].userName,
+                                amount: amount
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (debts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-smile text-success fa-2x mb-2"></i>
+                        <p class="text-success mb-0">Все расчеты завершены!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            debts.forEach(debt => {
+                const isCurrentUserOwes = debt.from === currentUserId;
+                const isCurrentUserGets = debt.to === currentUserId;
+
+                html += `
+                    <div class="debt-item ${isCurrentUserOwes ? 'negative' : 'positive'}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                ${isCurrentUserOwes ?
+                                    `<strong>Вы должны</strong> ${escapeHtml(debt.toName)}` :
+                                    isCurrentUserGets ?
+                                    `<strong>${escapeHtml(debt.fromName)} должен</strong> вам` :
+                                    `<strong>${escapeHtml(debt.fromName)}</strong> должен <strong>${escapeHtml(debt.toName)}</strong>`
+                                }
+                            </div>
+                            <div class="fw-bold">${formatMoney(debt.amount)} ₽</div>
+                        </div>
+                        ${(isCurrentUserOwes || isCurrentUserGets) ? `
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-success" onclick="markDebtAsPaid(${debt.from}, ${debt.to}, ${debt.amount})">
+                                    <i class="fas fa-check me-1"></i>Отметить как оплачено
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Загрузка поездок для селекта
+        async function loadTripsForSelect() {
+            try {
+                const response = await fetch('/Budget/GetSummary');
+                const data = await response.json();
+
+                if (data.success && data.data.trips) {
+                    const tripSelect = document.getElementById('expenseTrip');
+                    const tripFilter = document.getElementById('tripFilter');
+
+                    let options = '<option value="">Выберите поездку</option>';
+                    let filterOptions = '<option value="all">Все поездки</option>';
+
+                    data.data.trips.forEach(trip => {
+                        const dates = `${new Date(trip.startDate).toLocaleDateString()} - ${new Date(trip.endDate).toLocaleDateString()}`;
+                        options += `<option value="${trip.id}">${escapeHtml(trip.title)} (${dates})</option>`;
+                        filterOptions += `<option value="${trip.id}">${escapeHtml(trip.title)}</option>`;
+                    });
+
+                    tripSelect.innerHTML = options;
+                    tripFilter.innerHTML = filterOptions;
+
+                    // Если есть поездки, выбираем первую для фильтра
+                    if (data.data.trips.length > 0 && !selectedTripId) {
+                        tripFilter.value = data.data.trips[0].id;
+                        selectedTripId = data.data.trips[0].id;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading trips:', error);
+            }
+        }
+
+        // Загрузка категорий для селекта
+        async function loadCategoriesForSelect() {
+            try {
+                const response = await fetch('/Budget/GetSummary');
+                const data = await response.json();
+
+                if (data.success && data.data.categories) {
+                    const categorySelect = document.getElementById('expenseCategory');
+                    let options = '<option value="">Выберите категорию</option>';
+
+                    data.data.categories.forEach(cat => {
+                        if (cat.id > 0) { // Исключаем "Другое" (id=0)
+                            options += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+                        }
+                    });
+
+                    categorySelect.innerHTML = options;
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Загрузка участников поездки
+        async function loadTripParticipants(tripId) {
+            if (!tripId) return;
+
+            try {
+                const response = await fetch(`/Budget/GetTripParticipants?tripId=${tripId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const container = document.getElementById('participantsContainer');
+
+                    if (data.data.length <= 1) {
+                        container.innerHTML = '<div class="text-muted text-center py-2">Нет других участников для разделения</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.data.forEach(p => {
+                        if (p.idUser !== currentUserId) {
+                            html += `
+                                <div class="participant-checkbox form-check">
+                                    <input class="form-check-input" type="checkbox" value="${p.idUser}" id="participant_${p.idUser}">
+                                    <label class="form-check-label" for="participant_${p.idUser}">
+                                        <div class="d-flex align-items-center">
+                                            ${p.avatarPath ?
+                                                `<img src="${p.avatarPath}" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">` :
+                                                `<div class="avatar-circle-sm bg-primary me-2" style="width: 24px; height: 24px; font-size: 10px;">${getInitials(p.fullName)}</div>`
+                                            }
+                                            ${escapeHtml(p.fullName)}
+                                        </div>
+                                    </label>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    if (html) {
+                        html = '<div class="mb-2"><strong>Разделить расход с:</strong></div>' + html;
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div class="text-muted text-center py-2">Нет других участников для разделения</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading participants:', error);
+            }
+        }
+
+        // Добавление расхода
+        async function addExpense(event) {
+            event.preventDefault();
+
+            const tripId = document.getElementById('expenseTrip').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const categoryId = parseInt(document.getElementById('expenseCategory').value);
+            const title = document.getElementById('expenseTitle').value;
+            const date = document.getElementById('expenseDate').value;
+
+            if (!tripId || !amount || !categoryId || !title || !date) {
+                showNotification('Заполните все поля', 'warning');
+                return;
+            }
+
+            // Собираем ID выбранных участников для разделения
+            const sharedWith = [];
+            document.querySelectorAll('#participantsContainer input:checked').forEach(cb => {
+                sharedWith.push(parseInt(cb.value));
+            });
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Budget/AddExpense', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        tripId: parseInt(tripId),
+                        title: title,
+                        amount: amount,
+                        categoryId: categoryId,
+                        expenseDate: new Date(date).toISOString(),
+                        sharedWith: sharedWith
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Расход добавлен', 'success');
+
+                    // Сбрасываем форму
+                    document.getElementById('addExpenseForm').reset();
+                    document.getElementById('participantsContainer').innerHTML = '<div class="text-muted text-center py-2">Сначала выберите поездку</div>';
+
+                    // Обновляем данные
+                    await loadBudgetData();
+                } else {
+                    showNotification(data.message || 'Ошибка при добавлении', 'danger');
+                }
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                showNotification('Не удалось добавить расход', 'danger');
+            }
+        }
+
+        // Добавление категории
+        async function addCategory(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('categoryName').value;
+
+            if (!name) {
+                showNotification('Введите название категории', 'warning');
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Budget/AddCategory', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ name: name })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Категория добавлена', 'success');
+
+                    // Закрываем модальное окно
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+                    modal.hide();
+
+                    // Сбрасываем форму
+                    document.getElementById('categoryName').value = '';
+
+                    // Обновляем данные
+                    await loadBudgetData();
+                    await loadCategoriesForSelect();
+                } else {
+                    showNotification(data.message || 'Ошибка при добавлении', 'danger');
+                }
+            } catch (error) {
+                console.error('Error adding category:', error);
+                showNotification('Не удалось добавить категорию', 'danger');
+            }
+        }
+
+        // Показать детали расхода
+        function showExpenseDetails(expenseId) {
+            const expense = budgetData.recentExpenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            const modalBody = document.getElementById('expenseDetailsBody');
+            const date = new Date(expense.expenseDate).toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            let sharesHtml = '';
+            if (expense.shares && expense.shares.length > 0) {
+                sharesHtml = '<h6 class="mt-3 mb-2">Разделение расходов:</h6>';
+                expense.shares.forEach(share => {
+                    sharesHtml += `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span class="fw-bold">${escapeHtml(share.userName)}</span>
+                                ${share.userId === expense.paidById ? ' <span class="badge bg-primary">Организатор</span>' : ''}
+                            </div>
+                            <div>
+                                <span class="me-3">${formatMoney(share.amount)} ₽</span>
+                                <span class="badge ${share.isPaid ? 'bg-success' : 'bg-danger'}">
+                                    ${share.isPaid ? 'Оплачено' : 'Не оплачено'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            modalBody.innerHTML = `
+                <div class="text-center mb-3">
+                    <h3 class="text-danger">-${formatMoney(expense.amount)} ₽</h3>
+                    <span class="badge bg-light text-dark">${escapeHtml(expense.categoryName)}</span>
+                </div>
+
+                <div class="mb-3">
+                    <h6>${escapeHtml(expense.title)}</h6>
+                    <p class="text-muted small">${date}</p>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Поездка:</span>
+                        <span class="fw-bold">${escapeHtml(expense.tripName)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Кто заплатил:</span>
+                        <span class="fw-bold">${escapeHtml(expense.paidByName)}</span>
+                    </div>
+                </div>
+
+                ${sharesHtml}
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('expenseDetailsModal'));
+            modal.show();
+        }
+
+        // Переключение статуса оплаты доли
+        async function toggleSharePaid(expenseId, userId, currentStatus, event) {
+            event.stopPropagation();
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Budget/MarkShareAsPaid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        expenseId: expenseId,
+                        userId: userId,
+                        isPaid: !currentStatus
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Статус оплаты обновлен', 'success');
+                    await loadBudgetData();
+                } else {
+                    showNotification(data.message || 'Ошибка при обновлении', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating share status:', error);
+                showNotification('Не удалось обновить статус', 'danger');
+            }
+        }
+
+        // Отметить долг как оплаченный
+        async function markDebtAsPaid(fromUserId, toUserId, amount) {
+            // Здесь можно добавить логику создания расхода или уведомления
+            showNotification('Функция в разработке', 'info');
+        }
+
+        // Получить имя участника по ID
+        function getParticipantName(userId, tripId) {
+            if (!budgetData || !tripId) return 'Неизвестно';
+
+            const trip = budgetData.trips.find(t => t.id === tripId);
+            if (trip && trip.participants) {
+                // Временно возвращаем "Участник", пока не добавим маппинг имен
+                return 'Участник';
+            }
+            return 'Неизвестно';
+        }
+
+        // Обработчик изменения поездки в форме добавления
+        document.getElementById('expenseTrip')?.addEventListener('change', function(e) {
+            if (e.target.value) {
+                loadTripParticipants(e.target.value);
+            } else {
+                document.getElementById('participantsContainer').innerHTML = '<div class="text-muted text-center py-2">Сначала выберите поездку</div>';
+            }
+        });
+
+        // Форматирование денег
+        function formatMoney(amount) {
+            if (amount === null || amount === undefined) return '0';
+            return amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$& ');
+        }
+
+        // Получение инициалов
+        function getInitials(fullName) {
+            if (!fullName) return '?';
+            const parts = fullName.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return parts[0][0].toUpperCase();
+        }
+
+        // Экранирование HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.maxWidth = '400px';
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' :
+                                        type === 'danger' ? 'fa-exclamation-circle' :
+                                        'fa-info-circle'} me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => alertDiv.remove(), 150);
+                }
+            }, 3000);
+        }
+    </script>
+}

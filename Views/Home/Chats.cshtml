@@ -699,6 +699,71 @@
 .pinned-message-container .fa-thumbtack {
     font-size: 1.1rem;
 }
+
+    /* Добавьте в секцию стилей */
+    .pinned-message-container {
+        animation: slideDown 0.3s ease-out;
+        border-left: 3px solid;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+
+        .pinned-message-container:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .pinned-message-container.global-pin {
+            border-left-color: #0379D9;
+        }
+
+        .pinned-message-container.user-pin {
+            border-left-color: #28a745;
+        }
+
+        .pinned-message-container:not(:last-child) {
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+
+    /* Стиль для подсветки сообщения при переходе */
+    .message.highlight {
+        animation: highlightPulse 2s ease;
+    }
+
+    @@keyframes highlightPulse {
+        0%
+
+    {
+        background-color: rgba(3, 121, 217, 0.2);
+    }
+
+    50% {
+        background-color: rgba(3, 121, 217, 0.1);
+    }
+
+    100% {
+        background-color: transparent;
+    }
+
+    }
+
+    @@keyframes slideDown {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .pinned-message-container .fa-thumbtack {
+        font-size: 1.1rem;
+    }
 </style>
 
 @section Scripts {
@@ -1273,7 +1338,7 @@
         }
         // Загрузка сообщений чата - ИСПРАВЛЕНО: query string параметр
                 // В функции loadChatMessages, после renderMessages:
-                        function renderMessages(messages) {
+                                function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList');
 
             if (!messages || messages.length === 0) {
@@ -1288,16 +1353,15 @@
             }
 
             let html = '';
-            let currentDate = null;
+            let prevMessageTime = null;
 
-            messages.forEach(msg => {
-                const msgDate = formatDate(msg.sentAt);
-
-                if (currentDate !== msgDate) {
-                    currentDate = msgDate;
+            messages.forEach((msg, index) => {
+                // Проверяем, нужно ли показывать разделитель даты
+                if (shouldShowDateSeparator(prevMessageTime, msg.sentAt)) {
+                    const dateStr = formatDate(msg.sentAt);
                     html += `
                         <div class="date-separator">
-                            <span>${formatDate(msgDate)}</span>
+                            <span>${dateStr}</span>
                         </div>
                     `;
                 }
@@ -1326,25 +1390,25 @@
                                     ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
                                     <div class="message-text">${escapeHtml(msg.text || '')}</div>
                                 </div>
-                                                ${isOutgoing ? `
-            <div class="dropdown ms-2">
-                <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
-                        <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
-                        <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
-                        <i class="fas fa-trash me-2"></i>Удалить
-                    </a></li>
-                </ul>
-            </div>
-        ` : ''}
+                                ${isOutgoing ? `
+                                <div class="dropdown ms-2">
+                                    <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
+                                            <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
+                                            <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
+                                            <i class="fas fa-trash me-2"></i>Удалить
+                                        </a></li>
+                                    </ul>
+                                </div>
+                                ` : ''}
                             </div>
                             ${attachments.length > 0 ? `
                                 <div class="message-attachments mt-2">
@@ -1355,18 +1419,25 @@
                         </div>
                     </div>
                 `;
+
+                prevMessageTime = msg.sentAt;
             });
 
             messagesList.innerHTML = html;
             scrollToBottom();
         }
         // Отправка сообщения
-                async function sendMessage() {
+                        async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
 
-            if (!text || !currentChatId) {
-                console.log('Нет текста или не выбран чат');
+            if ((!text || text === '') && selectedFiles.length === 0) {
+                console.log('Нет текста и не выбрано файлов');
+                return;
+            }
+
+            if (!currentChatId) {
+                console.log('Не выбран чат');
                 return;
             }
 
@@ -1379,7 +1450,13 @@
                     return;
                 }
 
-                console.log('Отправка сообщения в чат:', currentChatId, 'Текст:', text);
+                const messageData = {
+                    chatId: currentChatId,
+                    text: text || '',
+                    attachments: selectedFiles
+                };
+
+                console.log('Отправка сообщения:', messageData);
 
                 const response = await fetch('/Chats/SendMessage', {
                     method: 'POST',
@@ -1387,27 +1464,22 @@
                         'Content-Type': 'application/json',
                         'RequestVerificationToken': token
                     },
-                    body: JSON.stringify({
-                        chatId: currentChatId,
-                        text: text
-                    })
+                    body: JSON.stringify(messageData)
                 });
 
-                console.log('Статус ответа:', response.status);
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Ошибка ответа:', response.status, errorText);
                     throw new Error(`HTTP ошибка: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Ответ сервера:', data);
 
                 if (data.success) {
                     input.value = '';
-                    // НЕ добавляем сообщение в UI здесь - оно придет через checkNewMessages
-                    // Просто очищаем поле ввода
+                    clearAllFiles();
+
+                    // Не добавляем сообщение вручную - ждем checkNewMessages
+                    // Он придет с правильным UTC временем
+
                 } else {
                     showNotification(data.message || 'Ошибка при отправке', 'danger');
                 }
@@ -1418,7 +1490,7 @@
         }
 
         // Добавление сообщения в UI
-                                function appendMessageToUI(message) {
+                                        function appendMessageToUI(message) {
             const messagesList = document.getElementById('messagesList');
 
             if (messagesList.children.length === 1 &&
@@ -1426,26 +1498,40 @@
                 messagesList.innerHTML = '';
             }
 
-            // Проверяем, что дата валидная
+            // Нормализуем время
             let sentAt = message.sentAt;
             if (typeof sentAt === 'string') {
-                sentAt = sentAt.replace(' ', 'T');
+                // Если время без Z, добавляем его
+                if (!sentAt.endsWith('Z') && !sentAt.includes('+')) {
+                    sentAt = sentAt.replace(' ', 'T') + 'Z';
+                }
             }
 
-            const msgDate = formatDate(sentAt);
-            const currentDate = new Date().toLocaleDateString('ru-RU');
+            // Проверяем, нужно ли добавить разделитель даты
+            const lastMessage = messagesList.lastElementChild;
+            let shouldAddDateSeparator = true;
 
-            if (!messagesList.querySelector('.date-separator:last-child span')?.textContent.includes(msgDate) &&
-                msgDate !== currentDate) {
+            if (lastMessage && !lastMessage.classList.contains('date-separator')) {
+                const lastMessageElement = lastMessage.previousElementSibling;
+                if (lastMessageElement && lastMessageElement.classList.contains('date-separator')) {
+                    const lastDateStr = lastMessageElement.querySelector('span').textContent;
+                    const currentDateStr = formatDate(sentAt);
+                    shouldAddDateSeparator = lastDateStr !== currentDateStr;
+                }
+            }
+
+            if (shouldAddDateSeparator) {
                 const dateSeparator = document.createElement('div');
                 dateSeparator.className = 'date-separator';
-                dateSeparator.innerHTML = `<span>${formatDate(msgDate)}</span>`;
+                dateSeparator.innerHTML = `<span>${formatDate(sentAt)}</span>`;
                 messagesList.appendChild(dateSeparator);
             }
 
+            const isOutgoing = message.senderId === currentUserId;
+
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message message-outgoing';
-            messageDiv.setAttribute('data-message-id', message.id || Date.now());
+            messageDiv.className = `message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}`;
+            messageDiv.setAttribute('data-message-id', message.id);
 
             // Получаем файлы для отображения
             let attachments = message.attachments || [];
@@ -1460,27 +1546,37 @@
                 }];
             }
 
-            // Добавляем содержимое сообщения с кнопкой удаления
+            // Формируем содержимое
             let content = `
                 <div class="message-content">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
+                            ${!isOutgoing ? `<div class="message-sender">${escapeHtml(message.senderName || 'Пользователь')}</div>` : ''}
                             <div class="message-text">${escapeHtml(message.text || '')}</div>
                         </div>
+                        ${isOutgoing ? `
                         <div class="dropdown ms-2">
                             <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="pinMessage(${message.id}, false, event)">
+                                    <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="pinMessage(${message.id}, true, event)">
+                                    <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${message.id}, event)">
                                     <i class="fas fa-trash me-2"></i>Удалить
                                 </a></li>
                             </ul>
                         </div>
+                        ` : ''}
                     </div>
             `;
 
-            // Если есть вложения, добавляем их
+            // Добавляем вложения если есть
             if (attachments.length > 0) {
                 content += `<div class="message-attachments mt-2">`;
                 attachments.forEach(att => {
@@ -1489,7 +1585,7 @@
                 content += `</div>`;
             }
 
-            content += `<div class="message-time">${formatTime(message.sentAt)}</div></div>`;
+            content += `<div class="message-time">${formatTime(sentAt)}</div></div>`;
 
             messageDiv.innerHTML = content;
             messagesList.appendChild(messageDiv);
@@ -1530,7 +1626,7 @@
         }
 
                 // Проверка новых сообщений
-                        async function checkNewMessages(chatId) {
+                                        async function checkNewMessages(chatId) {
             try {
                 const response = await fetch(`/Chats/GetNewMessages?chatId=${chatId}&lastMessageId=${lastMessageId}`);
                 const data = await response.json();
@@ -1543,36 +1639,77 @@
                         if (msgId) existingMessageIds.add(parseInt(msgId));
                     });
 
-                    // Добавляем только новые сообщения, которых еще нет в UI
+                    // Фильтруем только новые сообщения
                     const newMessages = data.data.filter(msg => !existingMessageIds.has(msg.id));
 
-                    newMessages.forEach(msg => {
-                        // Подготавливаем attachments для отображения
-                        if (msg.attachments) {
-                            // Уже в правильном формате
-                        } else if (msg.attachmentUrl) {
-                            msg.attachments = [{
-                                fileName: msg.attachmentName,
-                                fileUrl: msg.attachmentUrl,
-                                fileSize: msg.attachmentSize,
-                                fileType: msg.attachmentType
-                            }];
+                    if (newMessages.length > 0) {
+                        // Сортируем по времени
+                        newMessages.sort((a, b) => {
+                            const dateA = normalizeDate(a.sentAt);
+                            const dateB = normalizeDate(b.sentAt);
+                            return dateA - dateB;
+                        });
+
+                        // Получаем последнее сообщение в чате для проверки разделителя
+                        const lastMessage = document.querySelector('.message:last-child');
+                        let lastMessageTime = null;
+
+                        if (lastMessage) {
+                            const prevMessage = Array.from(document.querySelectorAll('.message')).pop();
+                            if (prevMessage) {
+                                const prevMsgId = prevMessage.getAttribute('data-message-id');
+                                const prevMsg = data.data.find(m => m.id === parseInt(prevMsgId));
+                                if (prevMsg) {
+                                    lastMessageTime = prevMsg.sentAt;
+                                }
+                            }
                         }
-                        appendMessageToUI(msg);
-                    });
 
-                    await markMessagesAsRead(chatId);
+                        // Добавляем сообщения
+                        newMessages.forEach((msg, index) => {
+                            // Проверяем нужен ли разделитель
+                            if (index === 0 && lastMessageTime) {
+                                if (shouldShowDateSeparator(lastMessageTime, msg.sentAt)) {
+                                    addDateSeparator(msg.sentAt);
+                                }
+                            } else if (index > 0) {
+                                if (shouldShowDateSeparator(newMessages[index - 1].sentAt, msg.sentAt)) {
+                                    addDateSeparator(msg.sentAt);
+                                }
+                            }
 
-                    // Обновляем lastMessageId
-                    if (data.data.length > 0) {
-                        lastMessageId = Math.max(...data.data.map(m => m.id));
+                            // Подготавливаем attachments
+                            if (msg.attachments) {
+                                // Уже в правильном формате
+                            } else if (msg.attachmentUrl) {
+                                msg.attachments = [{
+                                    fileName: msg.attachmentName,
+                                    fileUrl: msg.attachmentUrl,
+                                    fileSize: msg.attachmentSize,
+                                    fileType: msg.attachmentType
+                                }];
+                            }
+
+                            appendMessageToUI(msg);
+                        });
+
+                        await markMessagesAsRead(chatId);
+
+                        // Обновляем lastMessageId
+                        lastMessageId = Math.max(...newMessages.map(m => m.id), lastMessageId);
                     }
                 }
             } catch (error) {
                 console.error('Ошибка проверки новых сообщений:', error);
             }
         }
-
+                function addDateSeparator(dateString) {
+            const messagesList = document.getElementById('messagesList');
+            const dateSeparator = document.createElement('div');
+            dateSeparator.className = 'date-separator';
+            dateSeparator.innerHTML = `<span>${formatDate(dateString)}</span>`;
+            messagesList.appendChild(dateSeparator);
+        }
         // ==================== ФУНКЦИИ ДЛЯ СОЗДАНИЯ ЧАТА ====================
 
         function openNewChatModal() {
@@ -1925,131 +2062,133 @@
             return parts[0][0].toUpperCase();
         }
 
-                                        function formatTime(dateString) {
-            if (!dateString) return '';
+                                                // ИСПРАВЛЕННАЯ функция formatTime
+                // ИСПРАВЛЕННАЯ функция formatTime - использует локальное время браузера
+                        function formatTime(dateString) {
+            const date = normalizeDate(dateString);
+            if (!date) return '';
+
+            const options = {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+
+            return date.toLocaleTimeString('ru-RU', options);
+        }
+                function normalizeDate(dateInput) {
+            if (!dateInput) return null;
 
             try {
-                const date = new Date(dateString);
-                // Проверяем, валидная ли дата
-                if (isNaN(date.getTime())) {
-                    console.error('Invalid date:', dateString);
-                    return '';
+                // Если это строка, убеждаемся что она в правильном формате
+                if (typeof dateInput === 'string') {
+                    // Убираем лишние миллисекунды (оставляем только 3 цифры)
+                    dateInput = dateInput.replace(/\.(\d{3})\d+/, '.$1');
+
+                    // Добавляем Z если нужно
+                    if (!dateInput.endsWith('Z') && !dateInput.includes('+')) {
+                        dateInput = dateInput.replace(' ', 'T') + 'Z';
+                    }
                 }
 
+                const date = new Date(dateInput);
+                return isNaN(date.getTime()) ? null : date;
+            } catch {
+                return null;
+            }
+        }
+
+        // Функция для получения даты без времени
+        function getDateOnly(date) {
+            if (!date) return null;
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        // Функция для получения разницы в днях
+        function getDaysDifference(date1, date2) {
+            const d1 = getDateOnly(date1);
+            const d2 = getDateOnly(date2);
+            if (!d1 || !d2) return null;
+
+            const diffTime = d2 - d1;
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        }
+        // ИСПРАВЛЕННАЯ функция formatMessageTime
+                function formatMessageTime(dateString) {
+            const date = normalizeDate(dateString);
+            if (!date) return '';
+
+            const now = new Date();
+            const daysDiff = getDaysDifference(date, now);
+
+            if (daysDiff === null) return '';
+
+            if (daysDiff === 0) {
+                // Сегодня - показываем время
                 const options = {
                     hour: '2-digit',
                     minute: '2-digit',
-                    timeZone: 'Europe/Moscow',
-                    hour12: false // 24-часовой формат
+                    hour12: false
+                };
+                return date.toLocaleTimeString('ru-RU', options);
+            } else if (daysDiff === 1) {
+                return 'Вчера';
+            } else if (daysDiff < 7) {
+                // Меньше недели - показываем день недели
+                const options = { weekday: 'short' };
+                return date.toLocaleDateString('ru-RU', options);
+            } else {
+                // Больше недели - показываем дату
+                const options = {
+                    day: 'numeric',
+                    month: 'short'
+                };
+                return date.toLocaleDateString('ru-RU', options);
+            }
+        }
+
+        // ИСПРАВЛЕННАЯ функция formatDate для разделителей
+                function formatDate(dateString) {
+            const date = normalizeDate(dateString);
+            if (!date) return '';
+
+            const now = new Date();
+            const daysDiff = getDaysDifference(date, now);
+
+            if (daysDiff === null) return '';
+
+            if (daysDiff === 0) {
+                return 'Сегодня';
+            } else if (daysDiff === 1) {
+                return 'Вчера';
+            } else {
+                const options = {
+                    day: 'numeric',
+                    month: 'long'
                 };
 
-                return date.toLocaleTimeString('ru-RU', options);
-            } catch (e) {
-                console.error('Error formatting time:', e);
-                return '';
+                // Добавляем год если отличается
+                if (date.getFullYear() !== now.getFullYear()) {
+                    options.year = 'numeric';
+                }
+
+                return date.toLocaleDateString('ru-RU', options);
             }
         }
 
-                                        function formatMessageTime(dateString) {
-            if (!dateString) return '';
+        // Функция для проверки, нужно ли показывать разделитель даты
+                function shouldShowDateSeparator(prevMessageTime, currentMessageTime) {
+            const prevDate = normalizeDate(prevMessageTime);
+            const currentDate = normalizeDate(currentMessageTime);
 
-            try {
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) {
-                    console.error('Invalid date:', dateString);
-                    return '';
-                }
+            if (!prevDate || !currentDate) return true;
 
-                const now = new Date();
+            const prevDay = getDateOnly(prevDate);
+            const currentDay = getDateOnly(currentDate);
 
-                // Обнуляем время для сравнения дат
-                const today = new Date(now);
-                today.setHours(0, 0, 0, 0);
-
-                const messageDate = new Date(date);
-                messageDate.setHours(0, 0, 0, 0);
-
-                const diffTime = today - messageDate;
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays === 0) {
-                    const options = {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'Europe/Moscow',
-                        hour12: false
-                    };
-                    return date.toLocaleTimeString('ru-RU', options);
-                } else if (diffDays === 1) {
-                    return 'Вчера';
-                } else if (diffDays < 7) {
-                    const options = {
-                        weekday: 'short',
-                        timeZone: 'Europe/Moscow'
-                    };
-                    return date.toLocaleDateString('ru-RU', options);
-                } else {
-                    const options = {
-                        day: 'numeric',
-                        month: 'short',
-                        timeZone: 'Europe/Moscow'
-                    };
-                    return date.toLocaleDateString('ru-RU', options);
-                }
-            } catch (e) {
-                console.error('Error formatting message time:', e);
-                return '';
-            }
-        }
-
-                                        function formatDate(dateStr) {
-            if (!dateStr) return '';
-
-            // Если это уже отформатированная дата (Сегодня, Вчера или дата с точками)
-            if (typeof dateStr === 'string' &&
-                (dateStr === 'Сегодня' || dateStr === 'Вчера' || dateStr.includes('.'))) {
-                return dateStr;
-            }
-
-            try {
-                const date = new Date(dateStr);
-                // Проверяем, валидная ли дата
-                if (isNaN(date.getTime())) {
-                    console.error('Invalid date:', dateStr);
-                    return '';
-                }
-
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const messageDate = new Date(date);
-                messageDate.setHours(0, 0, 0, 0);
-
-                const diffTime = today - messageDate;
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays === 0) {
-                    return 'Сегодня';
-                } else if (diffDays === 1) {
-                    return 'Вчера';
-                } else {
-                    const options = {
-                        day: 'numeric',
-                        month: 'long',
-                        timeZone: 'Europe/Moscow'
-                    };
-
-                    // Добавляем год только если он отличается от текущего
-                    if (date.getFullYear() !== today.getFullYear()) {
-                        options.year = 'numeric';
-                    }
-
-                    return date.toLocaleDateString('ru-RU', options);
-                }
-            } catch (e) {
-                console.error('Error formatting date:', e);
-                return '';
-            }
+            return prevDay.getTime() !== currentDay.getTime();
         }
 
         function getChatColor(type) {
@@ -2606,10 +2745,43 @@
         }
                 // ==================== УДАЛЕНИЕ СООБЩЕНИЯ ====================
 
-        async function deleteMessage(messageId, event) {
+                        async function deleteMessage(messageId, event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
+            }
+
+            // Сначала проверяем, не закреплено ли это сообщение
+            try {
+                const pinnedResponse = await fetch(`/Chats/CheckMessagePinned?messageId=${messageId}`);
+                const pinnedData = await pinnedResponse.json();
+
+                if (pinnedData.success && pinnedData.isPinned) {
+                    let confirmMessage = '';
+
+                    if (pinnedData.pinType === 'global') {
+                        confirmMessage = 'Это сообщение закреплено для всех участников. Сначала нужно его открепить. Хотите открепить сейчас?';
+                    } else if (pinnedData.pinType === 'user') {
+                        confirmMessage = 'Это сообщение закреплено в вашем личном чате. Сначала нужно его открепить. Хотите открепить сейчас?';
+                    } else if (pinnedData.pinType === 'both') {
+                        confirmMessage = 'Это сообщение закреплено для всех и в вашем личном чате. Сначала нужно его открепить. Хотите открепить сейчас?';
+                    }
+
+                    if (confirm(confirmMessage)) {
+                        // Открепляем сообщение
+                        if (pinnedData.pinType === 'global' || pinnedData.pinType === 'both') {
+                            await unpinMessage(currentChatId, true, event);
+                        }
+                        if (pinnedData.pinType === 'user' || pinnedData.pinType === 'both') {
+                            await unpinMessage(currentChatId, false, event);
+                        }
+                        // После открепления пробуем удалить снова
+                        setTimeout(() => deleteMessage(messageId, event), 500);
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке закрепления:', error);
             }
 
             if (!confirm('Вы уверены, что хотите удалить это сообщение?')) {
@@ -2651,6 +2823,9 @@
                             `;
                         }
                     }
+
+                    // Обновляем закрепленные сообщения
+                    await loadPinnedMessages(currentChatId);
                 } else {
                     showNotification(data.message || 'Ошибка при удалении сообщения', 'danger');
                 }
@@ -2743,7 +2918,7 @@
             }
         }
 
-                                async function loadPinnedMessages(chatId) {
+                                        async function loadPinnedMessages(chatId) {
             try {
                 // Загружаем общее закрепленное сообщение
                 const response = await fetch(`/Chats/GetPinnedMessage?chatId=${chatId}`);
@@ -2755,8 +2930,37 @@
 
                 // Отображаем оба, если есть
                 displayPinnedMessages(data.data, userData.data);
+
+                // Если есть закрепленные сообщения, но они не загружены в истории,
+                // можно загрузить больше сообщений
+                if (data.data && !document.querySelector(`.message[data-message-id="${data.data.id}"]`)) {
+                    await loadMoreMessagesIfNeeded(chatId, data.data.sentAt);
+                }
+                if (userData.data && !document.querySelector(`.message[data-message-id="${userData.data.id}"]`)) {
+                    await loadMoreMessagesIfNeeded(chatId, userData.data.sentAt);
+                }
             } catch (error) {
                 console.error('Ошибка при загрузке закрепленных сообщений:', error);
+            }
+        }
+                async function loadMoreMessagesIfNeeded(chatId, targetDate) {
+            // Получаем самое раннее загруженное сообщение
+            const messages = document.querySelectorAll('.message');
+            if (messages.length === 0) return;
+
+            const firstMessage = messages[0];
+            const firstMessageId = firstMessage.getAttribute('data-message-id');
+
+            if (!firstMessageId) return;
+
+            // Если целевое сообщение старше самого раннего загруженного, загружаем еще
+            const targetTime = new Date(targetDate).getTime();
+            const firstMessageElement = Array.from(messages).find(m => m.getAttribute('data-message-id') === firstMessageId);
+
+            if (firstMessageElement) {
+                // Здесь можно реализовать подгрузку более старых сообщений
+                // Например, вызвать loadOlderMessages(chatId, firstMessageId)
+                console.log('Нужно загрузить более старые сообщения для перехода к закрепленному');
             }
         }
 
@@ -2778,32 +2982,44 @@
         }
 
         function displayPinnedMessage(message, isGlobal) {
-            const chatHeader = document.getElementById('chatHeader');
-            if (!chatHeader) return;
+    const chatHeader = document.getElementById('chatHeader');
+    if (!chatHeader) return;
 
-            const pinnedContainer = document.createElement('div');
-            pinnedContainer.className = `pinned-message-container bg-light p-2 border-bottom ${isGlobal ? 'global-pin' : 'user-pin'}`;
-            pinnedContainer.innerHTML = `
+    const pinnedContainer = document.createElement('div');
+    pinnedContainer.className = `pinned-message-container bg-light p-2 border-bottom ${isGlobal ? 'global-pin' : 'user-pin'}`;
+    pinnedContainer.style.cursor = 'pointer'; // Добавляем указатель мыши
+    pinnedContainer.setAttribute('data-pinned-message-id', message.id);
+    
+    pinnedContainer.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-thumbtack ${isGlobal ? 'text-primary' : 'text-success'} me-2" style="transform: rotate(45deg);"></i>
+            <div class="flex-grow-1" onclick="scrollToPinnedMessage(${message.id}, event)">
+                <small class="text-muted">${isGlobal ? 'Закреплено для всех' : 'Закреплено для вас'}</small>
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-thumbtack ${isGlobal ? 'text-primary' : 'text-success'} me-2" style="transform: rotate(45deg);"></i>
-                    <div class="flex-grow-1">
-                        <small class="text-muted">${isGlobal ? 'Закреплено для всех' : 'Закреплено для вас'}</small>
-                        <div class="d-flex align-items-center">
-                            <span class="fw-bold me-2">${escapeHtml(message.senderName)}:</span>
-                            <span class="text-truncate" style="max-width: 300px;">${escapeHtml(message.text || 'Файл')}</span>
-                        </div>
-                        <small class="text-muted">
-                            ${isGlobal ? `Закрепил(а) ${escapeHtml(message.pinnedBy)}` : 'Закреплено вами'} • ${formatTime(message.pinnedAt)}
-                        </small>
-                    </div>
-                    <button class="btn btn-sm btn-link text-danger" onclick="unpinMessage(${currentChatId}, ${isGlobal}, event)" title="Открепить">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <span class="fw-bold me-2">${escapeHtml(message.senderName)}:</span>
+                    <span class="text-truncate" style="max-width: 300px;">${escapeHtml(message.text || 'Файл')}</span>
                 </div>
-            `;
+                <small class="text-muted">
+                    ${isGlobal ? `Закрепил(а) ${escapeHtml(message.pinnedBy)}` : 'Закреплено вами'} • ${formatTime(message.pinnedAt)}
+                </small>
+            </div>
+            <button class="btn btn-sm btn-link text-danger" onclick="unpinMessage(${currentChatId}, ${isGlobal}, event)" title="Открепить">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
 
-            chatHeader.after(pinnedContainer);
-        }
+    // Добавляем эффект наведения
+    pinnedContainer.addEventListener('mouseenter', () => {
+        pinnedContainer.style.backgroundColor = '#e9ecef';
+    });
+    
+    pinnedContainer.addEventListener('mouseleave', () => {
+        pinnedContainer.style.backgroundColor = '#f8f9fa';
+    });
+
+    chatHeader.after(pinnedContainer);
+}
 
                 // ==================== АВАТАР ЧАТА ====================
 
@@ -2937,6 +3153,34 @@
                         <i class="fas ${getChatIcon(chatType)}"></i>
                     </div>
                 `;
+            }
+        }
+
+                async function scrollToPinnedMessage(messageId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            if (!messageId) return;
+
+            const messagesArea = document.getElementById('messagesArea');
+            const messageElement = document.querySelector(`.message[data-message-id="${messageId}"]`);
+
+            if (messageElement) {
+                // Сообщение уже загружено - просто скроллим к нему
+                messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Временно подсвечиваем сообщение
+                messageElement.style.transition = 'background-color 0.5s';
+                messageElement.style.backgroundColor = 'rgba(3, 121, 217, 0.1)';
+                setTimeout(() => {
+                    messageElement.style.backgroundColor = '';
+                }, 2000);
+            } else {
+                // Сообщение не загружено (возможно, старая история)
+                // Показываем уведомление
+                showNotification('Сообщение не найдено в текущей загрузке', 'warning');
             }
         }
     </script>

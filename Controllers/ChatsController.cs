@@ -2569,5 +2569,77 @@ namespace TripWise.Controllers
                 });
             }
         }
+        // GET: /Chats/CheckMessagePinned?messageId=123
+        [HttpGet]
+        public async Task<IActionResult> CheckMessagePinned(int messageId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("CheckMessagePinned: messageId={MessageId}, userId={UserId}", messageId, userId);
+
+                // Проверяем, является ли сообщение глобальным закрепом
+                var globalPin = await _context.Chats
+                    .AnyAsync(c => c.PinnedMessageId == messageId);
+
+                // Проверяем, является ли сообщение личным закрепом для этого пользователя
+                var userPin = await _context.UserPinnedMessages
+                    .AnyAsync(up => up.MessageId == messageId && up.UserId == userId);
+
+                // Проверяем, есть ли личные закрепы у других пользователей
+                var otherUserPins = await _context.UserPinnedMessages
+                    .AnyAsync(up => up.MessageId == messageId && up.UserId != userId);
+
+                string pinType = "none";
+                if (globalPin && userPin)
+                {
+                    pinType = "both";
+                }
+                else if (globalPin)
+                {
+                    pinType = "global";
+                }
+                else if (userPin)
+                {
+                    pinType = "user";
+                }
+                else if (otherUserPins)
+                {
+                    // Если сообщение закреплено у других пользователей, но не у текущего
+                    pinType = "other_users";
+                }
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new
+                    {
+                        isPinned = globalPin || userPin || otherUserPins,
+                        pinType = pinType,
+                        hasGlobalPin = globalPin,
+                        hasUserPin = userPin,
+                        hasOtherUserPins = otherUserPins
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке закрепления сообщения {MessageId}", messageId);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при проверке закрепления: " + ex.Message
+                });
+            }
+        }
     }
 }
