@@ -1,163 +1,684 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TripWise.Models;
+using TripWise.Models.DTOs;
+using System.Security.Claims;
+using Microsoft.Data.SqlClient;
 
 namespace TripWise.Controllers
 {
     public class TripsController : Controller
     {
         private readonly TripWiseContext _context;
+        private readonly ILogger<TripsController> _logger;
 
-        public TripsController(TripWiseContext context)
+        public TripsController(TripWiseContext context, ILogger<TripsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Trips
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var tripWiseContext = _context.Trips.Include(t => t.CreatedBy);
-            return View(await tripWiseContext.ToListAsync());
-        }
-
-        // GET: Trips/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
             {
-                return NotFound();
+                return RedirectToAction("Login", "Account");
             }
-
-            var trip = await _context.Trips
-                .Include(t => t.CreatedBy)
-                .FirstOrDefaultAsync(m => m.IdTrip == id);
-            if (trip == null)
-            {
-                return NotFound();
-            }
-
-            return View(trip);
-        }
-
-        // GET: Trips/Create
-        public IActionResult Create()
-        {
-            ViewData["CreatedById"] = new SelectList(_context.Users, "IdUser", "IdUser");
             return View();
         }
 
-        // POST: Trips/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("IdTrip,Title,Description,StartDate,EndDate,TotalBudget,CreatedAt,CreatedById")] Trip trip)
+        // GET: /Trips/GetUserTrips
+        [HttpGet]
+        public async Task<IActionResult> GetUserTrips()
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(trip);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["CreatedById"] = new SelectList(_context.Users, "IdUser", "IdUser", trip.CreatedById);
-            return View(trip);
-        }
-
-        // GET: Trips/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var trip = await _context.Trips.FindAsync(id);
-            if (trip == null)
-            {
-                return NotFound();
-            }
-            ViewData["CreatedById"] = new SelectList(_context.Users, "IdUser", "IdUser", trip.CreatedById);
-            return View(trip);
-        }
-
-        // POST: Trips/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdTrip,Title,Description,StartDate,EndDate,TotalBudget,CreatedAt,CreatedById")] Trip trip)
-        {
-            if (id != trip.IdTrip)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
                 {
-                    _context.Update(trip);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TripExists(trip.IdTrip))
+                    return Json(new ApiResponse<List<TripListDto>>
                     {
-                        return NotFound();
-                    }
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("GetUserTrips для пользователя {UserId}", userId);
+
+                // Получаем все поездки, где пользователь является участником
+                var userTripIds = await _context.TripParticipants
+                    .Where(tp => tp.IdUser == userId)
+                    .Select(tp => tp.IdTrip)
+                    .ToListAsync();
+
+                var now = DateTime.UtcNow;
+
+                // Загружаем поездки с полной информацией
+                var trips = await _context.Trips
+                    .Where(t => userTripIds.Contains(t.IdTrip))
+                    .Include(t => t.CreatedBy)
+                    .Include(t => t.TripParticipants)
+                        .ThenInclude(tp => tp.IdUserNavigation)
+                    .Include(t => t.TripParticipants)
+                        .ThenInclude(tp => tp.IdParticipantRoleNavigation)
+                    .Include(t => t.PointsOfInterests)
+                        .ThenInclude(p => p.IdInterestCategoryNavigation)
+                    .Include(t => t.Expenses)
+                    .ToListAsync();
+
+                // Получаем чаты для поездок отдельным запросом
+                var tripChats = await _context.Chats
+                    .Where(c => c.IdTrip.HasValue && userTripIds.Contains(c.IdTrip.Value))
+                    .Select(c => new { c.IdTrip, c.IdChat })
+                    .ToDictionaryAsync(c => c.IdTrip.Value, c => c.IdChat);
+
+                // Формируем DTO
+                var tripDtos = trips.Select(t =>
+                {
+                    // Определяем статус поездки
+                    string status;
+                    if (t.EndDate < now)
+                        status = "completed";
+                    else if (t.StartDate <= now && t.EndDate >= now)
+                        status = "active";
                     else
+                        status = "upcoming";
+
+                    // Получаем список участников с информацией о друзьях
+                    var participants = t.TripParticipants.Select(tp => new TripParticipantDto
                     {
-                        throw;
+                        UserId = tp.IdUser,
+                        FullName = $"{tp.IdUserNavigation?.LastName ?? ""} {tp.IdUserNavigation?.FirstName ?? ""}".Trim(),
+                        AvatarPath = tp.IdUserNavigation?.AvatarPath,
+                        Role = tp.IdParticipantRoleNavigation?.ParticipantRole1 ?? "Участник", // ИСПРАВЛЕНО: ParticipantRole1
+                        IsFriend = _context.Friends.Any(f =>
+                            (f.UserId == userId && f.FriendId == tp.IdUser && f.Status == "accepted") ||
+                            (f.UserId == tp.IdUser && f.FriendId == userId && f.Status == "accepted"))
+                    }).ToList();
+
+                    return new TripListDto
+                    {
+                        Id = t.IdTrip,
+                        Title = t.Title ?? "Без названия",
+                        Description = t.Description,
+                        StartDate = t.StartDate,
+                        EndDate = t.EndDate,
+                        TotalBudget = t.TotalBudget,
+                        Status = status,
+                        ParticipantCount = participants.Count(), // ИСПРАВЛЕНО: добавили ()
+                        Participants = participants,
+                        ChatId = tripChats.ContainsKey(t.IdTrip) ? tripChats[t.IdTrip] : (int?)null,
+                        CoverImage = GetTripCoverImage(t),
+                        CreatedAt = t.CreatedAt,
+                        CreatedBy = new TripCreatorDto
+                        {
+                            Id = t.CreatedBy?.IdUser ?? 0,
+                            FullName = t.CreatedBy != null
+                                ? $"{t.CreatedBy.LastName} {t.CreatedBy.FirstName}".Trim()
+                                : "Система",
+                            AvatarPath = t.CreatedBy?.AvatarPath
+                        },
+                        PointsCount = t.PointsOfInterests?.Count() ?? 0, // ИСПРАВЛЕНО: добавили ()
+                        SpentBudget = t.Expenses?.Sum(e => e.Amount) ?? 0
+                    };
+                }).ToList();
+
+                // Разделяем на предстоящие и завершенные
+                var upcomingTrips = tripDtos.Where(t => t.Status != "completed").OrderBy(t => t.StartDate).ToList();
+                var completedTrips = tripDtos.Where(t => t.Status == "completed").OrderByDescending(t => t.EndDate).ToList();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new
+                    {
+                        upcoming = upcomingTrips,
+                        completed = completedTrips,
+                        all = tripDtos
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении поездок пользователя");
+                return Json(new ApiResponse<List<TripListDto>>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке поездок: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Trips/CreateTrip
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateTrip([FromBody] CreateTripRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("CreateTrip: userId={UserId}, title={Title}", userId, request.Title);
+
+                // Проверяем даты
+                if (request.EndDate <= request.StartDate)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Дата окончания должна быть позже даты начала"
+                    });
+                }
+
+                // Создаем поездку
+                var trip = new Trip
+                {
+                    Title = request.Title,
+                    Description = request.Description,
+                    StartDate = request.StartDate.ToUniversalTime(),
+                    EndDate = request.EndDate.ToUniversalTime(),
+                    TotalBudget = request.TotalBudget,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedById = userId.Value
+                };
+
+                _context.Trips.Add(trip);
+                await _context.SaveChangesAsync();
+
+                // Добавляем создателя как участника
+                var participant = new TripParticipant
+                {
+                    IdTrip = trip.IdTrip,
+                    IdUser = userId.Value,
+                    IdParticipantRole = 1, // Организатор
+                    JoinedAt = DateTime.UtcNow
+                };
+                _context.TripParticipants.Add(participant);
+
+                // Если поездка публичная, создаем чат для нее
+                Chat? chat = null;
+                if (request.IsPublic)
+                {
+                    chat = new Chat
+                    {
+                        Name = $"Чат: {trip.Title}",
+                        Type = "trip",
+                        IdTrip = trip.IdTrip,
+                        CreatedById = userId.Value,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Chats.Add(chat);
+                    await _context.SaveChangesAsync();
+
+                    // Добавляем создателя в чат
+                    _context.ChatMembers.Add(new ChatMember
+                    {
+                        ChatId = chat.IdChat,
+                        UserId = userId.Value,
+                        Role = "admin",
+                        JoinedAt = DateTime.UtcNow
+                    });
+                }
+
+                // Приглашаем друзей, если указаны
+                if (request.InvitedFriends != null && request.InvitedFriends.Any())
+                {
+                    foreach (var friendId in request.InvitedFriends.Distinct())
+                    {
+                        if (friendId != userId.Value)
+                        {
+                            // Добавляем как участника поездки
+                            _context.TripParticipants.Add(new TripParticipant
+                            {
+                                IdTrip = trip.IdTrip,
+                                IdUser = friendId,
+                                IdParticipantRole = 2, // Участник
+                                JoinedAt = DateTime.UtcNow
+                            });
+
+                            // Если есть чат, добавляем и туда
+                            if (chat != null)
+                            {
+                                _context.ChatMembers.Add(new ChatMember
+                                {
+                                    ChatId = chat.IdChat,
+                                    UserId = friendId,
+                                    Role = "member",
+                                    JoinedAt = DateTime.UtcNow
+                                });
+                            }
+                        }
                     }
                 }
-                return RedirectToAction(nameof(Index));
+
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Поездка успешно создана",
+                    Data = new { tripId = trip.IdTrip }
+                });
             }
-            ViewData["CreatedById"] = new SelectList(_context.Users, "IdUser", "IdUser", trip.CreatedById);
-            return View(trip);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании поездки");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при создании поездки: " + ex.Message
+                });
+            }
         }
 
-        // GET: Trips/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var trip = await _context.Trips
-                .Include(t => t.CreatedBy)
-                .FirstOrDefaultAsync(m => m.IdTrip == id);
-            if (trip == null)
-            {
-                return NotFound();
-            }
-
-            return View(trip);
-        }
-
-        // POST: Trips/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: /Trips/InviteFriends
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> InviteFriends([FromBody] InviteFriendsRequest request)
         {
-            var trip = await _context.Trips.FindAsync(id);
-            if (trip != null)
+            try
             {
-                _context.Trips.Remove(trip);
-            }
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+                _logger.LogInformation("InviteFriends: tripId={TripId}, userId={UserId}", request.TripId, userId);
+
+                // Проверяем, является ли пользователь организатором поездки
+                var isOrganizer = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == request.TripId &&
+                                   tp.IdUser == userId &&
+                                   tp.IdParticipantRole == 1);
+
+                if (!isOrganizer)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только организатор может приглашать друзей"
+                    });
+                }
+
+                // Получаем текущих участников
+                var currentParticipants = await _context.TripParticipants
+                    .Where(tp => tp.IdTrip == request.TripId)
+                    .Select(tp => tp.IdUser)
+                    .ToListAsync();
+
+                // Получаем чат поездки
+                var tripChat = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdTrip == request.TripId && c.Type == "trip");
+
+                // Добавляем новых участников
+                foreach (var friendId in request.FriendIds.Distinct())
+                {
+                    if (!currentParticipants.Contains(friendId) && friendId != userId)
+                    {
+                        // Добавляем в поездку
+                        _context.TripParticipants.Add(new TripParticipant
+                        {
+                            IdTrip = request.TripId,
+                            IdUser = friendId,
+                            IdParticipantRole = 2, // Участник
+                            JoinedAt = DateTime.UtcNow
+                        });
+
+                        // Добавляем в чат, если он есть
+                        if (tripChat != null)
+                        {
+                            var isInChat = await _context.ChatMembers
+                                .AnyAsync(cm => cm.ChatId == tripChat.IdChat && cm.UserId == friendId);
+
+                            if (!isInChat)
+                            {
+                                _context.ChatMembers.Add(new ChatMember
+                                {
+                                    ChatId = tripChat.IdChat,
+                                    UserId = friendId,
+                                    Role = "member",
+                                    JoinedAt = DateTime.UtcNow
+                                });
+                            }
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Друзья приглашены в поездку"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при приглашении друзей");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при приглашении друзей: " + ex.Message
+                });
+            }
         }
 
-        private bool TripExists(int id)
+        // GET: /Trips/GetTripDetails/5
+        [HttpGet]
+        public async Task<IActionResult> GetTripDetails(int id)
         {
-            return _context.Trips.Any(e => e.IdTrip == id);
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<TripDetailDto>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Проверяем, является ли пользователь участником
+                var isParticipant = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == id && tp.IdUser == userId);
+
+                if (!isParticipant)
+                {
+                    return Json(new ApiResponse<TripDetailDto>
+                    {
+                        Success = false,
+                        Message = "У вас нет доступа к этой поездке"
+                    });
+                }
+
+                var trip = await _context.Trips
+                    .Include(t => t.CreatedBy)
+                    .Include(t => t.TripParticipants)
+                        .ThenInclude(tp => tp.IdUserNavigation)
+                    .Include(t => t.TripParticipants)
+                        .ThenInclude(tp => tp.IdParticipantRoleNavigation)
+                    .Include(t => t.PointsOfInterests)
+                        .ThenInclude(p => p.IdInterestCategoryNavigation)
+                    .Include(t => t.Expenses)
+                        .ThenInclude(e => e.IdExpenseCategoryNavigation)
+                    .FirstOrDefaultAsync(t => t.IdTrip == id);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<TripDetailDto>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Получаем чат поездки
+                var tripChat = await _context.Chats
+                    .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(5))
+                    .FirstOrDefaultAsync(c => c.IdTrip == id && c.Type == "trip");
+
+                var now = DateTime.UtcNow;
+                string status;
+                if (trip.EndDate < now)
+                    status = "completed";
+                else if (trip.StartDate <= now && trip.EndDate >= now)
+                    status = "active";
+                else
+                    status = "upcoming";
+
+                var participants = trip.TripParticipants.Select(tp => new TripParticipantDto
+                {
+                    UserId = tp.IdUser,
+                    FullName = $"{tp.IdUserNavigation?.LastName ?? ""} {tp.IdUserNavigation?.FirstName ?? ""}".Trim(),
+                    AvatarPath = tp.IdUserNavigation?.AvatarPath,
+                    Role = tp.IdParticipantRoleNavigation?.ParticipantRole1 ?? "Участник", // ИСПРАВЛЕНО: ParticipantRole1
+                    IsFriend = _context.Friends.Any(f =>
+                        (f.UserId == userId && f.FriendId == tp.IdUser && f.Status == "accepted") ||
+                        (f.UserId == tp.IdUser && f.FriendId == userId && f.Status == "accepted"))
+                }).ToList();
+
+                var points = trip.PointsOfInterests?.Select(p => new PointOfInterestDto
+                {
+                    Id = p.IdPoint,
+                    Name = p.Name ?? "Без названия",
+                    Description = p.Description,
+                    Cost = p.Cost,
+                    PlannedDate = p.PlannedDate,
+                    Category = p.IdInterestCategoryNavigation?.InterestCategory1 ?? "Другое" // ИСПРАВЛЕНО: InterestCategory1
+                }).ToList() ?? new List<PointOfInterestDto>();
+
+                var expenses = trip.Expenses?.Select(e => new ExpenseDto
+                {
+                    Id = e.IdExpense,
+                    Title = e.Title ?? "Без названия",
+                    Amount = e.Amount,
+                    Category = e.IdExpenseCategoryNavigation?.ExpenseCategoryName ?? "Другое",
+                    Date = e.ExpenseDate,
+                    PaidBy = _context.Users
+                        .Where(u => u.IdUser == e.PaidById)
+                        .Select(u => $"{u.LastName} {u.FirstName}".Trim())
+                        .FirstOrDefault() ?? "Неизвестно"
+                }).ToList() ?? new List<ExpenseDto>();
+
+                var recentMessages = tripChat?.Messages?.Select(m => new TripMessageDto
+                {
+                    Id = m.IdMessage,
+                    Text = m.Message ?? "",
+                    SenderName = _context.Users
+                        .Where(u => u.IdUser == m.SenderId)
+                        .Select(u => $"{u.LastName} {u.FirstName}".Trim())
+                        .FirstOrDefault() ?? "Пользователь",
+                    SentAt = m.SentAt
+                }).ToList() ?? new List<TripMessageDto>();
+
+                var dto = new TripDetailDto
+                {
+                    Id = trip.IdTrip,
+                    Title = trip.Title ?? "Без названия",
+                    Description = trip.Description,
+                    StartDate = trip.StartDate,
+                    EndDate = trip.EndDate,
+                    TotalBudget = trip.TotalBudget,
+                    Status = status,
+                    ParticipantCount = participants.Count(), // ИСПРАВЛЕНО: добавили ()
+                    Participants = participants,
+                    ChatId = tripChat?.IdChat,
+                    CoverImage = GetTripCoverImage(trip),
+                    CreatedAt = trip.CreatedAt,
+                    CreatedBy = new TripCreatorDto
+                    {
+                        Id = trip.CreatedBy?.IdUser ?? 0,
+                        FullName = trip.CreatedBy != null
+                            ? $"{trip.CreatedBy.LastName} {trip.CreatedBy.FirstName}".Trim()
+                            : "Система",
+                        AvatarPath = trip.CreatedBy?.AvatarPath
+                    },
+                    PointsCount = points.Count(), // ИСПРАВЛЕНО: добавили ()
+                    SpentBudget = expenses.Sum(e => e.Amount),
+                    Points = points,
+                    Expenses = expenses.OrderByDescending(e => e.Date).ToList(),
+                    RecentMessages = recentMessages
+                };
+
+                return Json(new ApiResponse<TripDetailDto>
+                {
+                    Success = true,
+                    Data = dto
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении деталей поездки {TripId}", id);
+                return Json(new ApiResponse<TripDetailDto>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке деталей поездки: " + ex.Message
+                });
+            }
+        }
+
+        // GET: /Trips/GetFriendsForInvite
+        [HttpGet]
+        public async Task<IActionResult> GetFriendsForInvite(int tripId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Получаем текущих участников поездки
+                var currentParticipants = await _context.TripParticipants
+                    .Where(tp => tp.IdTrip == tripId)
+                    .Select(tp => tp.IdUser)
+                    .ToListAsync();
+
+                // Получаем друзей, которые еще не в поездке
+                var friends = await _context.Friends
+                    .Include(f => f.FriendUser)
+                    .Where(f => f.UserId == userId && f.Status == "accepted")
+                    .Select(f => new
+                    {
+                        f.FriendId,
+                        FullName = f.FriendUser.LastName + " " + f.FriendUser.FirstName,
+                        f.FriendUser.AvatarPath,
+                        IsInTrip = currentParticipants.Contains(f.FriendId)
+                    })
+                    .Where(f => !f.IsInTrip)
+                    .OrderBy(f => f.FullName)
+                    .ToListAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = friends
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении друзей для приглашения");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке друзей"
+                });
+            }
+        }
+
+        private string GetTripCoverImage(Trip trip)
+        {
+            // Здесь можно добавить логику для получения обложки поездки
+            // Например, из первой точки интереса или загруженного изображения
+            return null;
+        }
+        // POST: /Trips/DeleteTrip/5?deleteChat=true
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTrip(int id, [FromQuery] bool deleteChat = true)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("DeleteTrip: tripId={TripId}, userId={UserId}, deleteChat={DeleteChat}",
+                    id, userId, deleteChat);
+
+                // Находим поездку
+                var trip = await _context.Trips
+                    .Include(t => t.TripParticipants)
+                    .FirstOrDefaultAsync(t => t.IdTrip == id);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Проверяем, является ли пользователь создателем поездки
+                if (trip.CreatedById != userId)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только создатель может удалить поездку"
+                    });
+                }
+
+                // Получаем связанные чаты (типа "trip")
+                var tripChats = await _context.Chats
+                    .Where(c => c.IdTrip == id && c.Type == "trip")
+                    .ToListAsync();
+
+                // Удаляем чаты только если пользователь выбрал эту опцию
+                if (deleteChat && tripChats != null && tripChats.Any())
+                {
+                    _context.Chats.RemoveRange(tripChats);
+                    _logger.LogInformation("Удалено {Count} чатов для поездки {TripId}", tripChats.Count, id);
+                }
+                else if (tripChats != null && tripChats.Any())
+                {
+                    // Если чаты не удаляем, отвязываем их от поездки
+                    foreach (var chat in tripChats)
+                    {
+                        chat.IdTrip = null;
+                    }
+                    _logger.LogInformation("Чаты отвязаны от поездки {TripId}", id);
+                }
+
+                // Удаляем поездку
+                _context.Trips.Remove(trip);
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = deleteChat
+                        ? "Поездка и связанный чат успешно удалены"
+                        : "Поездка успешно удалена, чат сохранен"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении поездки {TripId}", id);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при удалении поездки: " + ex.Message
+                });
+            }
         }
     }
 }
