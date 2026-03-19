@@ -166,6 +166,17 @@
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="leaveChat()"><i class="fas fa-sign-out-alt me-2"></i>Покинуть чат</a></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="deleteChat()"><i class="fas fa-trash me-2"></i>Удалить чат</a></li>
+                                            <!-- В чатах, в меню действий -->
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="showChatBudget(${chatId})">
+                                                    <i class="fas fa-wallet me-2"></i>Бюджет поездки
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="showChatDebts(${chatId})">
+                                                    <i class="fas fa-hand-holding-usd me-2"></i>Долги
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -3182,6 +3193,266 @@
                 // Показываем уведомление
                 showNotification('Сообщение не найдено в текущей загрузке', 'warning');
             }
+        }
+                // Показать бюджет поездки в чате
+        async function showChatBudget(chatId) {
+            try {
+                const response = await fetch(`/Budget/GetExpensesForChat?chatId=${chatId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const expenses = data.data;
+
+                    if (expenses.length === 0) {
+                        showNotification('В этой поездке пока нет расходов', 'info');
+                        return;
+                    }
+
+                    // Формируем сообщение с расходами
+                    let message = '📊 **Бюджет поездки**\n\n';
+
+                    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+                    message += `*Всего потрачено:* ${formatMoney(total)} ₽\n`;
+                    message += `*Количество расходов:* ${expenses.length}\n\n`;
+
+                    message += '*Последние расходы:*\n';
+                    expenses.slice(0, 5).forEach(exp => {
+                        const date = new Date(exp.expenseDate).toLocaleDateString();
+                        message += `• ${exp.title} - ${formatMoney(exp.amount)} ₽ (${date})\n`;
+                    });
+
+                    // Отправляем в чат
+                    const messageInput = document.getElementById('messageInput');
+                    if (messageInput) {
+                        messageInput.value = message;
+                        sendMessage();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading budget:', error);
+                showNotification('Не удалось загрузить бюджет', 'danger');
+            }
+        }
+
+        // Показать долги в чате
+        async function showChatDebts(chatId) {
+            try {
+                const response = await fetch(`/Budget/GetDebtsForChat?chatId=${chatId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const debts = data.data;
+
+                    if (debts.length === 0) {
+                        showNotification('В этой поездке нет долгов! Все расчеты завершены ✅', 'success');
+                        return;
+                    }
+
+                    // Формируем сообщение с долгами
+                    let message = '💰 **Долги в поездке**\n\n';
+
+                    debts.forEach(debt => {
+                        if (debt.debtorId === currentUserId) {
+                            message += `🔴 *Вы должны* ${debt.creditorName}: ${formatMoney(debt.amount)} ₽\n`;
+                        } else if (debt.creditorId === currentUserId) {
+                            message += `🟢 *Вам должен* ${debt.debtorName}: ${formatMoney(debt.amount)} ₽\n`;
+                        } else {
+                            message += `• ${debt.debtorName} должен ${debt.creditorName}: ${formatMoney(debt.amount)} ₽\n`;
+                        }
+                    });
+
+                    // Отправляем в чат
+                    const messageInput = document.getElementById('messageInput');
+                    if (messageInput) {
+                        messageInput.value = message;
+                        sendMessage();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading debts:', error);
+                showNotification('Не удалось загрузить долги', 'danger');
+            }
+        }
+
+        // Отправить напоминание о долге
+        async function sendDebtReminder(debtorId, creditorId, amount, tripId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Budget/SendDebtReminder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        fromUserId: debtorId,
+                        toUserId: creditorId,
+                        amount: amount,
+                        tripId: tripId,
+                        message: `Напоминаю о долге ${formatMoney(amount)} ₽`
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Напоминание отправлено в чат', 'success');
+                } else {
+                    showNotification(data.message || 'Ошибка при отправке', 'danger');
+                }
+            } catch (error) {
+                console.error('Error sending reminder:', error);
+                showNotification('Не удалось отправить напоминание', 'danger');
+            }
+        }
+
+        // Обновленная функция renderDebts с кнопками отправки в чат
+        function renderDebts(tripId) {
+            const container = document.getElementById('debtsContainer');
+
+            if (!budgetData || !tripId) {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-calculator fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Выберите поездку для просмотра долгов</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Получаем все расходы для этой поездки
+            const tripExpenses = budgetData.recentExpenses.filter(e => e.tripId === tripId);
+
+            // Получаем чат поездки (нужно добавить chatId в данные)
+            const trip = budgetData.trips.find(t => t.id === tripId);
+
+            // Собираем всех участников и их баланс
+            const balances = new Map();
+            const expenseMap = new Map(); // Для отслеживания расходов по пользователям
+
+            tripExpenses.forEach(exp => {
+                if (exp.shares && exp.shares.length > 0) {
+                    exp.shares.forEach(share => {
+                        const currentBalance = balances.get(share.userId) || 0;
+                        if (share.userId === exp.paidById) {
+                            balances.set(share.userId, currentBalance + (exp.amount - share.amount));
+                        } else {
+                            balances.set(share.userId, currentBalance - share.amount);
+                        }
+
+                        // Сохраняем информацию о расходе
+                        if (!expenseMap.has(share.userId)) {
+                            expenseMap.set(share.userId, []);
+                        }
+                        expenseMap.get(share.userId).push(exp.id);
+                    });
+                }
+            });
+
+            // Формируем список долгов
+            const debts = [];
+            const users = Array.from(balances.entries()).map(([userId, balance]) => ({
+                userId,
+                balance,
+                userName: getParticipantName(userId, tripId),
+                expenseIds: expenseMap.get(userId) || []
+            }));
+
+            // Находим кто кому должен
+            for (let i = 0; i < users.length; i++) {
+                for (let j = i + 1; j < users.length; j++) {
+                    if (users[i].balance > 0 && users[j].balance < 0) {
+                        const amount = Math.min(users[i].balance, -users[j].balance);
+                        if (amount > 0.01) {
+                            debts.push({
+                                from: users[j].userId,
+                                fromName: users[j].userName,
+                                to: users[i].userId,
+                                toName: users[i].userName,
+                                amount: amount,
+                                expenseIds: [...users[j].expenseIds, ...users[i].expenseIds]
+                            });
+                        }
+                    } else if (users[i].balance < 0 && users[j].balance > 0) {
+                        const amount = Math.min(-users[i].balance, users[j].balance);
+                        if (amount > 0.01) {
+                            debts.push({
+                                from: users[i].userId,
+                                fromName: users[i].userName,
+                                to: users[j].userId,
+                                toName: users[j].userName,
+                                amount: amount,
+                                expenseIds: [...users[i].expenseIds, ...users[j].expenseIds]
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (debts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-smile text-success fa-2x mb-2"></i>
+                        <p class="text-success mb-0">Все расчеты завершены!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            debts.forEach(debt => {
+                const isCurrentUserOwes = debt.from === currentUserId;
+                const isCurrentUserGets = debt.to === currentUserId;
+
+                html += `
+                    <div class="debt-item ${isCurrentUserOwes ? 'negative' : 'positive'}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                ${isCurrentUserOwes ?
+                                    `<strong>Вы должны</strong> ${escapeHtml(debt.toName)}` :
+                                    isCurrentUserGets ?
+                                    `<strong>${escapeHtml(debt.fromName)} должен</strong> вам` :
+                                    `<strong>${escapeHtml(debt.fromName)}</strong> должен <strong>${escapeHtml(debt.toName)}</strong>`
+                                }
+                            </div>
+                            <div class="fw-bold">${formatMoney(debt.amount)} ₽</div>
+                        </div>
+                        <div class="mt-2 d-flex gap-2">
+                            ${(isCurrentUserOwes || isCurrentUserGets) ? `
+                                <button class="btn btn-sm btn-success" onclick="markDebtAsPaid(${debt.from}, ${debt.to}, ${debt.amount})">
+                                    <i class="fas fa-check me-1"></i>Оплачено
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="sendDebtReminder(${debt.from}, ${debt.to}, ${debt.amount}, ${tripId})">
+                                    <i class="fas fa-bell me-1"></i>Напомнить
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-info" onclick="showDebtDetails(${JSON.stringify(debt)})">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Показать детали долга
+        function showDebtDetails(debt) {
+            const expenses = budgetData.recentExpenses.filter(e =>
+                debt.expenseIds.includes(e.id)
+            );
+
+            let details = `Детали долга между ${debt.fromName} и ${debt.toName}:\n\n`;
+            details += `Сумма: ${formatMoney(debt.amount)} ₽\n`;
+            details += `Включает расходы:\n`;
+
+            expenses.forEach(exp => {
+                details += `• ${exp.title} - ${formatMoney(exp.amount)} ₽\n`;
+            });
+
+            showNotification(details, 'info', 5000);
         }
     </script>
 }

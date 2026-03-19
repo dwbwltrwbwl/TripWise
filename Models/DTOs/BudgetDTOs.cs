@@ -84,4 +84,38 @@
         public int UserId { get; set; }
         public bool IsPaid { get; set; }
     }
+    public class ExpenseWithChatDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public decimal Amount { get; set; }
+        public string CategoryName { get; set; } = "";
+        public string TripName { get; set; } = "";
+        public int TripId { get; set; }
+        public string PaidByName { get; set; } = "";
+        public int? ChatId { get; set; }
+        public List<ExpenseShareDto> Shares { get; set; } = new();
+    }
+
+    public class DebtReminderDto
+    {
+        public int DebtorId { get; set; }
+        public string DebtorName { get; set; } = "";
+        public int CreditorId { get; set; }
+        public string CreditorName { get; set; } = "";
+        public decimal Amount { get; set; }
+        public int TripId { get; set; }
+        public string TripName { get; set; } = "";
+        public int? ChatId { get; set; }
+        public List<int> ExpenseIds { get; set; } = new();
+    }
+
+    public class SendDebtReminderRequest
+    {
+        public int FromUserId { get; set; }
+        public int ToUserId { get; set; }
+        public decimal Amount { get; set; }
+        public int TripId { get; set; }
+        public string Message { get; set; } = "";
+    }
 }
