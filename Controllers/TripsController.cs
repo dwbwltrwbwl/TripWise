@@ -680,5 +680,245 @@ namespace TripWise.Controllers
                 });
             }
         }
+        // POST: /Trips/UpdateTrip
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateTrip([FromBody] UpdateTripRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("UpdateTrip: tripId={TripId}, userId={UserId}", request.Id, userId);
+
+                // Находим поездку
+                var trip = await _context.Trips
+                    .FirstOrDefaultAsync(t => t.IdTrip == request.Id);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Проверяем, является ли пользователь создателем
+                if (trip.CreatedById != userId)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только создатель может редактировать поездку"
+                    });
+                }
+
+                // Проверяем, что поездка не завершена
+                var now = DateTime.UtcNow;
+                if (trip.EndDate < now)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Нельзя редактировать завершенные поездки"
+                    });
+                }
+
+                // Проверяем даты
+                if (request.EndDate <= request.StartDate)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Дата окончания должна быть позже даты начала"
+                    });
+                }
+
+                // Обновляем данные поездки
+                trip.Title = request.Title;
+                trip.Description = request.Description;
+                trip.StartDate = request.StartDate.ToUniversalTime();
+                trip.EndDate = request.EndDate.ToUniversalTime();
+                trip.TotalBudget = request.TotalBudget;
+
+                await _context.SaveChangesAsync();
+
+                // Проверяем, есть ли уже чат у поездки
+                var existingChat = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdTrip == request.Id && c.Type == "trip");
+
+                // Если пользователь хочет публичный чат
+                if (request.IsPublic)
+                {
+                    if (existingChat == null)
+                    {
+                        // Создаем новый чат
+                        var newChat = new Chat
+                        {
+                            Name = $"Чат: {trip.Title}",
+                            Type = "trip",
+                            IdTrip = trip.IdTrip,
+                            CreatedById = userId.Value,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        _context.Chats.Add(newChat);
+                        await _context.SaveChangesAsync();
+
+                        // Добавляем создателя в чат
+                        _context.ChatMembers.Add(new ChatMember
+                        {
+                            ChatId = newChat.IdChat,
+                            UserId = userId.Value,
+                            Role = "admin",
+                            JoinedAt = DateTime.UtcNow
+                        });
+
+                        // Добавляем всех участников поездки в чат
+                        var participants = await _context.TripParticipants
+                            .Where(tp => tp.IdTrip == trip.IdTrip && tp.IdUser != userId)
+                            .Select(tp => tp.IdUser)
+                            .ToListAsync();
+
+                        foreach (var participantId in participants)
+                        {
+                            _context.ChatMembers.Add(new ChatMember
+                            {
+                                ChatId = newChat.IdChat,
+                                UserId = participantId,
+                                Role = "member",
+                                JoinedAt = DateTime.UtcNow
+                            });
+                        }
+
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation("Создан новый чат для поездки {TripId}", trip.IdTrip);
+                    }
+                    else
+                    {
+                        // Обновляем название существующего чата
+                        existingChat.Name = $"Чат: {trip.Title}";
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    // Если пользователь не хочет публичный чат, но чат существует - ничего не делаем
+                    // Чат остается, но его можно будет удалить отдельно
+                    if (existingChat != null)
+                    {
+                        _logger.LogInformation("Чат для поездки {TripId} существует, но оставлен по желанию пользователя", trip.IdTrip);
+                    }
+                }
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = existingChat == null && request.IsPublic
+                        ? "Поездка обновлена и создан новый чат"
+                        : "Поездка успешно обновлена"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении поездки {TripId}", request?.Id);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при обновлении поездки: " + ex.Message
+                });
+            }
+        }
+
+        // GET: /Trips/GetTripForEdit/5
+        [HttpGet]
+        public async Task<IActionResult> GetTripForEdit(int id)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var trip = await _context.Trips
+                    .FirstOrDefaultAsync(t => t.IdTrip == id);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Проверяем, является ли пользователь создателем
+                if (trip.CreatedById != userId)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только создатель может редактировать поездку"
+                    });
+                }
+
+                // Проверяем, что поездка не завершена
+                var now = DateTime.UtcNow;
+                if (trip.EndDate < now)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Нельзя редактировать завершенные поездки"
+                    });
+                }
+
+                // Проверяем, есть ли у поездки чат
+                var hasChat = await _context.Chats
+                    .AnyAsync(c => c.IdTrip == id && c.Type == "trip");
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new
+                    {
+                        trip.IdTrip,
+                        trip.Title,
+                        trip.Description,
+                        StartDate = trip.StartDate.ToString("yyyy-MM-dd"),
+                        EndDate = trip.EndDate.ToString("yyyy-MM-dd"),
+                        trip.TotalBudget,
+                        HasChat = hasChat,
+                        // Если чат уже есть, чекбокс будет включен, иначе выключен
+                        IsPublic = hasChat
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении данных для редактирования поездки {TripId}", id);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке данных: " + ex.Message
+                });
+            }
+        }
     }
 }

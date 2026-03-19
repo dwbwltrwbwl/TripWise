@@ -100,4 +100,14 @@
         public DateTime InvitedAt { get; set; }
         public string Status { get; set; } = ""; // pending, accepted, declined
     }
+    public class UpdateTripRequest
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string? Description { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal TotalBudget { get; set; }
+        public bool IsPublic { get; set; }
+    }
 }
