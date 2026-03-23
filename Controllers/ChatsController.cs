@@ -2641,5 +2641,307 @@ namespace TripWise.Controllers
                 });
             }
         }
+        // GET: /Chats/GetVotes?chatId=5
+        [HttpGet]
+        public async Task<IActionResult> GetVotes(int chatId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<List<VoteDto>>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Проверяем, является ли пользователь участником чата
+                var isMember = await _context.ChatMembers
+                    .AnyAsync(cm => cm.ChatId == chatId && cm.UserId == userId);
+
+                if (!isMember)
+                {
+                    return Json(new ApiResponse<List<VoteDto>>
+                    {
+                        Success = false,
+                        Message = "У вас нет доступа к этому чату"
+                    });
+                }
+
+                // Получаем все голосования для этого чата (через связь с поездкой)
+                var chat = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdChat == chatId);
+
+                if (chat == null || !chat.IdTrip.HasValue)
+                {
+                    return Json(new ApiResponse<List<VoteDto>>
+                    {
+                        Success = true,
+                        Data = new List<VoteDto>()
+                    });
+                }
+
+                // Исправлено: используем IdTripNavigation вместо Trip
+                var votes = await _context.VotingSystems
+                    .Include(v => v.CreatedBy)
+                    .Include(v => v.IdTripNavigation) // Исправлено: IdTripNavigation
+                    .Include(v => v.VoteOptions)
+                        .ThenInclude(o => o.UserVotes)
+                    .Where(v => v.IdTrip == chat.IdTrip)
+                    .OrderByDescending(v => v.CreatedAt)
+                    .ToListAsync();
+
+                var voteDtos = votes.Select(v =>
+                {
+                    var options = v.VoteOptions.Select(o => new VoteOptionDto
+                    {
+                        Id = o.IdVoteOption,
+                        Text = o.OptionText,
+                        VotesCount = o.UserVotes.Count,
+                        TotalVotes = 0, // Пока 0, заполним позже
+                        VoterIds = o.UserVotes.Select(uv => uv.IdUser).ToList()
+                    }).ToList();
+
+                    var totalVotes = options.Sum(o => o.VotesCount);
+                    foreach (var opt in options)
+                    {
+                        opt.TotalVotes = totalVotes;
+                    }
+
+                    var userHasVoted = v.VoteOptions.Any(o => o.UserVotes.Any(uv => uv.IdUser == userId));
+                    var userVoteOptionId = v.VoteOptions
+                        .Where(o => o.UserVotes.Any(uv => uv.IdUser == userId))
+                        .Select(o => (int?)o.IdVoteOption)
+                        .FirstOrDefault();
+
+                    return new VoteDto
+                    {
+                        Id = v.IdVote,
+                        Question = v.Question,
+                        CreatedAt = v.CreatedAt,
+                        ExpiresAt = v.ExpiresAt,
+                        CreatedById = v.CreatedById,
+                        CreatedByName = v.CreatedBy != null ? $"{v.CreatedBy.LastName} {v.CreatedBy.FirstName}".Trim() : "Система",
+                        TripId = v.IdTrip,
+                        TripName = v.IdTripNavigation?.Title,
+                        PointId = v.IdPoint,
+                        Options = options,
+                        TotalVotes = totalVotes,
+                        UserHasVoted = userHasVoted,
+                        UserVoteOptionId = userVoteOptionId
+                    };
+                }).ToList();
+
+                return Json(new ApiResponse<List<VoteDto>>
+                {
+                    Success = true,
+                    Data = voteDtos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении голосований");
+                return Json(new ApiResponse<List<VoteDto>>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке голосований: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Chats/CreateVote
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateVote([FromBody] CreateVoteRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Проверяем, является ли пользователь участником чата
+                var isMember = await _context.ChatMembers
+                    .AnyAsync(cm => cm.ChatId == request.ChatId && cm.UserId == userId);
+
+                if (!isMember)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "У вас нет доступа к этому чату"
+                    });
+                }
+
+                // Получаем поездку из чата
+                var chat = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdChat == request.ChatId);
+
+                if (chat == null || !chat.IdTrip.HasValue)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Этот чат не связан с поездкой"
+                    });
+                }
+
+                // Создаем голосование
+                var vote = new VotingSystem
+                {
+                    Question = request.Question,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = request.ExpiresAt?.ToUniversalTime(),
+                    IdTrip = chat.IdTrip.Value,
+                    CreatedById = userId.Value,
+                    IdPoint = request.PointId
+                };
+
+                _context.VotingSystems.Add(vote);
+                await _context.SaveChangesAsync();
+
+                // Добавляем варианты ответов
+                foreach (var optionText in request.Options)
+                {
+                    if (!string.IsNullOrWhiteSpace(optionText))
+                    {
+                        _context.VoteOptions.Add(new VoteOption
+                        {
+                            OptionText = optionText.Trim(),
+                            IdVote = vote.IdVote
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Отправляем сообщение в чат о создании голосования
+                var message = new ChatMessage
+                {
+                    Message = $"📊 Новое голосование: {request.Question}",
+                    SentAt = DateTime.UtcNow,
+                    SenderId = userId.Value,
+                    ChatId = request.ChatId,
+                    AttachmentType = "vote",
+                    AttachmentsJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        type = "vote",
+                        voteId = vote.IdVote,
+                        question = request.Question,
+                        optionsCount = request.Options.Count,
+                        expiresAt = request.ExpiresAt
+                    })
+                };
+
+                _context.ChatMessages.Add(message);
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Голосование создано",
+                    Data = new { voteId = vote.IdVote }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании голосования");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при создании голосования: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Chats/SubmitVote
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitVote([FromBody] SubmitVoteRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Исправлено: используем IdVoteNavigation вместо Vote
+                var option = await _context.VoteOptions
+                    .Include(o => o.IdVoteNavigation) // Исправлено: IdVoteNavigation
+                    .FirstOrDefaultAsync(o => o.IdVoteOption == request.OptionId);
+
+                if (option == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Вариант ответа не найден"
+                    });
+                }
+
+                var vote = option.IdVoteNavigation;
+
+                // Проверяем, не истекло ли голосование
+                if (vote.ExpiresAt.HasValue && vote.ExpiresAt.Value < DateTime.UtcNow)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Голосование завершено"
+                    });
+                }
+
+                // Проверяем, голосовал ли уже пользователь
+                var existingVote = await _context.UserVotes
+                    .FirstOrDefaultAsync(uv => uv.IdVoteOption == request.OptionId && uv.IdUser == userId);
+
+                if (existingVote != null)
+                {
+                    // Удаляем предыдущий голос
+                    _context.UserVotes.Remove(existingVote);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Добавляем новый голос
+                var userVote = new UserVote
+                {
+                    IdVoteOption = request.OptionId,
+                    IdUser = userId.Value,
+                    VotedAt = DateTime.UtcNow
+                };
+
+                _context.UserVotes.Add(userVote);
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Ваш голос учтен"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при голосовании");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при голосовании: " + ex.Message
+                });
+            }
+        }
     }
 }

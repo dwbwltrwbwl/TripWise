@@ -158,7 +158,7 @@
                                             <i class="fas fa-ellipsis-v"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="#" onclick="showChatInfo()"><i class="fas fa-info-circle me-2"></i>Информация</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="showChatInfoModal()"><i class="fas fa-info-circle me-2"></i>Информация</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="renameChat()"><i class="fas fa-edit me-2"></i>Переименовать</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="changeChatAvatar()"><i class="fas fa-camera me-2"></i>Изменить аватар</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="deleteChatAvatar()"><i class="fas fa-trash-alt me-2"></i>Удалить аватар</a></li>
@@ -166,7 +166,6 @@
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="leaveChat()"><i class="fas fa-sign-out-alt me-2"></i>Покинуть чат</a></li>
                                             <li><a class="dropdown-item text-danger" href="#" onclick="deleteChat()"><i class="fas fa-trash me-2"></i>Удалить чат</a></li>
-                                            <!-- В чатах, в меню действий -->
                                             <li>
                                                 <a class="dropdown-item" href="#" onclick="showChatBudget(${chatId})">
                                                     <i class="fas fa-wallet me-2"></i>Бюджет поездки
@@ -198,6 +197,9 @@
                                 <div class="input-group">
                                     <button class="btn btn-outline-secondary" type="button" onclick="attachFile()">
                                         <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="showCreateVoteModal()">
+                                        <i class="fas fa-poll"></i>
                                     </button>
                                     <input type="text"
                                            class="form-control"
@@ -331,6 +333,91 @@
             </div>
             <div class="modal-footer border-0 justify-content-center">
                 <small class="text-muted">После авторизации вы сможете общаться с друзьями</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно информации о чате -->
+<div class="modal fade" id="chatInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    Информация о чате
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="chatInfoContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания голосования -->
+<div class="modal fade" id="createVoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-poll text-primary me-2"></i>
+                    Создать голосование
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Вопрос</label>
+                    <input type="text" class="form-control" id="voteQuestion" placeholder="Куда поедем?">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Варианты ответов</label>
+                    <div id="voteOptionsContainer">
+                        <div class="vote-option-input mb-2">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Вариант ответа" required>
+                                <button class="btn btn-outline-danger" type="button" onclick="removeVoteOption(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="vote-option-input mb-2">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Вариант ответа" required>
+                                <button class="btn btn-outline-danger" type="button" onclick="removeVoteOption(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addVoteOption()">
+                        <i class="fas fa-plus me-1"></i>Добавить вариант
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Дата окончания (необязательно)</label>
+                    <input type="datetime-local" class="form-control" id="voteExpiresAt">
+                    <small class="text-muted">Оставьте пустым для бессрочного голосования</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="createVote()">
+                    <i class="fas fa-check me-2"></i>Создать голосование
+                </button>
             </div>
         </div>
     </div>
@@ -775,6 +862,154 @@
     .pinned-message-container .fa-thumbtack {
         font-size: 1.1rem;
     }
+    /* Стили для модального окна информации о чате */
+    #chatInfoModal .modal-body {
+        padding: 1.5rem;
+    }
+
+    #chatInfoModal .chat-info h4 {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    #chatInfoModal .avatar-circle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0379D9, #40B624);
+        border-radius: 50%;
+        color: white;
+    }
+
+    #chatInfoModal .members-list {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+
+        #chatInfoModal .members-list .d-flex {
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+            #chatInfoModal .members-list .d-flex:hover {
+                background-color: #e9ecef;
+            }
+
+    #chatInfoModal table {
+        margin-bottom: 0;
+    }
+
+        #chatInfoModal table td {
+            padding: 0.5rem 0;
+            border: none;
+        }
+
+    #chatInfoModal hr {
+        margin: 1rem 0;
+        border-color: #e9ecef;
+    }
+    /* Стили для голосований */
+    .vote-message {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px;
+        margin: 4px 0;
+        border-left: 4px solid #0379D9;
+    }
+
+    .vote-question {
+        font-weight: 700;
+        margin-bottom: 12px;
+        font-size: 1rem;
+        color: #1e293b;
+    }
+
+    .vote-option {
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+        border: 1px solid #e9ecef;
+    }
+
+        .vote-option:hover:not(.disabled) {
+            border-color: #0379D9;
+            background: #f0f7ff;
+            transform: translateX(2px);
+        }
+
+        .vote-option.selected {
+            border-color: #28a745;
+            background: #e8f5e9;
+        }
+
+        .vote-option.disabled {
+            cursor: default;
+            opacity: 0.8;
+        }
+
+        .vote-option .option-text {
+            font-weight: 500;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .vote-option .progress {
+            height: 6px;
+            margin: 6px 0;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .vote-option .progress-bar {
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .vote-option .vote-count {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+    .vote-expired {
+        font-size: 0.75rem;
+        color: #dc3545;
+    }
+
+    .vote-total {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 8px;
+        text-align: right;
+    }
+
+    /* Модальное окно создания голосования */
+    #voteOptionsContainer {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .vote-option-input {
+        transition: all 0.2s ease;
+    }
+
+        .vote-option-input .input-group {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .vote-option-input input {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .vote-option-input button {
+            border-radius: 0 8px 8px 0;
+        }
 </style>
 
 @section Scripts {
@@ -792,6 +1027,8 @@
         let messagesRefreshInterval = null;
         let lastMessageId = 0;
         let isSelectingChat = false;
+        let chatInfoModal = null;
+                let createVoteModal = null;
 
         // Получаем chatId из URL если есть
         const urlParams = new URLSearchParams(window.location.search);
@@ -833,7 +1070,7 @@
         }
 
         // В начале после загрузки страницы
-        document.addEventListener('DOMContentLoaded', function() {
+                        document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded');
             console.log('Current User ID:', currentUserId);
 
@@ -843,6 +1080,18 @@
 
                 // Устанавливаем начальное состояние (currentChatId = null)
                 updateChatVisibility();
+
+                // Инициализируем модальное окно информации о чате
+                const modalElement = document.getElementById('chatInfoModal');
+                if (modalElement) {
+                    chatInfoModal = new bootstrap.Modal(modalElement);
+                }
+
+                // Инициализируем модальное окно создания голосования
+                const voteModalElement = document.getElementById('createVoteModal');
+                if (voteModalElement) {
+                    // Модальное окно будет создано при вызове showCreateVoteModal()
+                }
             } else {
                 console.log('User not logged in');
             }
@@ -1256,7 +1505,7 @@
             }
         }
                 // Загрузка сообщений чата
-        async function loadChatMessages(chatId) {
+                async function loadChatMessages(chatId) {
             try {
                 console.log('Загрузка сообщений чата:', chatId);
                 const response = await fetch(`/Chats/GetChatMessages?chatId=${chatId}`);
@@ -1269,7 +1518,39 @@
                 console.log('Сообщения чата:', data);
 
                 if (data.success) {
-                    renderMessages(data.data || []);
+                    // Загружаем голосования для этого чата
+                    await loadVotesForChat(chatId);
+
+                    // Обрабатываем сообщения, заменяя голосования на интерактивные элементы
+                    const processedMessages = data.data.map(msg => {
+                        if (msg.attachmentType === 'vote' && msg.attachmentsJson) {
+                            try {
+                                const voteInfo = JSON.parse(msg.attachmentsJson);
+                                const vote = window.votesData?.find(v => v.id === voteInfo.voteId);
+                                if (vote) {
+                                    // Создаем копию сообщения с визуализацией голосования
+                                    return {
+                                        ...msg,
+                                        isVoteMessage: true,
+                                        voteData: {
+                                            voteId: vote.id,
+                                            question: vote.question,
+                                            options: vote.options,
+                                            expiresAt: vote.expiresAt,
+                                            isExpired: vote.isExpired,
+                                            userHasVoted: vote.userHasVoted,
+                                            userVoteOptionId: vote.userVoteOptionId
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error('Error parsing vote data:', e);
+                            }
+                        }
+                        return msg;
+                    });
+
+                    renderMessages(processedMessages);
 
                     // Обновляем lastMessageId
                     if (data.data && data.data.length > 0) {
@@ -1349,7 +1630,7 @@
         }
         // Загрузка сообщений чата - ИСПРАВЛЕНО: query string параметр
                 // В функции loadChatMessages, после renderMessages:
-                                function renderMessages(messages) {
+                                        function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList');
 
             if (!messages || messages.length === 0) {
@@ -1380,56 +1661,90 @@
                 const isOutgoing = msg.senderId === currentUserId;
                 const senderName = isOutgoing ? 'Вы' : msg.senderName;
 
-                // Получаем файлы для отображения
-                let attachments = msg.attachments || [];
-
-                // Для обратной совместимости
-                if (attachments.length === 0 && msg.attachmentUrl) {
-                    attachments = [{
-                        fileName: msg.attachmentName,
-                        fileUrl: msg.attachmentUrl,
-                        fileSize: msg.attachmentSize,
-                        fileType: msg.attachmentType
-                    }];
-                }
-
-                html += `
-                    <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
-                        <div class="message-content">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
-                                    <div class="message-text">${escapeHtml(msg.text || '')}</div>
+                // Если это сообщение-голосование
+                if (msg.isVoteMessage && msg.voteData) {
+                    html += `
+                        <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
+                            <div class="message-content" style="max-width: 85%;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
+                                        ${renderVoteMessage(msg.voteData)}
+                                    </div>
+                                    ${isOutgoing ? `
+                                    <div class="dropdown ms-2">
+                                        <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
+                                                <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
+                                                <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
+                                                <i class="fas fa-trash me-2"></i>Удалить
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    ` : ''}
                                 </div>
-                                ${isOutgoing ? `
-                                <div class="dropdown ms-2">
-                                    <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
-                                            <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
-                                            <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
-                                            <i class="fas fa-trash me-2"></i>Удалить
-                                        </a></li>
-                                    </ul>
-                                </div>
-                                ` : ''}
+                                <div class="message-time mt-2">${formatTime(msg.sentAt)}</div>
                             </div>
-                            ${attachments.length > 0 ? `
-                                <div class="message-attachments mt-2">
-                                    ${attachments.map(att => renderAttachment(att)).join('<hr class="my-1">')}
-                                </div>
-                            ` : ''}
-                            <div class="message-time">${formatTime(msg.sentAt)}</div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    // Обычное сообщение
+                    let attachments = msg.attachments || [];
+                    if (attachments.length === 0 && msg.attachmentUrl) {
+                        attachments = [{
+                            fileName: msg.attachmentName,
+                            fileUrl: msg.attachmentUrl,
+                            fileSize: msg.attachmentSize,
+                            fileType: msg.attachmentType
+                        }];
+                    }
+
+                    html += `
+                        <div class="message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}" data-message-id="${msg.id}">
+                            <div class="message-content">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
+                                        <div class="message-text">${escapeHtml(msg.text || '')}</div>
+                                    </div>
+                                    ${isOutgoing ? `
+                                    <div class="dropdown ms-2">
+                                        <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, false, event)">
+                                                <i class="fas fa-thumbtack text-success me-2"></i>Закрепить для себя
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="pinMessage(${msg.id}, true, event)">
+                                                <i class="fas fa-thumbtack text-primary me-2"></i>Закрепить для всех
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id}, event)">
+                                                <i class="fas fa-trash me-2"></i>Удалить
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ${attachments.length > 0 ? `
+                                    <div class="message-attachments mt-2">
+                                        ${attachments.map(att => renderAttachment(att)).join('<hr class="my-1">')}
+                                    </div>
+                                ` : ''}
+                                <div class="message-time">${formatTime(msg.sentAt)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
 
                 prevMessageTime = msg.sentAt;
             });
@@ -3453,6 +3768,365 @@
             });
 
             showNotification(details, 'info', 5000);
+        }
+                async function showChatInfoModal() {
+            if (!currentChatId) return;
+
+            const modalBody = document.getElementById('chatInfoContent');
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/Chats/GetChatInfo?chatId=${currentChatId}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const chat = data.data;
+
+                    // Форматируем дату создания
+                    const createdAt = new Date(chat.createdAt).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    // Определяем тип чата
+                    const chatTypeText = {
+                        'private': 'Личный чат',
+                        'group': 'Групповой чат',
+                        'trip': 'Чат поездки'
+                    }[chat.type] || 'Чат';
+
+                    // Получаем список участников
+                    const membersHtml = chat.members && chat.members.length > 0
+                        ? chat.members.map(member => `
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2">
+                                    ${member.avatarPath ?
+                                        `<img src="${member.avatarPath}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">` :
+                                        `<div class="avatar-circle-sm bg-primary" style="width:32px;height:32px; font-size:12px;">${getInitials(member.fullName)}</div>`
+                                    }
+                                </div>
+                                <div>
+                                    <div class="fw-bold">${escapeHtml(member.fullName)}</div>
+                                    <small class="text-muted">${member.role === 'admin' ? 'Администратор' : 'Участник'}</small>
+                                </div>
+                            </div>
+                        `).join('')
+                        : '<p class="text-muted">Нет участников</p>';
+
+                    modalBody.innerHTML = `
+                        <div class="chat-info">
+                            <div class="text-center mb-4">
+                                <div class="chat-avatar d-inline-block">
+                                    ${chat.avatarPath ?
+                                        `<img src="${chat.avatarPath}" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">` :
+                                        `<div class="avatar-circle" style="width: 80px; height: 80px; background-color: ${getChatColor(chat.type)}; font-size: 32px;">
+                                            <i class="fas ${getChatIcon(chat.type)}"></i>
+                                        </div>`
+                                    }
+                                </div>
+                                <h4 class="mt-3 mb-1">${escapeHtml(chat.name)}</h4>
+                                <span class="badge bg-secondary">${chatTypeText}</span>
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <h6><i class="fas fa-info-circle me-2 text-primary"></i>Основная информация</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td class="text-muted" style="width: 40%;">Тип чата:</td>
+                                        <td>${chatTypeText}</td>
+                                    </tr>
+                                    ${chat.tripName ? `
+                                    <tr>
+                                        <td class="text-muted">Поездка:</td>
+                                        <td>${escapeHtml(chat.tripName)}</td>
+                                    </tr>
+                                    ` : ''}
+                                    <tr>
+                                        <td class="text-muted">Создан:</td>
+                                        <td>${createdAt}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Создатель:</td>
+                                        <td>${escapeHtml(chat.creator?.fullName || 'Система')}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Участников:</td>
+                                        <td>${chat.members?.length || 0}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Всего сообщений:</td>
+                                        <td>${chat.totalMessages || 0}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            ${chat.description ? `
+                            <div class="mb-3">
+                                <h6><i class="fas fa-align-left me-2 text-primary"></i>Описание</h6>
+                                <p class="text-muted">${escapeHtml(chat.description)}</p>
+                            </div>
+                            ` : ''}
+
+                            <div class="mb-3">
+                                <h6><i class="fas fa-users me-2 text-primary"></i>Участники</h6>
+                                <div class="members-list" style="max-height: 200px; overflow-y: auto;">
+                                    ${membersHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    modalBody.innerHTML = `
+                        <div class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                            <p>Не удалось загрузить информацию о чате</p>
+                            <small>${data.message || 'Попробуйте позже'}</small>
+                        </div>
+                    `;
+                }
+
+                chatInfoModal.show();
+            } catch (error) {
+                console.error('Error loading chat info:', error);
+                modalBody.innerHTML = `
+                    <div class="text-center py-4 text-danger">
+                        <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                        <p>Ошибка загрузки информации</p>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+                chatInfoModal.show();
+            }
+        }
+                function showCreateVoteModal() {
+            if (!currentChatId) {
+                showNotification('Сначала выберите чат', 'warning');
+                return;
+            }
+
+            document.getElementById('voteQuestion').value = '';
+            document.getElementById('voteOptionsContainer').innerHTML = `
+                <div class="vote-option-input mb-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Вариант ответа" required>
+                        <button class="btn btn-outline-danger" type="button" onclick="removeVoteOption(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="vote-option-input mb-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Вариант ответа" required>
+                        <button class="btn btn-outline-danger" type="button" onclick="removeVoteOption(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('voteExpiresAt').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('createVoteModal'));
+            modal.show();
+        }
+
+        // Добавить вариант ответа
+        function addVoteOption() {
+            const container = document.getElementById('voteOptionsContainer');
+            const newOption = document.createElement('div');
+            newOption.className = 'vote-option-input mb-2';
+            newOption.innerHTML = `
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Вариант ответа" required>
+                    <button class="btn btn-outline-danger" type="button" onclick="removeVoteOption(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(newOption);
+        }
+
+        // Удалить вариант ответа
+        function removeVoteOption(button) {
+            const container = document.getElementById('voteOptionsContainer');
+            if (container.children.length > 2) {
+                button.closest('.vote-option-input').remove();
+            } else {
+                showNotification('Должно быть минимум 2 варианта', 'warning');
+            }
+        }
+
+        // Создать голосование
+        async function createVote() {
+            const question = document.getElementById('voteQuestion').value.trim();
+            const options = [];
+            const expiresAt = document.getElementById('voteExpiresAt').value;
+
+            document.querySelectorAll('#voteOptionsContainer input[type="text"]').forEach(input => {
+                const text = input.value.trim();
+                if (text) {
+                    options.push(text);
+                }
+            });
+
+            if (!question) {
+                showNotification('Введите вопрос', 'warning');
+                return;
+            }
+
+            if (options.length < 2) {
+                showNotification('Добавьте минимум 2 варианта ответа', 'warning');
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/CreateVote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        chatId: currentChatId,
+                        question: question,
+                        options: options,
+                        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Голосование создано!', 'success');
+
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createVoteModal'));
+                    modal.hide();
+
+                    // Обновляем чат (добавляем сообщение о голосовании)
+                    await loadChatMessages(currentChatId);
+                } else {
+                    showNotification(data.message || 'Ошибка при создании', 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating vote:', error);
+                showNotification('Не удалось создать голосование', 'danger');
+            }
+        }
+                // Рендеринг сообщения с голосованием
+        function renderVoteMessage(voteData) {
+            const isExpired = voteData.isExpired;
+            const totalVotes = voteData.options.reduce((sum, opt) => sum + opt.votesCount, 0);
+
+            let html = `
+                <div class="vote-message">
+                    <div class="vote-question">
+                        <i class="fas fa-poll me-2 text-primary"></i>
+                        ${escapeHtml(voteData.question)}
+                    </div>
+                    <div class="vote-options">
+            `;
+
+            voteData.options.forEach(option => {
+                const percentage = totalVotes > 0 ? Math.round((option.votesCount / totalVotes) * 100) : 0;
+                const isSelected = voteData.userHasVoted && voteData.userVoteOptionId === option.id;
+                const disabled = isExpired || voteData.userHasVoted;
+
+                html += `
+                    <div class="vote-option ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}"
+                         data-option-id="${option.id}"
+                         ${!disabled ? `onclick="submitVote(${voteData.voteId}, ${option.id})"` : ''}>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="option-text">
+                                ${escapeHtml(option.text)}
+                                ${isSelected ? '<span class="badge bg-success ms-2">Ваш голос</span>' : ''}
+                            </div>
+                            <div class="vote-count">${option.votesCount} голос(ов)</div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="vote-total">
+                            <i class="fas fa-users me-1"></i>Всего голосов: ${totalVotes}
+                        </div>
+                        ${voteData.expiresAt ? `
+                            <div class="vote-expired">
+                                ${isExpired ?
+                                    '<i class="fas fa-clock me-1"></i>Голосование завершено' :
+                                    `<i class="fas fa-hourglass-half me-1"></i>До ${new Date(voteData.expiresAt).toLocaleDateString()}`
+                                }
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // Отправить голос
+        async function submitVote(voteId, optionId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Chats/SubmitVote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        voteId: voteId,
+                        optionId: optionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Ваш голос учтен!', 'success');
+                    // Обновляем сообщения в чате, чтобы показать актуальные результаты
+                    await loadChatMessages(currentChatId);
+                } else {
+                    showNotification(data.message || 'Ошибка при голосовании', 'danger');
+                }
+            } catch (error) {
+                console.error('Error submitting vote:', error);
+                showNotification('Не удалось отправить голос', 'danger');
+            }
+        }
+
+        // Загрузка голосований для чата
+        async function loadVotesForChat(chatId) {
+            try {
+                const response = await fetch(`/Chats/GetVotes?chatId=${chatId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Сохраняем голосования в глобальную переменную для быстрого доступа
+                    window.votesData = data.data;
+                }
+            } catch (error) {
+                console.error('Error loading votes:', error);
+            }
         }
     </script>
 }

@@ -51,9 +51,10 @@
                 <!-- Основной контент для авторизованных пользователей -->
                 <div class="row">
                     <div class="col-12">
-                        <!-- Заголовок и кнопка создания -->
-                        <div class="d-flex justify-content-between align-items-center mb-5">
-                            <div class="d-flex gap-3 flex-grow-1 me-3">
+                        <!-- Заголовок и фильтры -->
+                        <div class="d-flex justify-content-between align-items-start mb-5">
+                            <div class="d-flex flex-column flex-grow-1 me-3">
+                                <!-- Поиск -->
                                 <div class="input-group" style="max-width: 400px;">
                                     <span class="input-group-text bg-white border-end-0">
                                         <i class="fas fa-search text-muted"></i>
@@ -67,7 +68,41 @@
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
+
+                                <!-- Фильтры -->
+                                <div class="d-flex gap-3 mt-3 flex-wrap">
+                                    <!-- Фильтр по роли -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="roleFilterBtn">
+                                            <i class="fas fa-user-tag me-1"></i> Роль: Все
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="role" data-filter-value="all">Все поездки</a></li>
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="role" data-filter-value="organizer">Где я организатор</a></li>
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="role" data-filter-value="participant">Где я участник</a></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Фильтр по участникам -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="participantsFilterBtn">
+                                            <i class="fas fa-users me-1"></i> Участники: Все
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="participants" data-filter-value="all">Все поездки</a></li>
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="participants" data-filter-value="with-friends">С друзьями</a></li>
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="participants" data-filter-value="only-friends">Только друзья</a></li>
+                                            <li><a class="dropdown-item filter-option" href="#" data-filter-type="participants" data-filter-value="without-friends">Без друзей</a></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Кнопка сброса фильтров -->
+                                    <button class="btn btn-sm btn-outline-secondary" id="clearFiltersBtn" style="display: none;">
+                                        <i class="fas fa-times me-1"></i>Сбросить фильтры
+                                    </button>
+                                </div>
                             </div>
+
                             <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#createTripModal">
                                 <i class="fas fa-plus me-2"></i>Новая поездка
                             </button>
@@ -81,9 +116,6 @@
                                     <i class="fas fa-envelope text-warning me-2"></i>
                                     Приглашения в поездки
                                 </h3>
-                                <button class="btn btn-sm btn-outline-primary" onclick="loadInvitations()">
-                                    <i class="fas fa-sync me-1"></i>Обновить
-                                </button>
                             </div>
                             <div id="invitationsContainer">
                                 <div class="text-center py-5">
@@ -1351,6 +1383,49 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
         }
+    /* Стили для фильтров */
+    .filter-option {
+        cursor: pointer;
+    }
+
+        .filter-option:hover {
+            background-color: #f8f9fa;
+            color: #0379D9;
+        }
+
+    #clearFiltersBtn {
+        transition: all 0.2s ease;
+    }
+
+        #clearFiltersBtn:hover {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+    /* Адаптивность для фильтров */
+    @@media (max-width: 768px) {
+        .d-flex.gap-3.mt-3
+
+    {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+
+    .dropdown {
+        width: 100%;
+    }
+
+    .dropdown-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    #clearFiltersBtn {
+        width: 100%;
+    }
+
+    }
 </style>
 
 @section Scripts {
@@ -1363,7 +1438,9 @@
         let editTripModal = null;
         let searchTerm = '';
         let searchTimeout = null;
-                let manageParticipantsModal = null;
+        let manageParticipantsModal = null;
+        let filterRole = 'all';
+        let filterParticipants = 'all';
 
         let sortSettings = {
             upcoming: { type: 'date', order: 'asc' },
@@ -1371,13 +1448,16 @@
         };
 
                 // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
+                document.addEventListener('DOMContentLoaded', function() {
             console.log('Trips page loaded');
 
             if (currentUserId) {
                 // Загружаем поездки и друзей
                 loadTrips();
                 loadFriendsForInvite();
+
+                // Загружаем приглашения (ДОБАВИТЬ ЭТУ СТРОКУ)
+                loadInvitations();
 
                 // Инициализируем модальное окно удаления
                 const modalElement = document.getElementById('deleteTripModal');
@@ -1415,6 +1495,9 @@
 
                 // Добавляем обработчики для сортировки
                 initSortHandlers();
+
+                // Добавляем обработчики для фильтров
+                initFilterHandlers();
             }
         });
 
@@ -1748,35 +1831,97 @@
             });
         }
 
-                // Отфильтрованные поездки с учетом поиска
-        function renderFilteredTrips() {
+                        function renderFilteredTrips() {
             const now = new Date();
 
             let upcoming = allTrips.filter(trip => new Date(trip.endDate) >= now);
             let completed = allTrips.filter(trip => new Date(trip.endDate) < now);
 
+            // Применяем поиск
             if (searchTerm) {
                 upcoming = filterTripsBySearch(upcoming, searchTerm);
                 completed = filterTripsBySearch(completed, searchTerm);
             }
 
-            console.log('=== BEFORE SORTING ===');
-            console.log('Upcoming:', upcoming.map(t => ({ title: t.title, startDate: t.startDate })));
-            console.log('Completed:', completed.map(t => ({ title: t.title, endDate: t.endDate })));
+            // Применяем фильтры
+            upcoming = applyFilters(upcoming);
+            completed = applyFilters(completed);
 
-            // Применяем сортировку с указанием типа поездки
+            // Применяем сортировку
             upcoming = sortTrips(upcoming, sortSettings.upcoming.type, sortSettings.upcoming.order, false);
             completed = sortTrips(completed, sortSettings.completed.type, sortSettings.completed.order, true);
-
-            console.log('=== AFTER SORTING ===');
-            console.log('Upcoming (sorted):', upcoming.map(t => ({ title: t.title, startDate: t.startDate })));
-            console.log('Completed (sorted):', completed.map(t => ({ title: t.title, endDate: t.endDate })));
 
             renderTrips(upcoming, 'upcoming');
             renderTrips(completed, 'completed');
             updateSearchResultsInfo(upcoming.length, completed.length);
         }
 
+                function initFilterHandlers() {
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    const filterType = this.dataset.filterType;
+                    const filterValue = this.dataset.filterValue;
+
+                    if (filterType === 'role') {
+                        filterRole = filterValue;
+                        updateFilterButtonText('roleFilterBtn', filterValue, 'Роль');
+                    } else if (filterType === 'participants') {
+                        filterParticipants = filterValue;
+                        updateFilterButtonText('participantsFilterBtn', filterValue, 'Участники');
+                    }
+
+                    // Показываем кнопку сброса, если применен любой фильтр
+                    const clearBtn = document.getElementById('clearFiltersBtn');
+                    if (filterRole !== 'all' || filterParticipants !== 'all') {
+                        clearBtn.style.display = 'inline-flex';
+                    } else {
+                        clearBtn.style.display = 'none';
+                    }
+
+                    // Применяем фильтры
+                    renderFilteredTrips();
+                });
+            });
+
+            // Обработчик сброса фильтров
+            const clearBtn = document.getElementById('clearFiltersBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    filterRole = 'all';
+                    filterParticipants = 'all';
+
+                    updateFilterButtonText('roleFilterBtn', 'all', 'Роль');
+                    updateFilterButtonText('participantsFilterBtn', 'all', 'Участники');
+
+                    this.style.display = 'none';
+                    renderFilteredTrips();
+                });
+            }
+        }
+                function updateFilterButtonText(buttonId, value, defaultText) {
+            const button = document.getElementById(buttonId);
+            if (!button) return;
+
+            const textMap = {
+                'all': defaultText,
+                'organizer': 'Организатор',
+                'participant': 'Участник',
+                'with-friends': 'С друзьями',
+                'only-friends': 'Только друзья',
+                'without-friends': 'Без друзей'
+            };
+
+            const iconMap = {
+                'roleFilterBtn': '<i class="fas fa-user-tag me-1"></i>',
+                'participantsFilterBtn': '<i class="fas fa-users me-1"></i>'
+            };
+
+            const icon = iconMap[buttonId] || '';
+            const text = textMap[value] || defaultText;
+            button.innerHTML = `${icon} ${text}: ${value === 'all' ? 'Все' : text}`;
+        }
         // Поиск по поездкам
         function filterTripsBySearch(trips, term) {
             if (!term || term.trim() === '') return trips;
@@ -2648,6 +2793,42 @@
                 showNotification('Не удалось отправить приглашение', 'danger');
                 return false;
             }
+        }
+                function applyFilters(trips) {
+            let filtered = [...trips];
+
+            // Фильтр по роли
+            if (filterRole !== 'all') {
+                filtered = filtered.filter(trip => {
+                    if (filterRole === 'organizer') {
+                        return trip.createdBy.id === currentUserId;
+                    } else if (filterRole === 'participant') {
+                        return trip.createdBy.id !== currentUserId;
+                    }
+                    return true;
+                });
+            }
+
+            // Фильтр по участникам
+            if (filterParticipants !== 'all') {
+                filtered = filtered.filter(trip => {
+                    const hasFriends = trip.participants.some(p => p.isFriend && p.userId !== currentUserId);
+                    const allParticipants = trip.participants.filter(p => p.userId !== currentUserId);
+                    const allAreFriends = allParticipants.length > 0 && allParticipants.every(p => p.isFriend);
+                    const noFriends = !hasFriends;
+
+                    if (filterParticipants === 'with-friends') {
+                        return hasFriends;
+                    } else if (filterParticipants === 'only-friends') {
+                        return allAreFriends;
+                    } else if (filterParticipants === 'without-friends') {
+                        return noFriends;
+                    }
+                    return true;
+                });
+            }
+
+            return filtered;
         }
     </script>
 }
