@@ -96,9 +96,15 @@
         public int Id { get; set; }
         public int TripId { get; set; }
         public string TripTitle { get; set; } = "";
+        public int InviterId { get; set; }
         public string InviterName { get; set; } = "";
+        public string? InviterAvatar { get; set; }
+        public int InvitedId { get; set; }
+        public string? Message { get; set; }
         public DateTime InvitedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
         public string Status { get; set; } = ""; // pending, accepted, declined
+        public int? ChatId { get; set; }
     }
     public class UpdateTripRequest
     {
@@ -109,5 +115,35 @@
         public DateTime EndDate { get; set; }
         public decimal TotalBudget { get; set; }
         public bool IsPublic { get; set; }
+    }
+    public class ManageParticipantRequest
+    {
+        public int TripId { get; set; }
+        public int UserId { get; set; }
+    }
+
+    public class TripParticipantManageDto
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; } = "";
+        public string? AvatarPath { get; set; }
+        public string Role { get; set; } = "";
+        public bool IsFriend { get; set; }
+        public bool IsCreator { get; set; }
+        public bool IsCurrentUser { get; set; }
+        public DateTime JoinedAt { get; set; }
+    }
+
+    public class SendTripInvitationRequest
+    {
+        public int TripId { get; set; }
+        public int FriendId { get; set; }
+        public string? Message { get; set; }
+    }
+
+    public class RespondToInvitationRequest
+    {
+        public int InvitationId { get; set; }
+        public bool Accept { get; set; }
     }
 }

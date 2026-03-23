@@ -281,7 +281,7 @@ namespace TripWise.Controllers
             }
         }
 
-        // POST: /Trips/InviteFriends
+        // POST: /Trips/InviteFriends (обновленный)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> InviteFriends([FromBody] InviteFriendsRequest request)
@@ -315,48 +315,46 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Получаем текущих участников
-                var currentParticipants = await _context.TripParticipants
-                    .Where(tp => tp.IdTrip == request.TripId)
-                    .Select(tp => tp.IdUser)
-                    .ToListAsync();
+                var results = new List<string>();
+                var successCount = 0;
 
-                // Получаем чат поездки
-                var tripChat = await _context.Chats
-                    .FirstOrDefaultAsync(c => c.IdTrip == request.TripId && c.Type == "trip");
-
-                // Добавляем новых участников
                 foreach (var friendId in request.FriendIds.Distinct())
                 {
-                    if (!currentParticipants.Contains(friendId) && friendId != userId)
+                    // Проверяем, не является ли друг уже участником
+                    var isParticipant = await _context.TripParticipants
+                        .AnyAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == friendId);
+
+                    if (isParticipant)
                     {
-                        // Добавляем в поездку
-                        _context.TripParticipants.Add(new TripParticipant
-                        {
-                            IdTrip = request.TripId,
-                            IdUser = friendId,
-                            IdParticipantRole = 2, // Участник
-                            JoinedAt = DateTime.UtcNow
-                        });
-
-                        // Добавляем в чат, если он есть
-                        if (tripChat != null)
-                        {
-                            var isInChat = await _context.ChatMembers
-                                .AnyAsync(cm => cm.ChatId == tripChat.IdChat && cm.UserId == friendId);
-
-                            if (!isInChat)
-                            {
-                                _context.ChatMembers.Add(new ChatMember
-                                {
-                                    ChatId = tripChat.IdChat,
-                                    UserId = friendId,
-                                    Role = "member",
-                                    JoinedAt = DateTime.UtcNow
-                                });
-                            }
-                        }
+                        results.Add($"Пользователь уже в поездке");
+                        continue;
                     }
+
+                    // Проверяем, нет ли уже активного приглашения
+                    var existingInvitation = await _context.TripInvitations
+                        .FirstOrDefaultAsync(i => i.IdTrip == request.TripId &&
+                                                  i.InvitedId == friendId &&
+                                                  i.Status == "pending");
+
+                    if (existingInvitation != null)
+                    {
+                        results.Add($"Приглашение уже отправлено");
+                        continue;
+                    }
+
+                    // Создаем приглашение
+                    var invitation = new TripInvitation
+                    {
+                        IdTrip = request.TripId,
+                        InviterId = userId.Value,
+                        InvitedId = friendId,
+                        Message = request.Message,
+                        InvitedAt = DateTime.UtcNow,
+                        Status = "pending"
+                    };
+
+                    _context.TripInvitations.Add(invitation);
+                    successCount++;
                 }
 
                 await _context.SaveChangesAsync();
@@ -364,7 +362,7 @@ namespace TripWise.Controllers
                 return Json(new ApiResponse<object>
                 {
                     Success = true,
-                    Message = "Друзья приглашены в поездку"
+                    Message = $"Приглашения отправлены {successCount} пользователям"
                 });
             }
             catch (Exception ex)
@@ -917,6 +915,492 @@ namespace TripWise.Controllers
                 {
                     Success = false,
                     Message = "Ошибка при загрузке данных: " + ex.Message
+                });
+            }
+        }
+        // GET: /Trips/GetTripParticipants/5
+        [HttpGet]
+        public async Task<IActionResult> GetTripParticipants(int tripId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                // Проверяем, является ли пользователь участником поездки
+                var isParticipant = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == tripId && tp.IdUser == userId);
+
+                if (!isParticipant)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "У вас нет доступа к этой поездке"
+                    });
+                }
+
+                // Получаем всех участников
+                var participants = await _context.TripParticipants
+                    .Include(tp => tp.IdUserNavigation)
+                    .Include(tp => tp.IdParticipantRoleNavigation)
+                    .Where(tp => tp.IdTrip == tripId)
+                    .Select(tp => new TripParticipantManageDto
+                    {
+                        UserId = tp.IdUser,
+                        FullName = (tp.IdUserNavigation.LastName + " " + tp.IdUserNavigation.FirstName).Trim(),
+                        AvatarPath = tp.IdUserNavigation.AvatarPath,
+                        Role = tp.IdParticipantRoleNavigation != null
+                            ? tp.IdParticipantRoleNavigation.ParticipantRole1
+                            : "Участник",
+                        IsFriend = _context.Friends.Any(f =>
+                            (f.UserId == userId && f.FriendId == tp.IdUser && f.Status == "accepted") ||
+                            (f.UserId == tp.IdUser && f.FriendId == userId && f.Status == "accepted")),
+                        IsCreator = tp.IdParticipantRole == 1, // 1 - организатор
+                        IsCurrentUser = tp.IdUser == userId,
+                        JoinedAt = tp.JoinedAt
+                    })
+                    .OrderByDescending(p => p.IsCreator)
+                    .ThenBy(p => p.FullName)
+                    .ToListAsync();
+
+                // Получаем чат поездки
+                var tripChat = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdTrip == tripId && c.Type == "trip");
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new
+                    {
+                        participants = participants,
+                        chatId = tripChat?.IdChat,
+                        currentUserId = userId
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении участников поездки {TripId}", tripId);
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке участников: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Trips/RemoveParticipant
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveParticipant([FromBody] ManageParticipantRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("RemoveParticipant: tripId={TripId}, userIdToRemove={UserIdToRemove}, currentUser={CurrentUserId}",
+                    request.TripId, request.UserId, userId);
+
+                // Проверяем, существует ли поездка
+                var trip = await _context.Trips
+                    .FirstOrDefaultAsync(t => t.IdTrip == request.TripId);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Проверяем, является ли текущий пользователь организатором
+                var isCreator = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == userId && tp.IdParticipantRole == 1);
+
+                // Если удаляемый пользователь - это текущий пользователь
+                if (request.UserId == userId)
+                {
+                    // Организатор не может удалить сам себя
+                    if (isCreator)
+                    {
+                        return Json(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Message = "Организатор не может покинуть поездку. Сначала назначьте нового организатора или удалите поездку."
+                        });
+                    }
+
+                    // Удаляем участника из поездки
+                    var participant = await _context.TripParticipants
+                        .FirstOrDefaultAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == userId);
+
+                    if (participant != null)
+                    {
+                        _context.TripParticipants.Remove(participant);
+                    }
+
+                    // Удаляем из чата поездки
+                    var chat = await _context.Chats
+                        .FirstOrDefaultAsync(c => c.IdTrip == request.TripId && c.Type == "trip");
+
+                    if (chat != null)
+                    {
+                        var chatMember = await _context.ChatMembers
+                            .FirstOrDefaultAsync(cm => cm.ChatId == chat.IdChat && cm.UserId == userId);
+
+                        if (chatMember != null)
+                        {
+                            _context.ChatMembers.Remove(chatMember);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = true,
+                        Message = "Вы покинули поездку"
+                    });
+                }
+
+                // Удаление другого участника (только для организатора)
+                if (!isCreator)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только организатор может удалять других участников"
+                    });
+                }
+
+                // Проверяем, существует ли участник
+                var participantToRemove = await _context.TripParticipants
+                    .FirstOrDefaultAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == request.UserId);
+
+                if (participantToRemove == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Участник не найден"
+                    });
+                }
+
+                // Нельзя удалить организатора
+                if (participantToRemove.IdParticipantRole == 1)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Нельзя удалить организатора поездки"
+                    });
+                }
+
+                // Удаляем участника из поездки
+                _context.TripParticipants.Remove(participantToRemove);
+
+                // Удаляем из чата поездки
+                var chatToRemove = await _context.Chats
+                    .FirstOrDefaultAsync(c => c.IdTrip == request.TripId && c.Type == "trip");
+
+                if (chatToRemove != null)
+                {
+                    var chatMember = await _context.ChatMembers
+                        .FirstOrDefaultAsync(cm => cm.ChatId == chatToRemove.IdChat && cm.UserId == request.UserId);
+
+                    if (chatMember != null)
+                    {
+                        _context.ChatMembers.Remove(chatMember);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Участник удален из поездки"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении участника из поездки");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при удалении участника: " + ex.Message
+                });
+            }
+        }
+        // POST: /Trips/SendInvitation
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendInvitation([FromBody] SendTripInvitationRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                _logger.LogInformation("SendInvitation: tripId={TripId}, friendId={FriendId}, userId={UserId}",
+                    request.TripId, request.FriendId, userId);
+
+                // Проверяем, существует ли поездка
+                var trip = await _context.Trips
+                    .FirstOrDefaultAsync(t => t.IdTrip == request.TripId);
+
+                if (trip == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Поездка не найдена"
+                    });
+                }
+
+                // Проверяем, является ли пользователь организатором поездки
+                var isCreator = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == userId && tp.IdParticipantRole == 1);
+
+                if (!isCreator)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Только организатор может приглашать участников"
+                    });
+                }
+
+                // Проверяем, не является ли друг уже участником
+                var isAlreadyParticipant = await _context.TripParticipants
+                    .AnyAsync(tp => tp.IdTrip == request.TripId && tp.IdUser == request.FriendId);
+
+                if (isAlreadyParticipant)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь уже является участником поездки"
+                    });
+                }
+
+                // Проверяем, нет ли уже активного приглашения
+                var existingInvitation = await _context.TripInvitations
+                    .FirstOrDefaultAsync(i => i.IdTrip == request.TripId &&
+                                              i.InvitedId == request.FriendId &&
+                                              i.Status == "pending");
+
+                if (existingInvitation != null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Приглашение уже отправлено"
+                    });
+                }
+
+                // Создаем приглашение
+                var invitation = new TripInvitation
+                {
+                    IdTrip = request.TripId,
+                    InviterId = userId.Value,
+                    InvitedId = request.FriendId,
+                    Message = request.Message,
+                    InvitedAt = DateTime.UtcNow,
+                    Status = "pending"
+                };
+
+                _context.TripInvitations.Add(invitation);
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Приглашение отправлено",
+                    Data = new { invitationId = invitation.IdInvitation }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке приглашения");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при отправке приглашения: " + ex.Message
+                });
+            }
+        }
+
+        // GET: /Trips/GetMyInvitations
+        [HttpGet]
+        public async Task<IActionResult> GetMyInvitations()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var invitations = await _context.TripInvitations
+                    .Include(i => i.Trip)
+                    .Include(i => i.Inviter)
+                    .Where(i => i.InvitedId == userId && i.Status == "pending")
+                    .OrderByDescending(i => i.InvitedAt)
+                    .Select(i => new TripInvitationDto
+                    {
+                        Id = i.IdInvitation,
+                        TripId = i.IdTrip,
+                        TripTitle = i.Trip.Title ?? "Без названия",
+                        InviterId = i.InviterId,
+                        InviterName = i.Inviter.LastName + " " + i.Inviter.FirstName,
+                        InviterAvatar = i.Inviter.AvatarPath,
+                        Message = i.Message,
+                        InvitedAt = i.InvitedAt,
+                        Status = i.Status,
+                        ChatId = _context.Chats
+                            .Where(c => c.IdTrip == i.IdTrip && c.Type == "trip")
+                            .Select(c => (int?)c.IdChat)
+                            .FirstOrDefault()
+                    })
+                    .ToListAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = invitations
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении приглашений");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при загрузке приглашений: " + ex.Message
+                });
+            }
+        }
+
+        // POST: /Trips/RespondToInvitation
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RespondToInvitation([FromBody] RespondToInvitationRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Пользователь не авторизован"
+                    });
+                }
+
+                var invitation = await _context.TripInvitations
+                    .Include(i => i.Trip)
+                    .FirstOrDefaultAsync(i => i.IdInvitation == request.InvitationId && i.InvitedId == userId);
+
+                if (invitation == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Приглашение не найдено"
+                    });
+                }
+
+                if (invitation.Status != "pending")
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Это приглашение уже обработано"
+                    });
+                }
+
+                invitation.RespondedAt = DateTime.UtcNow;
+
+                if (request.Accept)
+                {
+                    invitation.Status = "accepted";
+
+                    // Добавляем пользователя в участники поездки
+                    var participant = new TripParticipant
+                    {
+                        IdTrip = invitation.IdTrip,
+                        IdUser = userId.Value,
+                        IdParticipantRole = 2, // Участник
+                        JoinedAt = DateTime.UtcNow
+                    };
+                    _context.TripParticipants.Add(participant);
+
+                    // Добавляем в чат поездки, если он есть
+                    var chat = await _context.Chats
+                        .FirstOrDefaultAsync(c => c.IdTrip == invitation.IdTrip && c.Type == "trip");
+
+                    if (chat != null)
+                    {
+                        _context.ChatMembers.Add(new ChatMember
+                        {
+                            ChatId = chat.IdChat,
+                            UserId = userId.Value,
+                            Role = "member",
+                            JoinedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+                else
+                {
+                    invitation.Status = "declined";
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = request.Accept ? "Вы присоединились к поездке" : "Приглашение отклонено"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при ответе на приглашение");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка при ответе на приглашение: " + ex.Message
                 });
             }
         }

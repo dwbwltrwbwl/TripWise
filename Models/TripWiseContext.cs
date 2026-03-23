@@ -65,6 +65,7 @@ public partial class TripWiseContext : DbContext
     public DbSet<FavoriteTrain> FavoriteTrains { get; set; }
     public DbSet<FavoriteHotel> FavoriteHotels { get; set; }
     public virtual DbSet<UserPinnedMessage> UserPinnedMessages { get; set; }
+    public virtual DbSet<TripInvitation> TripInvitations { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -1092,6 +1093,70 @@ public partial class TripWiseContext : DbContext
                 .HasForeignKey(d => d.MessageId)
                 .HasConstraintName("FK_UserPinnedMessages_ChatMessages_messageId")
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<TripInvitation>(entity =>
+        {
+            entity.ToTable("TripInvitations");
+
+            entity.HasKey(e => e.IdInvitation);
+
+            entity.Property(e => e.IdInvitation)
+                .HasColumnName("idInvitation")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.IdTrip)
+                .HasColumnName("idTrip")
+                .IsRequired();
+
+            entity.Property(e => e.InviterId)
+                .HasColumnName("inviterId")
+                .IsRequired();
+
+            entity.Property(e => e.InvitedId)
+                .HasColumnName("invitedId")
+                .IsRequired();
+
+            entity.Property(e => e.Message)
+                .HasColumnName("message")
+                .HasMaxLength(500);
+
+            entity.Property(e => e.InvitedAt)
+                .HasColumnName("invitedAt")
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.Property(e => e.RespondedAt)
+                .HasColumnName("respondedAt");
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(20)
+                .HasDefaultValue("pending");
+
+            // Связи
+            entity.HasOne(e => e.Trip)
+                .WithMany()
+                .HasForeignKey(e => e.IdTrip)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Inviter)
+                .WithMany()
+                .HasForeignKey(e => e.InviterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Invited)
+                .WithMany()
+                .HasForeignKey(e => e.InvitedId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Индексы
+            entity.HasIndex(e => new { e.IdTrip, e.InvitedId, e.Status })
+                .HasDatabaseName("IX_TripInvitations_Trip_Invited_Status");
+
+            entity.HasIndex(e => e.InvitedId)
+                .HasDatabaseName("IX_TripInvitations_InvitedId");
+
+            entity.HasIndex(e => e.Status)
+                .HasDatabaseName("IX_TripInvitations_Status");
         });
 
         OnModelCreatingPartial(modelBuilder);
