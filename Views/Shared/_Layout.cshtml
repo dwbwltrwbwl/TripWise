@@ -34,15 +34,6 @@
                         <div class="sidebar-item-desc">История и планирование</div>
                     </div>
                 </a>
-                @* <a class="sidebar-item" asp-controller="Home" asp-action="Groups">
-                    <div class="sidebar-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="sidebar-text">
-                        <div class="sidebar-item-title">Группы</div>
-                        <div class="sidebar-item-desc">Совместные путешествия</div>
-                    </div>
-                </a> *@
                 <a class="sidebar-item" asp-controller="Home" asp-action="Budget">
                     <div class="sidebar-icon">
                         <i class="fas fa-wallet"></i>
@@ -50,6 +41,15 @@
                     <div class="sidebar-text">
                         <div class="sidebar-item-title">Бюджет</div>
                         <div class="sidebar-item-desc">Управление расходами</div>
+                    </div>
+                </a>
+                <a class="sidebar-item" asp-controller="Notes" asp-action="Index">
+                    <div class="sidebar-icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <div class="sidebar-item-title">Заметки</div>
+                        <div class="sidebar-item-desc">Ваши личные записи</div>
                     </div>
                 </a>
                 <a class="sidebar-item" asp-controller="Home" asp-action="Activities">
@@ -186,9 +186,6 @@
                         <a href="#" class="social-icon text-white" title="ВКонтакте">
                             <i class="fab fa-vk"></i>
                         </a>
-                        <a href="#" class="social-icon text-white" title="Телеграм">
-                            <i class="fab fa-telegram"></i>
-                        </a>
                         <a href="#" class="social-icon text-white" title="Одноклассники">
                             <i class="fab fa-odnoklassniki"></i>
                         </a>
@@ -203,7 +200,6 @@
                         <li><a asp-controller="Home" asp-action="Flights" class="text-muted text-decoration-none">Авиабилеты</a></li>
                         <li><a asp-controller="Home" asp-action="Railway" class="text-muted text-decoration-none">ЖД билеты</a></li>
                         <li><a asp-controller="Home" asp-action="Hotels" class="text-muted text-decoration-none">Отели</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Туры</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">
@@ -213,7 +209,10 @@
                         <li><a asp-controller="Home" asp-action="Contact" class="text-muted text-decoration-none">Контакты</a></li>
                         <li><a asp-controller="Home" asp-action="FAQ" class="text-muted text-decoration-none">FAQ</a></li>
                         <li><a asp-controller="Home" asp-action="Reviews" class="text-muted text-decoration-none">Отзывы</a></li>
-                        <li><a asp-controller="Newsletter" asp-action="UnsubscribePage" class="text-muted text-decoration-none">Управление подпиской</a></li>
+                        @if (Context.Session.GetInt32("UserId") != null)
+                        {
+                            <li><a asp-controller="Newsletter" asp-action="UnsubscribePage" class="text-muted text-decoration-none">Управление подпиской</a></li>
+                        }
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">

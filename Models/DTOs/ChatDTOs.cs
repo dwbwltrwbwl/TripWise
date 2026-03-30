@@ -68,14 +68,15 @@ namespace TripWise.Models.DTOs
         public int? ReplyToId { get; set; }
         public ReplyMessageDto? ReplyTo { get; set; }
 
-        // Для обратной совместимости (один файл)
         public string? AttachmentType { get; set; }
         public string? AttachmentUrl { get; set; }
         public string? AttachmentName { get; set; }
         public long? AttachmentSize { get; set; }
-
-        // Новое поле для множественных файлов
         public List<AttachmentDto>? Attachments { get; set; }
+
+        // ДОБАВИТЬ ЭТИ ДВЕ СТРОКИ:
+        public bool IsVote { get; set; }
+        public string? VoteDataJson { get; set; }
 
         public bool IsOutgoing { get; set; }
         public List<int> ReadBy { get; set; } = new();

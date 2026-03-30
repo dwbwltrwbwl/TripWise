@@ -66,6 +66,8 @@ public partial class TripWiseContext : DbContext
     public DbSet<FavoriteHotel> FavoriteHotels { get; set; }
     public virtual DbSet<UserPinnedMessage> UserPinnedMessages { get; set; }
     public virtual DbSet<TripInvitation> TripInvitations { get; set; }
+    public DbSet<Note> Notes { get; set; }
+    public DbSet<ChecklistItem> ChecklistItems { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -621,31 +623,40 @@ public partial class TripWiseContext : DbContext
         modelBuilder.Entity<VotingSystem>(entity =>
         {
             entity.HasKey(e => e.IdVote);
+            entity.Property(e => e.IdVote).HasColumnName("IdVote").ValueGeneratedOnAdd();
 
-            entity.ToTable("votingSystems");
-
-            entity.HasIndex(e => e.CreatedById, "IX_votingSystems_createdById");
-
-            entity.HasIndex(e => e.IdPoint, "IX_votingSystems_idPoint");
-
-            entity.HasIndex(e => e.IdTrip, "IX_votingSystems_idTrip");
-
+            entity.Property(e => e.Question).HasColumnName("question");
             entity.Property(e => e.CreatedAt).HasColumnName("createdAt");
-            entity.Property(e => e.CreatedById).HasColumnName("createdById");
             entity.Property(e => e.ExpiresAt).HasColumnName("expiresAt");
-            entity.Property(e => e.IdPoint).HasColumnName("idPoint");
             entity.Property(e => e.IdTrip).HasColumnName("idTrip");
-            entity.Property(e => e.Question)
-                .HasMaxLength(200)
-                .HasColumnName("question");
+            entity.Property(e => e.CreatedById).HasColumnName("createdById");
+            entity.Property(e => e.IdPoint).HasColumnName("idPoint");
+            entity.Property(e => e.IdChat).HasColumnName("idChat");
 
-            entity.HasOne(d => d.CreatedBy).WithMany(p => p.VotingSystems)
-                .HasForeignKey(d => d.CreatedById)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+            // Исправленные связи - Указываем правильные имена внешних ключей
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .HasConstraintName("FK_votingSystems_Users_createdById")
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(d => d.IdPointNavigation).WithMany(p => p.VotingSystems).HasForeignKey(d => d.IdPoint);
+            entity.HasOne(e => e.IdTripNavigation)
+                .WithMany()
+                .HasForeignKey(e => e.IdTrip)
+                .HasConstraintName("FK_votingSystems_Trips_idTrip")
+                .OnDelete(DeleteBehavior.SetNull); // SetNull вместо Cascade
 
-            entity.HasOne(d => d.IdTripNavigation).WithMany(p => p.VotingSystems).HasForeignKey(d => d.IdTrip);
+            entity.HasOne(e => e.IdPointNavigation)
+                .WithMany()
+                .HasForeignKey(e => e.IdPoint)
+                .HasConstraintName("FK_votingSystems_PointsOfInterest_idPoint")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.IdChatNavigation)
+                .WithMany()
+                .HasForeignKey(e => e.IdChat)
+                .HasConstraintName("FK_votingSystems_Chats_idChat")
+                .OnDelete(DeleteBehavior.Cascade);
         });
         modelBuilder.Entity<UserAuthToken>().ToTable("UserAuthTokens", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<UserAuthToken>(entity =>
@@ -1157,6 +1168,26 @@ public partial class TripWiseContext : DbContext
 
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_TripInvitations_Status");
+        });
+        modelBuilder.Entity<Note>(entity =>
+        {
+            entity.ToTable("Notes");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Content)
+                .HasMaxLength(5000);
+
+            entity.Property(e => e.Color)
+                .HasMaxLength(50);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1010,6 +1010,184 @@
         .vote-option-input button {
             border-radius: 0 8px 8px 0;
         }
+
+    /* Стили для галереи вложений как в Telegram */
+.message-attachments {
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.attachments-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.attachment-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f0f2f5;
+    transition: all 0.2s ease;
+}
+
+.attachment-item.image-item {
+    width: 180px;
+    height: 180px;
+}
+
+.attachment-item.file-item {
+    width: auto;
+    min-width: 200px;
+    max-width: 260px;
+}
+
+.attachment-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.attachment-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+.attachment-preview:hover img {
+    transform: scale(1.05);
+}
+
+.attachment-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: white;
+}
+
+.attachment-preview:hover .attachment-overlay {
+    opacity: 1;
+}
+
+.attachment-overlay i {
+    font-size: 24px;
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f0f2f5;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s ease;
+}
+
+.file-preview:hover {
+    background: #e4e6e9;
+    text-decoration: none;
+    color: inherit;
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 8px;
+    margin-right: 12px;
+}
+
+.file-icon i {
+    font-size: 20px;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-size {
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+.file-download {
+    margin-left: 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.file-preview:hover .file-download {
+    opacity: 1;
+}
+
+/* Индикатор нескольких файлов в сообщении */
+.attachment-count-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+}
+
+/* Для мобильных устройств */
+@@media (max-width: 768px) {
+    .attachment-item.image-item {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .attachment-item.file-item {
+        min-width: 180px;
+        max-width: 220px;
+    }
+}
+
+/* Анимация для появляющихся вложений */
+.attachment-item {
+    animation: attachmentAppear 0.2s ease-out;
+}
+
+@@keyframes attachmentAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 </style>
 
 @section Scripts {
@@ -1504,7 +1682,7 @@
                 }, 500);
             }
         }
-                // Загрузка сообщений чата
+                        // Загрузка сообщений чата
                 async function loadChatMessages(chatId) {
             try {
                 console.log('Загрузка сообщений чата:', chatId);
@@ -1521,14 +1699,21 @@
                     // Загружаем голосования для этого чата
                     await loadVotesForChat(chatId);
 
+                    console.log('window.votesData после загрузки:', window.votesData);
+
                     // Обрабатываем сообщения, заменяя голосования на интерактивные элементы
                     const processedMessages = data.data.map(msg => {
+                        // Проверяем, является ли сообщение голосованием
                         if (msg.attachmentType === 'vote' && msg.attachmentsJson) {
                             try {
                                 const voteInfo = JSON.parse(msg.attachmentsJson);
+                                console.log('Найдено голосование в сообщении:', voteInfo);
+
+                                // Ищем голосование в загруженных данных по voteId
                                 const vote = window.votesData?.find(v => v.id === voteInfo.voteId);
+                                console.log('Найденное голосование в votesData:', vote);
+
                                 if (vote) {
-                                    // Создаем копию сообщения с визуализацией голосования
                                     return {
                                         ...msg,
                                         isVoteMessage: true,
@@ -1537,18 +1722,25 @@
                                             question: vote.question,
                                             options: vote.options,
                                             expiresAt: vote.expiresAt,
-                                            isExpired: vote.isExpired,
+                                            isExpired: vote.isExpired || (vote.expiresAt ? new Date(vote.expiresAt) < new Date() : false),
                                             userHasVoted: vote.userHasVoted,
                                             userVoteOptionId: vote.userVoteOptionId
                                         }
                                     };
+                                } else {
+                                    // Если голосование еще не загружено, показываем обычное сообщение
+                                    console.log('Голосование с ID', voteInfo.voteId, 'не найдено в votesData');
+                                    return msg;
                                 }
                             } catch (e) {
                                 console.error('Error parsing vote data:', e);
+                                return msg;
                             }
                         }
                         return msg;
                     });
+
+                    console.log('Обработанные сообщения:', processedMessages);
 
                     renderMessages(processedMessages);
 
@@ -1622,15 +1814,7 @@
             }
         }
 
-                        // Вспомогательная функция для удаления chatId из URL
-                function removeChatFromUrl() {
-            const url = new URL(window.location);
-            url.searchParams.delete('chatId');
-            window.history.replaceState({}, '', url);
-        }
-        // Загрузка сообщений чата - ИСПРАВЛЕНО: query string параметр
-                // В функции loadChatMessages, после renderMessages:
-                                        function renderMessages(messages) {
+                                function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList');
 
             if (!messages || messages.length === 0) {
@@ -1648,7 +1832,6 @@
             let prevMessageTime = null;
 
             messages.forEach((msg, index) => {
-                // Проверяем, нужно ли показывать разделитель даты
                 if (shouldShowDateSeparator(prevMessageTime, msg.sentAt)) {
                     const dateStr = formatDate(msg.sentAt);
                     html += `
@@ -1713,7 +1896,7 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         ${!isOutgoing ? `<div class="message-sender">${escapeHtml(senderName)}</div>` : ''}
-                                        <div class="message-text">${escapeHtml(msg.text || '')}</div>
+                                        ${msg.text ? `<div class="message-text">${escapeHtml(msg.text)}</div>` : ''}
                                     </div>
                                     ${isOutgoing ? `
                                     <div class="dropdown ms-2">
@@ -1736,11 +1919,13 @@
                                     ` : ''}
                                 </div>
                                 ${attachments.length > 0 ? `
-                                    <div class="message-attachments mt-2">
-                                        ${attachments.map(att => renderAttachment(att)).join('<hr class="my-1">')}
+                                    <div class="message-attachments">
+                                        <div class="attachments-gallery">
+                                            ${attachments.map((att, idx) => renderAttachment(att, idx, attachments.length, attachments)).join('')}
+                                        </div>
                                     </div>
                                 ` : ''}
-                                <div class="message-time">${formatTime(msg.sentAt)}</div>
+                                <div class="message-time mt-1">${formatTime(msg.sentAt)}</div>
                             </div>
                         </div>
                     `;
@@ -1816,7 +2001,7 @@
         }
 
         // Добавление сообщения в UI
-                                        function appendMessageToUI(message) {
+                                                        function appendMessageToUI(message) {
             const messagesList = document.getElementById('messagesList');
 
             if (messagesList.children.length === 1 &&
@@ -1824,14 +2009,7 @@
                 messagesList.innerHTML = '';
             }
 
-            // Нормализуем время
-            let sentAt = message.sentAt;
-            if (typeof sentAt === 'string') {
-                // Если время без Z, добавляем его
-                if (!sentAt.endsWith('Z') && !sentAt.includes('+')) {
-                    sentAt = sentAt.replace(' ', 'T') + 'Z';
-                }
-            }
+            let sentAt = normalizeDate(message.sentAt);
 
             // Проверяем, нужно ли добавить разделитель даты
             const lastMessage = messagesList.lastElementChild;
@@ -1859,10 +2037,8 @@
             messageDiv.className = `message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}`;
             messageDiv.setAttribute('data-message-id', message.id);
 
-            // Получаем файлы для отображения
             let attachments = message.attachments || [];
 
-            // Для обратной совместимости
             if (attachments.length === 0 && message.attachmentUrl) {
                 attachments = [{
                     fileName: message.attachmentName,
@@ -1872,13 +2048,12 @@
                 }];
             }
 
-            // Формируем содержимое
             let content = `
                 <div class="message-content">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             ${!isOutgoing ? `<div class="message-sender">${escapeHtml(message.senderName || 'Пользователь')}</div>` : ''}
-                            <div class="message-text">${escapeHtml(message.text || '')}</div>
+                            ${message.text ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
                         </div>
                         ${isOutgoing ? `
                         <div class="dropdown ms-2">
@@ -1902,22 +2077,261 @@
                     </div>
             `;
 
-            // Добавляем вложения если есть
             if (attachments.length > 0) {
-                content += `<div class="message-attachments mt-2">`;
-                attachments.forEach(att => {
-                    content += renderAttachment(att);
-                });
-                content += `</div>`;
+                content += `
+                    <div class="message-attachments">
+                        <div class="attachments-gallery">
+                            ${attachments.map((att, idx) => renderAttachment(att, idx, attachments.length, attachments)).join('')}
+                        </div>
+                    </div>
+                `;
             }
 
-            content += `<div class="message-time">${formatTime(sentAt)}</div></div>`;
+            content += `<div class="message-time mt-1">${formatTime(sentAt)}</div></div>`;
 
             messageDiv.innerHTML = content;
             messagesList.appendChild(messageDiv);
             scrollToBottom();
         }
+                let currentGalleryImages = [];
+        let currentGalleryIndex = 0;
+                        function openImageGallery(element) {
+            // Получаем данные из элемента
+            const allImagesData = element.closest('.attachment-item').getAttribute('data-all-images');
+            const currentIndex = parseInt(element.closest('.attachment-item').getAttribute('data-current-index') || '0');
 
+            if (allImagesData) {
+                try {
+                    currentGalleryImages = JSON.parse(allImagesData);
+                    currentGalleryIndex = currentIndex;
+                } catch (e) {
+                    console.error('Error parsing images data:', e);
+                    // Если не удалось распарсить, создаем один элемент
+                    const imgUrl = element.closest('.attachment-item').getAttribute('data-file-url');
+                    const imgName = element.closest('.attachment-item').querySelector('img')?.alt || 'Изображение';
+                    currentGalleryImages = [{ url: imgUrl, name: imgName }];
+                    currentGalleryIndex = 0;
+                }
+            } else {
+                // Если нет данных о всех изображениях, создаем один элемент
+                const imgUrl = element.closest('.attachment-item').getAttribute('data-file-url');
+                const imgName = element.closest('.attachment-item').querySelector('img')?.alt || 'Изображение';
+                currentGalleryImages = [{ url: imgUrl, name: imgName }];
+                currentGalleryIndex = 0;
+            }
+
+            // Показываем модальное окно с текущим изображением
+            showGalleryModal();
+        }
+                function showGalleryModal() {
+            // Удаляем предыдущее модальное окно, если есть
+            const existingModal = document.getElementById('imageGalleryModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const currentImage = currentGalleryImages[currentGalleryIndex];
+            const hasMultiple = currentGalleryImages.length > 1;
+
+            const modalHtml = `
+                <div class="modal fade" id="imageGalleryModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-xl">
+                        <div class="modal-content bg-dark">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title text-white">${escapeHtml(currentImage.name)}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center p-0 position-relative">
+                                <div class="gallery-container position-relative" style="min-height: 60vh;">
+                                    <img id="galleryImage" src="${currentImage.url}" alt="${escapeHtml(currentImage.name)}"
+                                         style="max-width: 100%; max-height: 70vh; object-fit: contain; cursor: pointer;">
+
+                                    ${hasMultiple ? `
+                                        <button class="gallery-nav gallery-prev" onclick="navigateGallery(-1)">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <button class="gallery-nav gallery-next" onclick="navigateGallery(1)">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                        <div class="gallery-counter text-white position-absolute bottom-0 start-50 translate-middle-x mb-3">
+                                            ${currentGalleryIndex + 1} / ${currentGalleryImages.length}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <div class="d-flex gap-2 w-100 justify-content-between">
+                                    <div>
+                                        <button class="btn btn-outline-light" onclick="downloadCurrentImage()">
+                                            <i class="fas fa-download me-2"></i>Скачать
+                                        </button>
+                                    </div>
+                                    <div>
+                                        ${hasMultiple ? `
+                                            <button class="btn btn-outline-light" onclick="startSlideshow()">
+                                                <i class="fas fa-play me-2"></i>Слайд-шоу
+                                            </button>
+                                        ` : ''}
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Добавляем стили для навигации, если их нет
+            if (!document.getElementById('galleryNavStyles')) {
+                const style = document.createElement('style');
+                style.id = 'galleryNavStyles';
+                style.textContent = `
+                    .gallery-nav {
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        background: rgba(0,0,0,0.6);
+                        color: white;
+                        border: none;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        z-index: 10;
+                    }
+                    .gallery-nav:hover {
+                        background: rgba(0,0,0,0.8);
+                        transform: translateY(-50%) scale(1.1);
+                    }
+                    .gallery-prev {
+                        left: 20px;
+                    }
+                    .gallery-next {
+                        right: 20px;
+                    }
+                    .gallery-counter {
+                        background: rgba(0,0,0,0.6);
+                        padding: 5px 12px;
+                        border-radius: 20px;
+                        font-size: 0.9rem;
+                        backdrop-filter: blur(4px);
+                    }
+                    #galleryImage {
+                        transition: transform 0.2s ease;
+                        cursor: pointer;
+                    }
+                    #galleryImage.zoomed {
+                        transform: scale(1.5);
+                        cursor: zoom-out;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Добавляем модальное окно в DOM
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer);
+
+            // Инициализируем модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+            modal.show();
+
+            // Добавляем обработчик для зума
+            const galleryImage = document.getElementById('galleryImage');
+            if (galleryImage) {
+                galleryImage.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    this.classList.toggle('zoomed');
+                });
+            }
+
+            // Удаляем из DOM после закрытия
+            document.getElementById('imageGalleryModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+                // Останавливаем слайд-шоу если было активно
+                if (window.slideshowInterval) {
+                    clearInterval(window.slideshowInterval);
+                    window.slideshowInterval = null;
+                }
+            });
+        }
+                function navigateGallery(direction) {
+            const newIndex = currentGalleryIndex + direction;
+            if (newIndex >= 0 && newIndex < currentGalleryImages.length) {
+                currentGalleryIndex = newIndex;
+                const newImage = currentGalleryImages[currentGalleryIndex];
+
+                // Обновляем изображение
+                const galleryImage = document.getElementById('galleryImage');
+                if (galleryImage) {
+                    galleryImage.src = newImage.url;
+                    galleryImage.alt = newImage.name;
+                    galleryImage.classList.remove('zoomed'); // Сбрасываем зум при смене
+                }
+
+                // Обновляем заголовок
+                const modalTitle = document.querySelector('#imageGalleryModal .modal-title');
+                if (modalTitle) {
+                    modalTitle.textContent = newImage.name;
+                }
+
+                // Обновляем счетчик
+                const galleryCounter = document.querySelector('.gallery-counter');
+                if (galleryCounter) {
+                    galleryCounter.textContent = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
+                }
+            }
+        }
+                function downloadCurrentImage() {
+            const currentImage = currentGalleryImages[currentGalleryIndex];
+            if (currentImage && currentImage.url) {
+                const link = document.createElement('a');
+                link.href = currentImage.url;
+                link.download = currentImage.name || 'image.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        let slideshowInterval = null;
+
+        function startSlideshow() {
+            if (slideshowInterval) {
+                // Если слайд-шоу уже запущено, останавливаем
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+
+                // Меняем текст кнопки обратно
+                const slideshowBtn = document.querySelector('#imageGalleryModal .modal-footer button[onclick="startSlideshow()"]');
+                if (slideshowBtn) {
+                    slideshowBtn.innerHTML = '<i class="fas fa-play me-2"></i>Слайд-шоу';
+                }
+                return;
+            }
+
+            // Запускаем слайд-шоу (переключение каждые 3 секунды)
+            slideshowInterval = setInterval(() => {
+                const newIndex = (currentGalleryIndex + 1) % currentGalleryImages.length;
+                navigateGallery(1);
+
+                // Если вернулись к началу и это не последний круг, продолжаем
+                if (newIndex === 0 && currentGalleryImages.length > 1) {
+                    // Продолжаем
+                }
+            }, 3000);
+
+            // Меняем текст кнопки
+            const slideshowBtn = document.querySelector('#imageGalleryModal .modal-footer button[onclick="startSlideshow()"]');
+            if (slideshowBtn) {
+                slideshowBtn.innerHTML = '<i class="fas fa-stop me-2"></i>Остановить';
+            }
+        }
         // Прокрутка к последнему сообщению
         function scrollToBottom() {
             const messagesArea = document.getElementById('messagesArea');
@@ -2753,70 +3167,79 @@
         }
                 // ==================== ОТОБРАЖЕНИЕ ВЛОЖЕНИЙ ====================
 
-        function renderAttachment(file) {
+                        function renderAttachment(file, index = 0, total = 1, allFiles = null) {
             if (!file || !file.fileUrl) return '';
 
             const fileExt = file.fileName?.split('.').pop()?.toLowerCase();
             const fileType = file.fileType || '';
-
-            // Определяем, является ли файл изображением
             const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
-
-            // Создаем URL для скачивания
             const fileName = encodeURIComponent(file.fileName || 'file');
 
+            // Для изображений - горизонтальная галерея
             if (isImage) {
+                // Определяем, нужно ли показывать счетчик (если файлов много)
+                const showCount = total > 1 && index === 0;
+
+                // Сохраняем все файлы сообщения для галереи
+                const allImages = allFiles || [file];
+                const imagesJson = JSON.stringify(allImages.map(f => ({ url: f.fileUrl, name: f.fileName })));
+
                 return `
-                    <div class="attachment-container">
-                        <a href="${file.fileUrl}" target="_blank" class="image-preview">
-                            <img src="${file.fileUrl}" alt="${escapeHtml(file.fileName)}"
-                                 style="max-width: 200px; max-height: 200px; border-radius: 5px; cursor: pointer;">
-                        </a>
-                        <div class="attachment-actions mt-1">
-                            <a href="${file.fileUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
-                                <i class="fas fa-download"></i> Скачать
-                            </a>
+                    <div class="attachment-item image-item" data-file-url="${file.fileUrl}" data-all-images='${imagesJson}' data-current-index="${index}">
+                        <div class="attachment-preview" onclick="openImageGallery(this)">
+                            <img src="${file.fileUrl}" alt="${escapeHtml(file.fileName)}">
+                            <div class="attachment-overlay">
+                                <i class="fas fa-search-plus"></i>
+                            </div>
+                            ${showCount ? `<div class="attachment-count-badge">+${total - 1}</div>` : ''}
                         </div>
-                    </div>
-                `;
-            } else {
-                // Определяем иконку по расширению или типу
-                let fileIcon = 'fa-file';
-                let fileColor = '';
-
-                if (fileType.includes('pdf') || fileExt === 'pdf') {
-                    fileIcon = 'fa-file-pdf';
-                    fileColor = 'text-danger';
-                } else if (fileType.includes('doc') || ['doc', 'docx'].includes(fileExt)) {
-                    fileIcon = 'fa-file-word';
-                    fileColor = 'text-primary';
-                } else if (fileType.includes('xls') || ['xls', 'xlsx'].includes(fileExt)) {
-                    fileIcon = 'fa-file-excel';
-                    fileColor = 'text-success';
-                } else if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') ||
-                           ['zip', 'rar', '7z'].includes(fileExt)) {
-                    fileIcon = 'fa-file-archive';
-                    fileColor = 'text-warning';
-                } else if (fileType.includes('text') || fileExt === 'txt') {
-                    fileIcon = 'fa-file-alt';
-                    fileColor = 'text-secondary';
-                }
-
-                return `
-                    <div class="attachment-container">
-                        <a href="${file.fileUrl}" target="_blank" class="file-attachment d-flex align-items-center p-2 bg-light rounded text-decoration-none">
-                            <i class="fas ${fileIcon} ${fileColor} me-2 fa-lg"></i>
-                            <span class="flex-grow-1 text-truncate">${escapeHtml(file.fileName)}</span>
-                            <small class="text-muted ms-2">${formatFileSize(file.fileSize)}</small>
-                        </a>
-                        <div class="attachment-actions mt-1">
-                            <a href="${file.fileUrl}" download="${fileName}" class="btn btn-sm btn-outline-primary" title="Скачать">
-                                <i class="fas fa-download"></i> Скачать
+                        <div class="attachment-actions mt-1 d-flex justify-content-center gap-2">
+                            <a href="${file.fileUrl}" download="${fileName}" class="btn btn-sm btn-link text-muted p-0" title="Скачать" onclick="event.stopPropagation()">
+                                <i class="fas fa-download"></i>
                             </a>
                         </div>
                     </div>
                 `;
             }
+
+            // Для файлов - горизонтальная карточка
+            let fileIcon = 'fa-file';
+            let fileColor = '';
+
+            if (fileType.includes('pdf') || fileExt === 'pdf') {
+                fileIcon = 'fa-file-pdf';
+                fileColor = 'text-danger';
+            } else if (fileType.includes('doc') || ['doc', 'docx'].includes(fileExt)) {
+                fileIcon = 'fa-file-word';
+                fileColor = 'text-primary';
+            } else if (fileType.includes('xls') || ['xls', 'xlsx'].includes(fileExt)) {
+                fileIcon = 'fa-file-excel';
+                fileColor = 'text-success';
+            } else if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') ||
+                       ['zip', 'rar', '7z'].includes(fileExt)) {
+                fileIcon = 'fa-file-archive';
+                fileColor = 'text-warning';
+            } else if (fileType.includes('text') || fileExt === 'txt') {
+                fileIcon = 'fa-file-alt';
+                fileColor = 'text-secondary';
+            }
+
+            return `
+                <div class="attachment-item file-item">
+                    <a href="${file.fileUrl}" download="${fileName}" class="file-preview" target="_blank">
+                        <div class="file-icon">
+                            <i class="fas ${fileIcon} ${fileColor} fa-lg"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${escapeHtml(file.fileName)}</div>
+                            <div class="file-size">${formatFileSize(file.fileSize)}</div>
+                        </div>
+                        <div class="file-download">
+                            <i class="fas fa-download text-muted"></i>
+                        </div>
+                    </a>
+                </div>
+            `;
         }
         // Обновленная функция отправки сообщения с файлом
                 async function sendMessage() {
@@ -3967,7 +4390,7 @@
         }
 
         // Создать голосование
-        async function createVote() {
+                async function createVote() {
             const question = document.getElementById('voteQuestion').value.trim();
             const options = [];
             const expiresAt = document.getElementById('voteExpiresAt').value;
@@ -4024,10 +4447,14 @@
                 showNotification('Не удалось создать голосование', 'danger');
             }
         }
-                // Рендеринг сообщения с голосованием
+                        // Рендеринг сообщения с голосованием
         function renderVoteMessage(voteData) {
+            console.log('renderVoteMessage called with:', voteData);
+
             const isExpired = voteData.isExpired;
-            const totalVotes = voteData.options.reduce((sum, opt) => sum + opt.votesCount, 0);
+            const totalVotes = voteData.options.reduce((sum, opt) => sum + (opt.votesCount || 0), 0);
+
+            console.log('totalVotes:', totalVotes);
 
             let html = `
                 <div class="vote-message">
@@ -4042,6 +4469,8 @@
                 const percentage = totalVotes > 0 ? Math.round((option.votesCount / totalVotes) * 100) : 0;
                 const isSelected = voteData.userHasVoted && voteData.userVoteOptionId === option.id;
                 const disabled = isExpired || voteData.userHasVoted;
+
+                console.log(`Option ${option.text}: votesCount=${option.votesCount}, percentage=${percentage}`);
 
                 html += `
                     <div class="vote-option ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}"
@@ -4082,7 +4511,7 @@
             return html;
         }
 
-        // Отправить голос
+                // Отправить голос
         async function submitVote(voteId, optionId) {
             try {
                 const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
@@ -4103,7 +4532,9 @@
 
                 if (data.success) {
                     showNotification('Ваш голос учтен!', 'success');
-                    // Обновляем сообщения в чате, чтобы показать актуальные результаты
+                    // Обновляем голосования
+                    await loadVotesForChat(currentChatId);
+                    // Обновляем сообщения в чате
                     await loadChatMessages(currentChatId);
                 } else {
                     showNotification(data.message || 'Ошибка при голосовании', 'danger');
@@ -4115,17 +4546,29 @@
         }
 
         // Загрузка голосований для чата
-        async function loadVotesForChat(chatId) {
+                                async function loadVotesForChat(chatId) {
             try {
+                console.log('loadVotesForChat called with chatId:', chatId);
                 const response = await fetch(`/Chats/GetVotes?chatId=${chatId}`);
                 const data = await response.json();
 
+                console.log('loadVotesForChat response:', data);
+
                 if (data.success) {
-                    // Сохраняем голосования в глобальную переменную для быстрого доступа
+                    // Сохраняем голосования в глобальную переменную
                     window.votesData = data.data;
+                    console.log('Загружено голосований:', window.votesData?.length || 0);
+                    console.log('Голосования:', window.votesData);
+                    return true;
+                } else {
+                    console.error('Error loading votes:', data.message);
+                    window.votesData = [];
+                    return false;
                 }
             } catch (error) {
                 console.error('Error loading votes:', error);
+                window.votesData = [];
+                return false;
             }
         }
     </script>

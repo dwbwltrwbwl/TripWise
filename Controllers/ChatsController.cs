@@ -380,9 +380,10 @@ namespace TripWise.Controllers
                     .ToListAsync();
 
                 // Формируем DTO
+                // В GetChatMessages, при формировании messageDtos
                 var messageDtos = messages.Select(m =>
                 {
-                    // Десериализуем вложения из JSON, если они есть
+                    // Десериализуем вложения из JSON
                     List<AttachmentDto>? attachments = null;
                     if (!string.IsNullOrEmpty(m.AttachmentsJson))
                     {
@@ -392,56 +393,13 @@ namespace TripWise.Controllers
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Ошибка десериализации attachments для сообщения {MessageId}", m.IdMessage);
+                            _logger.LogError(ex, "Ошибка десериализации attachments для сообщения {0}", m.IdMessage);
                         }
                     }
 
-                    // Для обратной совместимости: если нет attachments в JSON, но есть старые поля, создаем один attachment
-                    if ((attachments == null || attachments.Count == 0) && !string.IsNullOrEmpty(m.AttachmentUrl))
-                    {
-                        attachments = new List<AttachmentDto>
-                {
-                    new AttachmentDto
-                    {
-                        FileName = m.AttachmentName ?? "Файл",
-                        FileUrl = m.AttachmentUrl,
-                        FileSize = m.AttachmentSize ?? 0,
-                        FileType = m.AttachmentType ?? "application/octet-stream"
-                    }
-                };
-                    }
-
-                    // Получаем информацию о reply-to сообщении
-                    ReplyMessageDto? replyTo = null;
-                    if (m.ReplyToId.HasValue && replyMessages.ContainsKey(m.ReplyToId.Value))
-                    {
-                        var replyMsg = replyMessages[m.ReplyToId.Value];
-
-                        // Десериализуем вложения reply-to сообщения
-                        List<AttachmentDto>? replyAttachments = null;
-                        if (!string.IsNullOrEmpty(replyMsg.AttachmentsJson))
-                        {
-                            try
-                            {
-                                replyAttachments = System.Text.Json.JsonSerializer.Deserialize<List<AttachmentDto>>(replyMsg.AttachmentsJson);
-                            }
-                            catch { }
-                        }
-
-                        replyTo = new ReplyMessageDto
-                        {
-                            Id = m.ReplyToId.Value,
-                            Text = replyMsg.Text,
-                            SenderId = replyMsg.SenderId,
-                            SenderName = replySenders.ContainsKey(replyMsg.SenderId)
-                                ? replySenders[replyMsg.SenderId]
-                                : "Пользователь",
-                            AttachmentType = replyMsg.AttachmentType,
-                            Attachments = replyAttachments,
-                            HasAttachment = !string.IsNullOrEmpty(replyMsg.AttachmentType) ||
-                                           (replyAttachments != null && replyAttachments.Count > 0)
-                        };
-                    }
+                    // Для голосований - это могут быть данные голосования, а не вложения
+                    // Поэтому проверяем тип
+                    bool isVote = m.AttachmentType == "vote";
 
                     return new ChatMessageDto
                     {
@@ -449,20 +407,17 @@ namespace TripWise.Controllers
                         Text = m.Message,
                         SenderId = m.SenderId,
                         SenderName = senders.ContainsKey(m.SenderId) ? senders[m.SenderId] : "Пользователь",
-                        SentAt = DateTime.SpecifyKind(m.SentAt, DateTimeKind.Utc), // Явно указываем UTC
+                        SentAt = m.SentAt,
                         EditedAt = m.EditedAt,
                         ReplyToId = m.ReplyToId,
-                        ReplyTo = replyTo,
                         AttachmentType = m.AttachmentType,
                         AttachmentUrl = m.AttachmentUrl,
                         AttachmentName = m.AttachmentName,
                         AttachmentSize = m.AttachmentSize,
                         Attachments = attachments,
-                        IsOutgoing = m.SenderId == userId,
-                        ReadBy = readMessages
-                            .Where(r => r.MessageId == m.IdMessage)
-                            .Select(r => r.UserId)
-                            .ToList()
+                        IsVote = isVote,  // Добавьте это поле в DTO
+                        VoteDataJson = isVote ? m.AttachmentsJson : null,  // Сохраняем JSON для голосования
+                        IsOutgoing = m.SenderId == userId
                     };
                 }).ToList();
 
@@ -1768,9 +1723,9 @@ namespace TripWise.Controllers
 
                 // Проверяем существование сообщения и права через прямой SQL запрос с возвратом результата
                 var checkSql = @"
-            SELECT COUNT(*) 
-            FROM [ChatMessages] 
-            WHERE [idMessage] = @messageId AND [idUser] = @userId";
+    SELECT COUNT(*) 
+    FROM [ChatMessages] 
+    WHERE [idMessage] = @messageId AND [idUser] = @userId";
 
                 int exists = 0;
                 using (var command = _context.Database.GetDbConnection().CreateCommand())
@@ -1813,11 +1768,41 @@ namespace TripWise.Controllers
                     }
                 }
 
+                // СНИМАЕМ ГЛОБАЛЬНОЕ ЗАКРЕПЛЕНИЕ, если сообщение закреплено для всех
+                var updateChatSql = @"
+    UPDATE [Chats] 
+    SET [pinnedMessageId] = NULL, 
+        [pinnedAt] = NULL, 
+        [pinnedById] = NULL 
+    WHERE [idChat] = @chatId AND [pinnedMessageId] = @messageId";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = updateChatSql;
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                // УДАЛЯЕМ ЛИЧНЫЕ ЗАКРЕПЛЕНИЯ этого сообщения у всех пользователей
+                var deleteUserPinsSql = @"
+    DELETE FROM [UserPinnedMessages] 
+    WHERE [messageId] = @messageId";
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = deleteUserPinsSql;
+                    command.Parameters.Clear();
+                    command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
+                    await command.ExecuteNonQueryAsync();
+                }
+
                 // Удаляем сообщение
                 var deleteSql = "DELETE FROM [ChatMessages] WHERE [idMessage] = @messageId";
                 using (var command = _context.Database.GetDbConnection().CreateCommand())
                 {
                     command.CommandText = deleteSql;
+                    command.Parameters.Clear();
                     command.Parameters.Add(new SqlParameter("@messageId", request.MessageId));
                     await command.ExecuteNonQueryAsync();
                 }
@@ -1826,17 +1811,18 @@ namespace TripWise.Controllers
                 if (chatId > 0)
                 {
                     var updateLastMessageSql = @"
-                UPDATE [Chats] 
-                SET [lastMessageAt] = (
-                    SELECT MAX([sentAt]) 
-                    FROM [ChatMessages] 
-                    WHERE [idChat] = @chatId
-                )
-                WHERE [idChat] = @chatId";
+        UPDATE [Chats] 
+        SET [lastMessageAt] = (
+            SELECT MAX([sentAt]) 
+            FROM [ChatMessages] 
+            WHERE [idChat] = @chatId
+        )
+        WHERE [idChat] = @chatId";
 
                     using (var command = _context.Database.GetDbConnection().CreateCommand())
                     {
                         command.CommandText = updateLastMessageSql;
+                        command.Parameters.Clear();
                         command.Parameters.Add(new SqlParameter("@chatId", chatId));
                         await command.ExecuteNonQueryAsync();
                     }
@@ -2670,39 +2656,121 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Получаем все голосования для этого чата (через связь с поездкой)
-                var chat = await _context.Chats
-                    .FirstOrDefaultAsync(c => c.IdChat == chatId);
+                // Используем сырой SQL для получения голосований
+                var sql = @"
+            SELECT 
+                v.IdVote,
+                v.question,
+                v.createdAt,
+                v.expiresAt,
+                v.idTrip,
+                v.createdById,
+                v.idPoint,
+                v.idChat,
+                u.last_name as CreatorLastName,
+                u.first_name as CreatorFirstName,
+                t.title as TripTitle
+            FROM [votingSystems] v
+            LEFT JOIN [Users] u ON v.createdById = u.idUser
+            LEFT JOIN [Trips] t ON v.idTrip = t.idTrip
+            WHERE v.idChat = @chatId
+            ORDER BY v.createdAt DESC";
 
-                if (chat == null || !chat.IdTrip.HasValue)
+                var votes = new List<VotingSystemDto>();
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
                 {
-                    return Json(new ApiResponse<List<VoteDto>>
+                    command.CommandText = sql;
+                    command.Parameters.Add(new SqlParameter("@chatId", chatId));
+
+                    if (_context.Database.GetDbConnection().State != System.Data.ConnectionState.Open)
                     {
-                        Success = true,
-                        Data = new List<VoteDto>()
-                    });
+                        await _context.Database.OpenConnectionAsync();
+                    }
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var vote = new VotingSystemDto
+                            {
+                                IdVote = reader.GetInt32(0),
+                                Question = reader.GetString(1),
+                                CreatedAt = reader.GetDateTime(2),
+                                ExpiresAt = reader.IsDBNull(3) ? null : reader.GetDateTime(3),
+                                IdTrip = reader.IsDBNull(4) ? null : reader.GetInt32(4),
+                                CreatedById = reader.GetInt32(5),
+                                IdPoint = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+                                IdChat = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+                                CreatorName = !reader.IsDBNull(8) && !reader.IsDBNull(9)
+                                    ? $"{reader.GetString(8)} {reader.GetString(9)}".Trim()
+                                    : "Система",
+                                TripName = reader.IsDBNull(10) ? null : reader.GetString(10)
+                            };
+                            votes.Add(vote);
+                        }
+                    }
                 }
 
-                // Исправлено: используем IdTripNavigation вместо Trip
-                var votes = await _context.VotingSystems
-                    .Include(v => v.CreatedBy)
-                    .Include(v => v.IdTripNavigation) // Исправлено: IdTripNavigation
-                    .Include(v => v.VoteOptions)
-                        .ThenInclude(o => o.UserVotes)
-                    .Where(v => v.IdTrip == chat.IdTrip)
-                    .OrderByDescending(v => v.CreatedAt)
-                    .ToListAsync();
+                // Для каждого голосования получаем варианты и голоса
+                var voteDtos = new List<VoteDto>();
 
-                var voteDtos = votes.Select(v =>
+                foreach (var vote in votes)
                 {
-                    var options = v.VoteOptions.Select(o => new VoteOptionDto
+                    // Получаем варианты ответов
+                    var optionsSql = @"
+                SELECT o.idVoteOption, o.optionText
+                FROM [VoteOptions] o
+                WHERE o.idVote = @voteId";
+
+                    var options = new List<VoteOptionDto>();
+
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
                     {
-                        Id = o.IdVoteOption,
-                        Text = o.OptionText,
-                        VotesCount = o.UserVotes.Count,
-                        TotalVotes = 0, // Пока 0, заполним позже
-                        VoterIds = o.UserVotes.Select(uv => uv.IdUser).ToList()
-                    }).ToList();
+                        command.CommandText = optionsSql;
+                        command.Parameters.Clear();
+                        command.Parameters.Add(new SqlParameter("@voteId", vote.IdVote));
+
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                options.Add(new VoteOptionDto
+                                {
+                                    Id = reader.GetInt32(0),
+                                    Text = reader.GetString(1),
+                                    VotesCount = 0,
+                                    TotalVotes = 0,
+                                    VoterIds = new List<int>()
+                                });
+                            }
+                        }
+                    }
+
+                    // Получаем голоса для каждого варианта
+                    foreach (var option in options)
+                    {
+                        var votesSql = @"
+                    SELECT uv.idUser
+                    FROM [UserVotes] uv
+                    WHERE uv.idVoteOption = @optionId";
+
+                        using (var command = _context.Database.GetDbConnection().CreateCommand())
+                        {
+                            command.CommandText = votesSql;
+                            command.Parameters.Clear();
+                            command.Parameters.Add(new SqlParameter("@optionId", option.Id));
+
+                            using (var reader = await command.ExecuteReaderAsync())
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                    option.VotesCount++;
+                                    option.VoterIds.Add(reader.GetInt32(0));
+                                }
+                            }
+                        }
+                    }
 
                     var totalVotes = options.Sum(o => o.VotesCount);
                     foreach (var opt in options)
@@ -2710,29 +2778,31 @@ namespace TripWise.Controllers
                         opt.TotalVotes = totalVotes;
                     }
 
-                    var userHasVoted = v.VoteOptions.Any(o => o.UserVotes.Any(uv => uv.IdUser == userId));
-                    var userVoteOptionId = v.VoteOptions
-                        .Where(o => o.UserVotes.Any(uv => uv.IdUser == userId))
-                        .Select(o => (int?)o.IdVoteOption)
+                    var userHasVoted = options.Any(o => o.VoterIds.Contains(userId.Value));
+                    var userVoteOptionId = options
+                        .Where(o => o.VoterIds.Contains(userId.Value))
+                        .Select(o => (int?)o.Id)
                         .FirstOrDefault();
 
-                    return new VoteDto
+                    voteDtos.Add(new VoteDto
                     {
-                        Id = v.IdVote,
-                        Question = v.Question,
-                        CreatedAt = v.CreatedAt,
-                        ExpiresAt = v.ExpiresAt,
-                        CreatedById = v.CreatedById,
-                        CreatedByName = v.CreatedBy != null ? $"{v.CreatedBy.LastName} {v.CreatedBy.FirstName}".Trim() : "Система",
-                        TripId = v.IdTrip,
-                        TripName = v.IdTripNavigation?.Title,
-                        PointId = v.IdPoint,
+                        Id = vote.IdVote,
+                        Question = vote.Question,
+                        CreatedAt = vote.CreatedAt,
+                        ExpiresAt = vote.ExpiresAt,
+                        CreatedById = vote.CreatedById,
+                        CreatedByName = vote.CreatorName,
+                        TripId = vote.IdTrip,
+                        TripName = vote.TripName,
+                        PointId = vote.IdPoint,
+                        ChatId = vote.IdChat,
                         Options = options,
                         TotalVotes = totalVotes,
                         UserHasVoted = userHasVoted,
-                        UserVoteOptionId = userVoteOptionId
-                    };
-                }).ToList();
+                        UserVoteOptionId = userVoteOptionId,
+                        IsExpired = vote.ExpiresAt.HasValue && vote.ExpiresAt.Value < DateTime.UtcNow
+                    });
+                }
 
                 return Json(new ApiResponse<List<VoteDto>>
                 {
@@ -2768,6 +2838,48 @@ namespace TripWise.Controllers
                     });
                 }
 
+                // Проверяем, что запрос не пустой
+                if (request == null)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Неверный запрос"
+                    });
+                }
+
+                // Проверяем обязательные поля
+                if (string.IsNullOrWhiteSpace(request.Question))
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Введите вопрос"
+                    });
+                }
+
+                if (request.Options == null || request.Options.Count < 2)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Добавьте минимум 2 варианта ответа"
+                    });
+                }
+
+                // Проверяем, существует ли чат
+                var chatExists = await _context.Chats
+                    .AnyAsync(c => c.IdChat == request.ChatId);
+
+                if (!chatExists)
+                {
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = $"Чат с ID {request.ChatId} не найден"
+                    });
+                }
+
                 // Проверяем, является ли пользователь участником чата
                 var isMember = await _context.ChatMembers
                     .AnyAsync(cm => cm.ChatId == request.ChatId && cm.UserId == userId);
@@ -2777,78 +2889,163 @@ namespace TripWise.Controllers
                     return Json(new ApiResponse<object>
                     {
                         Success = false,
-                        Message = "У вас нет доступа к этому чату"
+                        Message = "Вы не являетесь участником этого чата"
                     });
                 }
 
-                // Получаем поездку из чата
-                var chat = await _context.Chats
-                    .FirstOrDefaultAsync(c => c.IdChat == request.ChatId);
-
-                if (chat == null || !chat.IdTrip.HasValue)
+                // Проверяем, что варианты не пустые
+                var validOptions = request.Options.Where(o => !string.IsNullOrWhiteSpace(o)).ToList();
+                if (validOptions.Count < 2)
                 {
                     return Json(new ApiResponse<object>
                     {
                         Success = false,
-                        Message = "Этот чат не связан с поездкой"
+                        Message = "Все варианты ответа должны быть заполнены"
                     });
                 }
 
-                // Создаем голосование
-                var vote = new VotingSystem
-                {
-                    Question = request.Question,
-                    CreatedAt = DateTime.UtcNow,
-                    ExpiresAt = request.ExpiresAt?.ToUniversalTime(),
-                    IdTrip = chat.IdTrip.Value,
-                    CreatedById = userId.Value,
-                    IdPoint = request.PointId
-                };
+                int voteId = 0;
 
-                _context.VotingSystems.Add(vote);
-                await _context.SaveChangesAsync();
+                // Создаем голосование через SQL
+                var connection = _context.Database.GetDbConnection();
 
-                // Добавляем варианты ответов
-                foreach (var optionText in request.Options)
+                try
                 {
-                    if (!string.IsNullOrWhiteSpace(optionText))
+                    if (connection.State != System.Data.ConnectionState.Open)
                     {
-                        _context.VoteOptions.Add(new VoteOption
+                        await connection.OpenAsync();
+                    }
+
+                    // Вставляем голосование
+                    var insertVoteSql = @"
+                INSERT INTO [votingSystems] 
+                ([question], [createdAt], [expiresAt], [idTrip], [createdById], [idPoint], [idChat])
+                VALUES 
+                (@question, @createdAt, @expiresAt, @idTrip, @createdById, @idPoint, @idChat);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = insertVoteSql;
+                        command.Parameters.Add(new SqlParameter("@question", request.Question.Trim()));
+                        command.Parameters.Add(new SqlParameter("@createdAt", DateTime.UtcNow));
+                        command.Parameters.Add(new SqlParameter("@expiresAt", request.ExpiresAt?.ToUniversalTime() ?? (object)DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@idTrip", DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@createdById", userId.Value));
+                        command.Parameters.Add(new SqlParameter("@idPoint", DBNull.Value));
+                        command.Parameters.Add(new SqlParameter("@idChat", request.ChatId));
+
+                        var result = await command.ExecuteScalarAsync();
+                        if (result != null && result != DBNull.Value)
                         {
-                            OptionText = optionText.Trim(),
-                            IdVote = vote.IdVote
+                            voteId = Convert.ToInt32(result);
+                        }
+                    }
+
+                    if (voteId == 0)
+                    {
+                        return Json(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Message = "Не удалось создать голосование"
                         });
                     }
-                }
 
-                await _context.SaveChangesAsync();
-
-                // Отправляем сообщение в чат о создании голосования
-                var message = new ChatMessage
-                {
-                    Message = $"📊 Новое голосование: {request.Question}",
-                    SentAt = DateTime.UtcNow,
-                    SenderId = userId.Value,
-                    ChatId = request.ChatId,
-                    AttachmentType = "vote",
-                    AttachmentsJson = System.Text.Json.JsonSerializer.Serialize(new
+                    // Добавляем варианты ответов
+                    foreach (var optionText in validOptions)
                     {
-                        type = "vote",
-                        voteId = vote.IdVote,
+                        var insertOptionSql = @"
+                    INSERT INTO [VoteOptions] 
+                    ([optionText], [idVote])
+                    VALUES 
+                    (@optionText, @voteId)";
+
+                        using (var command = connection.CreateCommand())
+                        {
+                            command.CommandText = insertOptionSql;
+                            command.Parameters.Clear();
+                            command.Parameters.Add(new SqlParameter("@optionText", optionText.Trim()));
+                            command.Parameters.Add(new SqlParameter("@voteId", voteId));
+                            await command.ExecuteNonQueryAsync();
+                        }
+                    }
+
+                    // Создаем данные голосования для attachmentsJson
+                    var voteData = new
+                    {
+                        voteId = voteId,
                         question = request.Question,
-                        optionsCount = request.Options.Count,
-                        expiresAt = request.ExpiresAt
-                    })
-                };
+                        options = validOptions,
+                        optionsCount = validOptions.Count,
+                        expiresAt = request.ExpiresAt?.ToUniversalTime()
+                    };
 
-                _context.ChatMessages.Add(message);
-                await _context.SaveChangesAsync();
+                    var attachmentsJson = System.Text.Json.JsonSerializer.Serialize(voteData);
 
+                    // ОТПРАВЛЯЕМ СООБЩЕНИЕ В ЧАТ С ПРАВИЛЬНЫМИ ПОЛЯМИ
+                    var insertMessageSql = @"
+                INSERT INTO [ChatMessages] 
+                ([message], [sentAt], [idUser], [idChat], [attachmentType], [attachmentsJson])
+                VALUES 
+                (@message, @sentAt, @senderId, @chatId, @attachmentType, @attachmentsJson);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                    int messageId = 0;
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = insertMessageSql;
+                        command.Parameters.Clear();
+                        // Важно: message должен быть пустым или содержать только текст для отображения
+                        // Но attachmentType = "vote" и attachmentsJson содержат данные голосования
+                        command.Parameters.Add(new SqlParameter("@message", "")); // Пустое сообщение, голосование будет отображаться через attachmentType
+                        command.Parameters.Add(new SqlParameter("@sentAt", DateTime.UtcNow));
+                        command.Parameters.Add(new SqlParameter("@senderId", userId.Value));
+                        command.Parameters.Add(new SqlParameter("@chatId", request.ChatId));
+                        command.Parameters.Add(new SqlParameter("@attachmentType", "vote")); // ВАЖНО: устанавливаем тип "vote"
+                        command.Parameters.Add(new SqlParameter("@attachmentsJson", attachmentsJson));
+
+                        var result = await command.ExecuteScalarAsync();
+                        if (result != null)
+                        {
+                            messageId = Convert.ToInt32(result);
+                        }
+                    }
+
+                    // Обновляем время последнего сообщения
+                    var chat = await _context.Chats.FindAsync(request.ChatId);
+                    if (chat != null)
+                    {
+                        chat.LastMessageAt = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
+
+                    _logger.LogInformation("Голосование создано: VoteId={VoteId}, MessageId={MessageId}, ChatId={ChatId}",
+                        voteId, messageId, request.ChatId);
+
+                    return Json(new ApiResponse<object>
+                    {
+                        Success = true,
+                        Message = "Голосование создано",
+                        Data = new
+                        {
+                            voteId = voteId,
+                            messageId = messageId
+                        }
+                    });
+                }
+                finally
+                {
+                    // Не закрываем соединение, оно управляется контекстом
+                }
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL ошибка при создании голосования: {Message}", ex.Message);
                 return Json(new ApiResponse<object>
                 {
-                    Success = true,
-                    Message = "Голосование создано",
-                    Data = new { voteId = vote.IdVote }
+                    Success = false,
+                    Message = "Ошибка базы данных: " + ex.Message
                 });
             }
             catch (Exception ex)
@@ -2857,7 +3054,7 @@ namespace TripWise.Controllers
                 return Json(new ApiResponse<object>
                 {
                     Success = false,
-                    Message = "Ошибка при создании голосования: " + ex.Message
+                    Message = "Ошибка: " + ex.Message
                 });
             }
         }
@@ -2879,12 +3076,33 @@ namespace TripWise.Controllers
                     });
                 }
 
-                // Исправлено: используем IdVoteNavigation вместо Vote
-                var option = await _context.VoteOptions
-                    .Include(o => o.IdVoteNavigation) // Исправлено: IdVoteNavigation
-                    .FirstOrDefaultAsync(o => o.IdVoteOption == request.OptionId);
+                // Проверяем существование варианта и не истекло ли голосование
+                var checkSql = @"
+            SELECT v.IdVote, v.expiresAt 
+            FROM [VoteOptions] o
+            INNER JOIN [votingSystems] v ON o.idVote = v.IdVote
+            WHERE o.idVoteOption = @optionId";
 
-                if (option == null)
+                int voteId = 0;
+                DateTime? expiresAt = null;
+
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = checkSql;
+                    command.Parameters.Add(new SqlParameter("@optionId", request.OptionId));
+
+                    await _context.Database.OpenConnectionAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            voteId = reader.GetInt32(0);
+                            expiresAt = reader.IsDBNull(1) ? null : reader.GetDateTime(1);
+                        }
+                    }
+                }
+
+                if (voteId == 0)
                 {
                     return Json(new ApiResponse<object>
                     {
@@ -2893,10 +3111,8 @@ namespace TripWise.Controllers
                     });
                 }
 
-                var vote = option.IdVoteNavigation;
-
                 // Проверяем, не истекло ли голосование
-                if (vote.ExpiresAt.HasValue && vote.ExpiresAt.Value < DateTime.UtcNow)
+                if (expiresAt.HasValue && expiresAt.Value < DateTime.UtcNow)
                 {
                     return Json(new ApiResponse<object>
                     {
@@ -2906,31 +3122,63 @@ namespace TripWise.Controllers
                 }
 
                 // Проверяем, голосовал ли уже пользователь
-                var existingVote = await _context.UserVotes
-                    .FirstOrDefaultAsync(uv => uv.IdVoteOption == request.OptionId && uv.IdUser == userId);
+                var checkVoteSql = @"
+            SELECT COUNT(*) FROM [UserVotes] 
+            WHERE idVoteOption = @optionId AND idUser = @userId";
 
-                if (existingVote != null)
+                int existingVoteCount = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
                 {
-                    // Удаляем предыдущий голос
-                    _context.UserVotes.Remove(existingVote);
-                    await _context.SaveChangesAsync();
+                    command.CommandText = checkVoteSql;
+                    command.Parameters.Add(new SqlParameter("@optionId", request.OptionId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+
+                    var result = await command.ExecuteScalarAsync();
+                    existingVoteCount = result != null ? Convert.ToInt32(result) : 0;
+                }
+
+                // Если голосовал - удаляем старый голос
+                if (existingVoteCount > 0)
+                {
+                    var deleteSql = "DELETE FROM [UserVotes] WHERE idVoteOption = @optionId AND idUser = @userId";
+                    using (var command = _context.Database.GetDbConnection().CreateCommand())
+                    {
+                        command.CommandText = deleteSql;
+                        command.Parameters.Add(new SqlParameter("@optionId", request.OptionId));
+                        command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                        await command.ExecuteNonQueryAsync();
+                    }
                 }
 
                 // Добавляем новый голос
-                var userVote = new UserVote
-                {
-                    IdVoteOption = request.OptionId,
-                    IdUser = userId.Value,
-                    VotedAt = DateTime.UtcNow
-                };
+                var insertSql = @"
+            INSERT INTO [UserVotes] 
+            ([idVoteOption], [idUser], [votedAt])
+            VALUES 
+            (@optionId, @userId, @votedAt)";
 
-                _context.UserVotes.Add(userVote);
-                await _context.SaveChangesAsync();
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = insertSql;
+                    command.Parameters.Add(new SqlParameter("@optionId", request.OptionId));
+                    command.Parameters.Add(new SqlParameter("@userId", userId.Value));
+                    command.Parameters.Add(new SqlParameter("@votedAt", DateTime.UtcNow));
+                    await command.ExecuteNonQueryAsync();
+                }
 
                 return Json(new ApiResponse<object>
                 {
                     Success = true,
                     Message = "Ваш голос учтен"
+                });
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL ошибка при голосовании");
+                return Json(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Ошибка базы данных: " + ex.Message
                 });
             }
             catch (Exception ex)
@@ -2939,9 +3187,22 @@ namespace TripWise.Controllers
                 return Json(new ApiResponse<object>
                 {
                     Success = false,
-                    Message = "Ошибка при голосовании: " + ex.Message
+                    Message = "Ошибка: " + ex.Message
                 });
             }
         }
+    }
+    public class VotingSystemDto
+    {
+        public int IdVote { get; set; }
+        public string Question { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ExpiresAt { get; set; }
+        public int? IdTrip { get; set; }
+        public int CreatedById { get; set; }
+        public int? IdPoint { get; set; }
+        public int? IdChat { get; set; }
+        public string CreatorName { get; set; } = "";
+        public string? TripName { get; set; }
     }
 }

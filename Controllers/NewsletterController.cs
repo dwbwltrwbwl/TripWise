@@ -363,6 +363,84 @@ namespace TripWise.Controllers
             }
         }
 
+        // POST: /Newsletter/UnsubscribeFromAccount
+        [HttpPost]
+        [Route("UnsubscribeFromAccount")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnsubscribeFromAccount([FromBody] UnsubscribeRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "Не авторизован" });
+                }
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Пользователь не найден" });
+                }
+
+                var email = user.Email;
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return Json(new { success = false, message = "Email не указан" });
+                }
+
+                email = email.Trim().ToLower();
+
+                var subscription = await _context.NewsletterSubscriptions
+                    .FirstOrDefaultAsync(ns => ns.Email == email);
+
+                if (subscription == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Email не найден в списке подписчиков"
+                    });
+                }
+
+                if (!subscription.IsActive)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Вы уже отписаны от рассылки"
+                    });
+                }
+
+                // Отписываем
+                subscription.IsActive = false;
+                subscription.UnsubscribedAt = DateTime.UtcNow;
+
+                _context.NewsletterSubscriptions.Update(subscription);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"User {email} unsubscribed from newsletter");
+
+                // Отправляем письмо об отписке
+                await SendUnsubscribeEmail(email);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Вы успешно отписались от рассылки"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отписке от рассылки");
+                return Json(new
+                {
+                    success = false,
+                    message = "Произошла ошибка при отписке"
+                });
+            }
+        }
+
         private async Task SendWelcomeEmail(string email, bool isReactivation = false)
         {
             try
@@ -470,6 +548,11 @@ namespace TripWise.Controllers
             {
                 _logger.LogError(ex, $"Failed to send unsubscribe email to: {email}");
             }
+        }
+
+        public class UnsubscribeRequest
+        {
+            public string Email { get; set; } = "";
         }
 
         private bool IsValidEmail(string email)

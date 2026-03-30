@@ -281,6 +281,41 @@ namespace TripWise.Migrations
                     b.ToTable("ChatMessageReads");
                 });
 
+            modelBuilder.Entity("TripWise.Models.ChecklistItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NoteId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteId");
+
+                    b.ToTable("ChecklistItems");
+                });
+
             modelBuilder.Entity("TripWise.Models.Document", b =>
                 {
                     b.Property<int>("IdDocument")
@@ -1277,6 +1312,47 @@ namespace TripWise.Migrations
                     b.ToTable("NewsletterSubscriptions");
                 });
 
+            modelBuilder.Entity("TripWise.Models.Note", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notes", (string)null);
+                });
+
             modelBuilder.Entity("TripWise.Models.ParticipantRole", b =>
                 {
                     b.Property<int>("IdParticipantRole")
@@ -2155,7 +2231,8 @@ namespace TripWise.Migrations
                 {
                     b.Property<int>("IdVote")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("IdVote");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdVote"));
 
@@ -2171,29 +2248,49 @@ namespace TripWise.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("expiresAt");
 
+                    b.Property<int?>("IdChat")
+                        .HasColumnType("int")
+                        .HasColumnName("idChat");
+
                     b.Property<int?>("IdPoint")
                         .HasColumnType("int")
                         .HasColumnName("idPoint");
 
-                    b.Property<int>("IdTrip")
+                    b.Property<int?>("IdTrip")
                         .HasColumnType("int")
                         .HasColumnName("idTrip");
 
+                    b.Property<int?>("PointsOfInterestIdPoint")
+                        .HasColumnType("int");
+
                     b.Property<string>("Question")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("question");
+
+                    b.Property<int?>("TripIdTrip")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserIdUser")
+                        .HasColumnType("int");
 
                     b.HasKey("IdVote");
 
-                    b.HasIndex(new[] { "CreatedById" }, "IX_votingSystems_createdById");
+                    b.HasIndex("CreatedById");
 
-                    b.HasIndex(new[] { "IdPoint" }, "IX_votingSystems_idPoint");
+                    b.HasIndex("IdChat");
 
-                    b.HasIndex(new[] { "IdTrip" }, "IX_votingSystems_idTrip");
+                    b.HasIndex("IdPoint");
 
-                    b.ToTable("votingSystems", (string)null);
+                    b.HasIndex("IdTrip");
+
+                    b.HasIndex("PointsOfInterestIdPoint");
+
+                    b.HasIndex("TripIdTrip");
+
+                    b.HasIndex("UserIdUser");
+
+                    b.ToTable("VotingSystems");
                 });
 
             modelBuilder.Entity("TripWise.Models.Chat", b =>
@@ -2300,6 +2397,17 @@ namespace TripWise.Migrations
                     b.Navigation("Message");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.ChecklistItem", b =>
+                {
+                    b.HasOne("TripWise.Models.Note", "Note")
+                        .WithMany("ChecklistItems")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Note");
                 });
 
             modelBuilder.Entity("TripWise.Models.Document", b =>
@@ -2463,6 +2571,17 @@ namespace TripWise.Migrations
                 });
 
             modelBuilder.Entity("TripWise.Models.HotelBooking", b =>
+                {
+                    b.HasOne("TripWise.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TripWise.Models.Note", b =>
                 {
                     b.HasOne("TripWise.Models.User", "User")
                         .WithMany()
@@ -2707,21 +2826,45 @@ namespace TripWise.Migrations
             modelBuilder.Entity("TripWise.Models.VotingSystem", b =>
                 {
                     b.HasOne("TripWise.Models.User", "CreatedBy")
-                        .WithMany("VotingSystems")
+                        .WithMany()
                         .HasForeignKey("CreatedById")
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_votingSystems_Users_createdById");
+
+                    b.HasOne("TripWise.Models.Chat", "IdChatNavigation")
+                        .WithMany()
+                        .HasForeignKey("IdChat")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("FK_votingSystems_Chats_idChat");
 
                     b.HasOne("TripWise.Models.PointsOfInterest", "IdPointNavigation")
-                        .WithMany("VotingSystems")
-                        .HasForeignKey("IdPoint");
+                        .WithMany()
+                        .HasForeignKey("IdPoint")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_votingSystems_PointsOfInterest_idPoint");
 
                     b.HasOne("TripWise.Models.Trip", "IdTripNavigation")
-                        .WithMany("VotingSystems")
+                        .WithMany()
                         .HasForeignKey("IdTrip")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_votingSystems_Trips_idTrip");
+
+                    b.HasOne("TripWise.Models.PointsOfInterest", null)
+                        .WithMany("VotingSystems")
+                        .HasForeignKey("PointsOfInterestIdPoint");
+
+                    b.HasOne("TripWise.Models.Trip", null)
+                        .WithMany("VotingSystems")
+                        .HasForeignKey("TripIdTrip");
+
+                    b.HasOne("TripWise.Models.User", null)
+                        .WithMany("VotingSystems")
+                        .HasForeignKey("UserIdUser");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("IdChatNavigation");
 
                     b.Navigation("IdPointNavigation");
 
@@ -2760,6 +2903,11 @@ namespace TripWise.Migrations
             modelBuilder.Entity("TripWise.Models.InterestCategory", b =>
                 {
                     b.Navigation("PointsOfInterests");
+                });
+
+            modelBuilder.Entity("TripWise.Models.Note", b =>
+                {
+                    b.Navigation("ChecklistItems");
                 });
 
             modelBuilder.Entity("TripWise.Models.ParticipantRole", b =>

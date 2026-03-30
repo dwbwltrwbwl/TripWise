@@ -81,19 +81,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="accordion-item border-0 mb-2">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                    Как работает система бонусов и скидок?
-                                </button>
-                            </h2>
-                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body">
-                                    За каждое бронирование вы получаете бонусные баллы, которые можно использовать для оплаты следующих поездок. Также действуют сезонные акции и специальные предложения для постоянных клиентов.
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -130,7 +117,8 @@
                                     </h2>
                                     <div id="bookingFaq2" class="accordion-collapse collapse" data-bs-parent="#bookingFaqAccordion">
                                         <div class="accordion-body">
-                                            Да, при бронировании для нескольких пассажиров система автоматически старается подобрать соседние места. Выбор конкретных мест доступен на этапе оплаты.
+                                            Да, мы автоматически подбираем соседние места при бронировании для нескольких пассажиров.
+                                            Вам не нужно выбирать места вручную — система сделает это за вас.
                                         </div>
                                     </div>
                                 </div>
@@ -180,14 +168,14 @@
 
             <!-- Блок "Не нашли ответ" -->
             <div class="card border-0 shadow-sm mt-4">
-                <div class="card-body p-4 text-center">
-                    <div class="help-block mb-4">
+                <div class="card-body p-4">
+                    <div class="help-block text-center">
                         <i class="fas fa-headset fa-3x text-primary mb-3"></i>
-                        <h3 class="section-subtitle mb-3">Не нашли ответ на свой вопрос?</h3>
-                        <p class="text-muted mb-4">Наша служба поддержки всегда готова помочь вам</p>
-                        <div class="d-flex justify-content-center gap-3">
+                        <h3 class="section-subtitle mb-3 text-center">Не нашли ответ на свой вопрос?</h3>
+                        <p class="text-muted mb-4 text-center">Наша служба поддержки всегда готова помочь вам</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
                             <a asp-controller="Home" asp-action="Contact" class="btn btn-primary btn-lg">
-                                Написать сообщение
+                                <i class="fas fa-envelope me-2 text-white"></i>Написать сообщение
                             </a>
                             <a href="tel:+78001234567" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-phone me-2"></i>Позвонить
@@ -265,7 +253,6 @@
         font-size: 1.3rem;
         color: #334155;
         margin: 0;
-        display: flex;
         align-items: center;
     }
 
@@ -430,6 +417,25 @@
             padding: 14px 20px;
             font-size: 1.1rem;
         }
+    }
+    /* Блок помощи */
+    .help-block {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+        .help-block .text-center {
+            text-align: center;
+        }
+
+        .help-block .section-subtitle {
+            text-align: center;
+            width: 100%;
+        }
+
+    /* Иконка письма белая */
+    .btn-primary i {
+        color: white !important;
     }
 </style>
 
